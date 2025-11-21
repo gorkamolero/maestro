@@ -22,7 +22,7 @@ export function ZoomControls({ onBackToNow, onAddTrack }: ZoomControlsProps) {
   const { zoomLevel, backgroundVariant } = useSnapshot(timelineStore);
 
   return (
-    <Panel position="top-right" className="m-4">
+    <Panel position="top-right" className="mr-4 mt-10 mb-4 ml-4">
       <div className="flex items-center gap-2">
         <Button
           size="sm"
