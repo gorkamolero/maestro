@@ -129,3 +129,25 @@ const result = await invoke("your_command", { arg: "value" });
 1. Add to `Cargo.toml` dependencies
 2. Add corresponding npm package if it has frontend bindings
 3. Register in `lib.rs` builder: `.plugin(plugin_name::init())`
+
+## Code Organization
+
+### Component Structure
+
+**Keep components focused and maintainable:**
+- Break up components when they exceed ~200-250 lines
+- Extract reusable logic into hooks
+- Separate concerns into smaller, focused components
+- Move complex calculations or data transformations into utility functions
+
+**When to refactor:**
+- After completing a feature or work session
+- When a component has multiple responsibilities
+- When logic could be reused elsewhere
+- When a component becomes difficult to understand at a glance
+
+**Example refactoring patterns:**
+- Extract event handlers into custom hooks
+- Move data transformation logic to utility files
+- Split UI sections into sub-components
+- Create shared components for repeated patterns
