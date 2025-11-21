@@ -4,7 +4,6 @@ import {
   Background,
   ReactFlowProvider,
   Panel,
-  MiniMap,
 } from '@xyflow/react';
 import { useSnapshot } from 'valtio';
 
@@ -95,11 +94,6 @@ function TimelineCanvas({ onCenterOnNow, onCenterOnTrack, onAddTrack }: Timeline
           gap={backgroundVariant === 'dots' ? 20 : TRACK_HEIGHT}
           size={backgroundVariant === 'dots' ? 2 : undefined}
           className={backgroundVariant === 'dots' ? 'opacity-30' : 'opacity-10'}
-        />
-        <MiniMap
-          nodeStrokeWidth={3}
-          zoomable
-          pannable
         />
         <TimelineControls onBackToNow={centerOnNow} onAddTrack={onAddTrack} centerOnNow={centerOnNow} />
       </ReactFlow>
