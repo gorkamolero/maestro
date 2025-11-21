@@ -26,6 +26,8 @@
     "@glass-ui": "https://glass-ui.crenspire.com/r/{name}.json",
     "@hextaui": "https://hextaui.com/r/{name}.json",
     "@hooks": "https://shadcn-hooks.vercel.app/r/{name}.json",
-    "@magicui": "https://magicui.design/r/{name}"
+    "@magicui": "https://magicui.design/r/{name}",
+    "@motion-primitives": "https://motion-primitives.com/c/registry.json",
+    "@reui": "https://reui.io/r/{name}.json"
   }
 }

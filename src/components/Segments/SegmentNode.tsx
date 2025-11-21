@@ -7,6 +7,7 @@ import { BaseHandle } from '@/components/base-handle';
 import { cn } from '@/lib/utils';
 import { segmentsActions } from '@/stores/segments.store';
 import { tracksActions } from '@/stores/tracks.store';
+import { GlowEffect } from '@/components/motion-primitives/glow-effect';
 
 interface SegmentNodeData {
   segmentId: string;
@@ -50,18 +51,30 @@ function SegmentNodeComponent({ data }: SegmentNodeProps) {
   return (
     <BaseNode
       className={cn(
-        'h-16 px-3 py-0 flex items-center gap-2 transition-all cursor-pointer group',
-        isActive && 'shadow-[0_0_20px_rgba(100,116,139,0.5)] border-primary',
+        'h-16 px-3 py-0 flex items-center gap-2 transition-all cursor-pointer group overflow-hidden',
+        isActive && 'border-primary',
         isPlanted && 'border-dashed'
       )}
       style={{ width: `${data.width}px` }}
     >
+      {/* Animated glow effect for active segments */}
+      {isActive && (
+        <GlowEffect
+          colors={['hsl(var(--primary))', 'hsl(var(--primary) / 0.5)']}
+          mode="breathe"
+          blur="soft"
+          duration={3}
+          scale={1.2}
+          className="opacity-30"
+        />
+      )}
+
       {/* Hide handles - we don't use edges in timeline */}
       <BaseHandle type="target" position={Position.Left} className="opacity-0" />
       <BaseHandle type="source" position={Position.Right} className="opacity-0" />
 
-      <Icon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-      <div className="flex-1 min-w-0">
+      <Icon className="w-4 h-4 text-muted-foreground flex-shrink-0 relative z-10" />
+      <div className="flex-1 min-w-0 relative z-10">
         <p className="text-sm font-medium truncate">{data.title}</p>
       </div>
 
@@ -69,7 +82,7 @@ function SegmentNodeComponent({ data }: SegmentNodeProps) {
       {isActive && (
         <button
           onClick={handleEndSegment}
-          className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 w-5 h-5 flex items-center justify-center rounded-sm hover:bg-destructive/20 hover:text-destructive"
+          className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 w-5 h-5 flex items-center justify-center rounded-sm hover:bg-destructive/20 hover:text-destructive relative z-10"
           title="End segment"
         >
           <X className="w-3 h-3" />
