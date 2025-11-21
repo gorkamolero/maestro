@@ -13,6 +13,18 @@ export function useTimelineNodes(referenceTime: Date, trackLabelOffset: number):
   const { tracks } = useSnapshot(tracksStore);
 
   return useMemo(() => {
+    // NOW line node
+    const nowX = timeToPixels(now, zoomLevel, referenceTime);
+    const nowLineNode = {
+      id: 'now-line',
+      type: 'nowLine',
+      position: { x: nowX, y: 0 },
+      data: {},
+      draggable: false,
+      selectable: false,
+      zIndex: 1000,
+    };
+
     const trackLabelNodes = tracks.map((track) => ({
       id: `track-label-${track.id}`,
       type: 'trackLabel',
@@ -60,6 +72,6 @@ export function useTimelineNodes(referenceTime: Date, trackLabelOffset: number):
       })
     );
 
-    return [...trackLabelNodes, ...segmentNodes];
+    return [nowLineNode, ...trackLabelNodes, ...segmentNodes];
   }, [tracks, zoomLevel, referenceTime, now, trackLabelOffset]);
 }

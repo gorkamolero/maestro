@@ -21,6 +21,7 @@ import { useKeyboardNavigation } from '@/hooks/useKeyboardNavigation';
 const nodeTypes = {
   segment: SegmentNode,
   trackLabel: TrackLabelNode,
+  nowLine: NowLine,
 };
 
 function TimelineCanvas() {
@@ -39,7 +40,7 @@ function TimelineCanvas() {
 
   const nodes = useTimelineNodes(referenceTime, trackLabelOffset);
 
-  useKeyboardNavigation({ containerRef, referenceTime });
+  const { centerOnNow } = useKeyboardNavigation({ containerRef, referenceTime });
 
   return (
     <div
@@ -74,8 +75,7 @@ function TimelineCanvas() {
           pannable
         />
         <TimeRuler referenceTime={referenceTime} />
-        <ZoomControls />
-        <NowLine referenceTime={referenceTime} />
+        <ZoomControls onBackToNow={centerOnNow} />
       </ReactFlow>
       <SegmentEditor segment={selectedSegment} onClose={() => setSelectedSegment(null)} />
     </div>

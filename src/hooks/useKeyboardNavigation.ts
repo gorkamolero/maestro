@@ -1,4 +1,4 @@
-import { useEffect, type RefObject } from 'react';
+import { useEffect, useCallback, type RefObject } from 'react';
 import { useReactFlow } from '@xyflow/react';
 import { useSnapshot } from 'valtio';
 import { timelineStore } from '@/stores/timeline.store';
@@ -16,22 +16,28 @@ export function useKeyboardNavigation({ containerRef, referenceTime }: KeyboardN
   const reactFlowInstance = useReactFlow();
   const { now, zoomLevel } = useSnapshot(timelineStore);
 
+  const centerOnNow = useCallback(() => {
+    const nowX = timeToPixels(now, zoomLevel, referenceTime);
+    const { width } = containerRef.current?.getBoundingClientRect() || { width: 1000 };
+
+    reactFlowInstance.setViewport({
+      x: -nowX + width / 2,
+      y: reactFlowInstance.getViewport().y,
+      zoom: reactFlowInstance.getViewport().zoom,
+    }, { duration: 300 });
+  }, [now, zoomLevel, referenceTime, reactFlowInstance, containerRef]);
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.code === 'Space' && !event.repeat) {
         event.preventDefault();
-        const nowX = timeToPixels(now, zoomLevel, referenceTime);
-        const { width } = containerRef.current?.getBoundingClientRect() || { width: 1000 };
-
-        reactFlowInstance.setViewport({
-          x: -nowX + width / 2,
-          y: reactFlowInstance.getViewport().y,
-          zoom: reactFlowInstance.getViewport().zoom,
-        }, { duration: 300 });
+        centerOnNow();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [now, zoomLevel, referenceTime, reactFlowInstance, containerRef]);
+  }, [centerOnNow]);
+
+  return { centerOnNow };
 }
