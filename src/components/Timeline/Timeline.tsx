@@ -9,7 +9,7 @@ import { useSnapshot } from 'valtio';
 
 import { SegmentNode } from '@/components/Segments/SegmentNode';
 import { SegmentEditor } from '@/components/Segments/SegmentEditor';
-import { TrackLabelNode } from '@/components/Tracks/TrackLabelNode';
+import { SpaceLabelNode } from '@/components/Spaces/SpaceLabelNode';
 import { NowLine } from './NowLine';
 import { TimeRuler } from './TimeRuler';
 import { TimelineControls } from './TimelineControls';
@@ -22,7 +22,7 @@ import { useViewportControls } from '@/hooks/useViewportControls';
 
 const nodeTypes = {
   segment: SegmentNode,
-  trackLabel: TrackLabelNode,
+  trackLabel: SpaceLabelNode,
 };
 
 export interface TimelineHandle {
