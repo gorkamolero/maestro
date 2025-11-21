@@ -7,18 +7,18 @@ import { segmentsActions } from '@/stores/segments.store';
 import { Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface TrackLabelNodeData {
+interface SpaceLabelNodeData {
   spaceId: string;
   name: string;
   color: string;
   segmentCount: number;
 }
 
-interface TrackLabelNodeProps {
-  data: TrackLabelNodeData;
+interface SpaceLabelNodeProps {
+  data: SpaceLabelNodeData;
 }
 
-function TrackLabelNodeComponent({ data }: TrackLabelNodeProps) {
+function SpaceLabelNodeComponent({ data }: SpaceLabelNodeProps) {
   const { getViewport } = useReactFlow();
   const viewport = getViewport();
 
@@ -68,4 +68,4 @@ function TrackLabelNodeComponent({ data }: TrackLabelNodeProps) {
   );
 }
 
-export const TrackLabelNode = memo(TrackLabelNodeComponent);
+export const SpaceLabelNode = memo(SpaceLabelNodeComponent);
