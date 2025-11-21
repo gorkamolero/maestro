@@ -24,13 +24,13 @@ export function Dock() {
   };
 
   return (
-    <div className="h-16 bg-background/95 backdrop-blur-xl border-t border-border flex items-center justify-center px-3 relative">
+    <div className="relative">
       <TooltipProvider delayDuration={0}>
         <DockPrimitive
-          className="bg-muted/30 border-muted-foreground/20"
-          iconSize={44}
-          iconMagnification={54}
-          iconDistance={100}
+          className="bg-background/80 backdrop-blur-xl border-border shadow-2xl"
+          iconSize={48}
+          iconMagnification={64}
+          iconDistance={120}
         >
           {/* Track icons */}
           {tracks.map((track) => {
@@ -92,18 +92,6 @@ export function Dock() {
           </Tooltip>
         </DockPrimitive>
       </TooltipProvider>
-
-      {/* Resource monitor placeholder */}
-      <div className="absolute right-4 flex items-center gap-3 text-xs text-muted-foreground">
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full bg-green-500" />
-          <span>2.3GB</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full bg-orange-500" />
-          <span>45%</span>
-        </div>
-      </div>
     </div>
   );
 }

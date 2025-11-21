@@ -30,7 +30,7 @@ function App() {
   };
 
   return (
-    <div className="h-screen bg-background text-foreground flex flex-col">
+    <div className="h-screen bg-background text-foreground flex flex-col relative">
       {/* Main layout with resizable panels */}
       <PanelGroup direction="vertical" className="flex-1">
         {/* Timeline at top (resizable 20-50%) */}
@@ -60,8 +60,12 @@ function App() {
         </Panel>
       </PanelGroup>
 
-      {/* Dock at bottom (fixed height) */}
-      <Dock />
+      {/* Floating dock at bottom */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+        <div className="pointer-events-auto">
+          <Dock />
+        </div>
+      </div>
     </div>
   );
 }

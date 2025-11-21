@@ -40,7 +40,7 @@ export function Sidebar() {
 
   if (!activeTrackId) {
     return (
-      <div className="w-[200px] bg-muted/30 border-r border-border flex items-center justify-center p-4">
+      <div className="w-full h-full bg-muted/30 flex items-center justify-center p-4">
         <p className="text-xs text-muted-foreground text-center">
           Select a track from the dock below
         </p>
@@ -49,7 +49,7 @@ export function Sidebar() {
   }
 
   return (
-    <div className="w-[200px] bg-muted/30 border-r border-border flex flex-col">
+    <div className="w-full h-full bg-muted/30 flex flex-col">
       {/* Quick actions */}
       <TooltipProvider delayDuration={0}>
         <div className="p-3 flex gap-2">

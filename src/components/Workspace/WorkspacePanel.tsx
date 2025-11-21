@@ -65,31 +65,35 @@ function TerminalPlaceholder({ tab }: { tab: any }) {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="flex-1 flex flex-col items-center justify-center bg-black/90 text-green-400 font-mono p-8"
+      className="w-full h-full bg-black/90 text-green-400 font-mono p-4 flex flex-col"
     >
-      <motion.div
-        animate={{ scale: [1, 1.1, 1] }}
-        transition={{ duration: 2, repeat: Infinity }}
-      >
-        <Terminal className="w-12 h-12 mb-4 opacity-50" />
-      </motion.div>
-      <p className="text-sm mb-2">{tab.title}</p>
-      <p className="text-xs opacity-50">Terminal integration coming in Phase 2</p>
-      <motion.div
-        initial={{ y: 10, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.2 }}
-        className="mt-4 p-3 bg-black/50 rounded border border-green-500/20"
-      >
-        <div className="text-xs">$ Ready for XTerm.js integration</div>
+      {/* Terminal header */}
+      <div className="flex items-center justify-between mb-4 pb-2 border-b border-green-500/20">
+        <div className="flex items-center gap-2">
+          <Terminal className="w-4 h-4" />
+          <span className="text-sm">{tab.title}</span>
+        </div>
+        <div className="flex gap-1">
+          <div className="w-3 h-3 rounded-full bg-red-500/50" />
+          <div className="w-3 h-3 rounded-full bg-yellow-500/50" />
+          <div className="w-3 h-3 rounded-full bg-green-500/50" />
+        </div>
+      </div>
+
+      {/* Terminal content */}
+      <div className="flex-1 flex flex-col gap-2 font-mono text-sm">
+        <div className="opacity-70">$ Terminal integration coming in Phase 2</div>
+        <div className="opacity-70">$ XTerm.js will be integrated here</div>
+        <div className="opacity-70">$ Full shell support with PTY backend</div>
         <motion.div
           animate={{ opacity: [0.5, 1, 0.5] }}
           transition={{ duration: 1.5, repeat: Infinity }}
-          className="text-xs mt-1"
+          className="flex"
         >
-          ...
+          <span>$ </span>
+          <span className="ml-1">█</span>
         </motion.div>
-      </motion.div>
+      </div>
     </motion.div>
   );
 }
