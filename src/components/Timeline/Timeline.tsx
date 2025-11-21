@@ -90,7 +90,12 @@ function TimelineCanvas({ onCenterOnNow, onCenterOnTrack, onAddTrack }: Timeline
         nodesConnectable={false}
         elementsSelectable={true}
       >
-        <Background variant={backgroundVariant} gap={TRACK_HEIGHT} className="opacity-10" />
+        <Background
+          variant={backgroundVariant}
+          gap={backgroundVariant === 'dots' ? 20 : TRACK_HEIGHT}
+          size={backgroundVariant === 'dots' ? 2 : undefined}
+          className={backgroundVariant === 'dots' ? 'opacity-30' : 'opacity-10'}
+        />
         <MiniMap
           nodeStrokeWidth={3}
           zoomable
