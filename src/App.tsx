@@ -1,4 +1,8 @@
 import { useState, useEffect } from "react";
+import { Timeline } from "@/components/Timeline/Timeline";
+import { Button } from "@/components/ui/button";
+import { tracksActions } from "@/stores/tracks.store";
+import { Plus } from "lucide-react";
 
 function App() {
   const [darkMode, setDarkMode] = useState(true);
@@ -11,11 +15,25 @@ function App() {
     }
   }, [darkMode]);
 
+  const handleAddTrack = () => {
+    const trackNumber = Math.floor(Math.random() * 1000);
+    tracksActions.addTrack(`Track ${trackNumber}`);
+  };
+
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="p-8">
-        <h1 className="text-4xl font-bold">Maestro</h1>
-        <p className="text-muted-foreground">Phase 1: Ready to build</p>
+    <div className="h-screen bg-background text-foreground flex flex-col">
+      {/* Header */}
+      <div className="h-12 border-b border-border flex items-center justify-between px-4 flex-shrink-0">
+        <h1 className="text-lg font-semibold">Maestro</h1>
+        <Button size="sm" onClick={handleAddTrack}>
+          <Plus className="w-4 h-4 mr-1" />
+          Add Track
+        </Button>
+      </div>
+
+      {/* Timeline */}
+      <div className="flex-1 overflow-hidden">
+        <Timeline />
       </div>
     </div>
   );

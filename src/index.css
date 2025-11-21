@@ -127,3 +127,51 @@
     @apply min-h-screen;
   }
 }
+
+/* React Flow customizations - outside layers for higher specificity */
+.react-flow {
+  background-color: var(--background) !important;
+  --xy-node-background-color-default: var(--card) !important;
+  --xy-minimap-background-color-default: var(--card) !important;
+  --xy-minimap-mask-background-color-default: color-mix(in oklab, var(--primary) 30%, transparent) !important;
+  --xy-minimap-mask-stroke-color-default: var(--primary) !important;
+  --xy-minimap-node-background-color-default: var(--foreground) !important;
+  --xy-minimap-node-stroke-color-default: var(--foreground) !important;
+}
+
+.react-flow__background {
+  opacity: 0.2;
+}
+
+.react-flow__controls {
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem;
+}
+
+.react-flow__controls-button {
+  background-color: hsl(var(--card));
+  border-bottom: 1px solid hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+
+.react-flow__controls-button:hover {
+  background-color: hsl(var(--accent));
+}
+
+.react-flow__attribution {
+  display: none;
+}
+
+.react-flow__pane {
+  cursor: grab;
+}
+
+.react-flow__pane:active {
+  cursor: grabbing;
+}
+
+.react-flow__minimap {
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem;
+}
