@@ -151,3 +151,20 @@ const result = await invoke("your_command", { arg: "value" });
 - Move data transformation logic to utility files
 - Split UI sections into sub-components
 - Create shared components for repeated patterns
+
+## Component Libraries
+
+This project has access to multiple shadcn-compatible component registries configured in `components.json`. For detailed information about available components, their use cases, and recommendations, see [docs/shadcn-registry-libraries-analysis.md](docs/shadcn-registry-libraries-analysis.md).
+
+Available registries:
+- **shadcn/ui** - Default registry with core UI components
+- **@ai-elements** - AI SDK components for chat and streaming
+- **@animate-ui** - Animation components
+- **@cult-ui** - Modern UI components
+- **@eldoraui** - UI component library
+- **@glass-ui** - Glassmorphism components
+- **@hextaui** - Design system components
+- **@hooks** - React hooks collection
+- **@magicui** - Animated components
+- **@motion-primitives** - Motion and animation primitives
+- **@reui** - React UI components
