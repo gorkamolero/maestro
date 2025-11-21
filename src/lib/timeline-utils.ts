@@ -26,13 +26,8 @@ export function pixelsToTime(pixels: number, zoomLevel: ZoomLevel, referenceTime
   return new Date(referenceTime.getTime() + minutes * 60000);
 }
 
-// Minimum segment widths for different zoom levels (in pixels)
-const MIN_SEGMENT_WIDTH: Record<ZoomLevel, number> = {
-  hour: 100,   // 50 minutes at hour zoom
-  day: 60,     // 2 hours at day zoom
-  week: 40,    // 6.6 hours at week zoom
-  month: 30,   // 20 hours at month zoom
-};
+// Minimum segment width (in pixels) - keep it small so segments grow naturally
+const MIN_SEGMENT_WIDTH = 8;
 
 // Calculate segment width in pixels based on duration
 export function getSegmentWidth(
@@ -45,5 +40,9 @@ export function getSegmentWidth(
   const end = endTime || nowTime;
   const startX = timeToPixels(startTime, zoomLevel, referenceTime);
   const endX = timeToPixels(end, zoomLevel, referenceTime);
-  return Math.max(endX - startX, MIN_SEGMENT_WIDTH[zoomLevel]);
+  const naturalWidth = endX - startX;
+
+  // Only apply minimum width if the segment has been running for at least a few seconds
+  // This lets new segments start very small and grow naturally
+  return Math.max(naturalWidth, MIN_SEGMENT_WIDTH);
 }

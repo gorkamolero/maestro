@@ -1,11 +1,12 @@
-import { useState, useEffect } from "react";
-import { Timeline } from "@/components/Timeline/Timeline";
+import { useState, useEffect, useRef } from "react";
+import { Timeline, TimelineHandle } from "@/components/Timeline/Timeline";
 import { Button } from "@/components/ui/button";
 import { tracksActions } from "@/stores/tracks.store";
 import { Plus } from "lucide-react";
 
 function App() {
   const [darkMode, setDarkMode] = useState(true);
+  const timelineRef = useRef<TimelineHandle>(null);
 
   useEffect(() => {
     if (darkMode) {
@@ -18,6 +19,8 @@ function App() {
   const handleAddTrack = () => {
     const trackNumber = Math.floor(Math.random() * 1000);
     tracksActions.addTrack(`Track ${trackNumber}`);
+    // Center viewport on NOW after adding track
+    timelineRef.current?.centerOnNow();
   };
 
   return (
@@ -33,7 +36,7 @@ function App() {
 
       {/* Timeline */}
       <div className="flex-1 overflow-hidden">
-        <Timeline />
+        <Timeline ref={timelineRef} />
       </div>
     </div>
   );

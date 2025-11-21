@@ -1,3 +1,4 @@
+import { forwardRef, useImperativeHandle } from 'react';
 import {
   ReactFlow,
   Background,
@@ -24,7 +25,11 @@ const nodeTypes = {
   nowLine: NowLine,
 };
 
-function TimelineCanvas() {
+export interface TimelineHandle {
+  centerOnNow: () => void;
+}
+
+function TimelineCanvas({ onCenterOnNow }: { onCenterOnNow?: (fn: () => void) => void }) {
   const { containerRef, referenceTime } = useTimelineViewport();
 
   const {
@@ -41,6 +46,11 @@ function TimelineCanvas() {
   const nodes = useTimelineNodes(referenceTime, trackLabelOffset);
 
   const { centerOnNow } = useKeyboardNavigation({ containerRef, referenceTime });
+
+  // Expose centerOnNow to parent
+  if (onCenterOnNow) {
+    onCenterOnNow(centerOnNow);
+  }
 
   return (
     <div
@@ -82,10 +92,24 @@ function TimelineCanvas() {
   );
 }
 
-export function Timeline() {
+export const Timeline = forwardRef<TimelineHandle>((props, ref) => {
+  let centerOnNowFn: (() => void) | null = null;
+
+  useImperativeHandle(ref, () => ({
+    centerOnNow: () => {
+      if (centerOnNowFn) {
+        centerOnNowFn();
+      }
+    },
+  }));
+
   return (
     <ReactFlowProvider>
-      <TimelineCanvas />
+      <TimelineCanvas
+        onCenterOnNow={(fn) => {
+          centerOnNowFn = fn;
+        }}
+      />
     </ReactFlowProvider>
   );
-}
+});
