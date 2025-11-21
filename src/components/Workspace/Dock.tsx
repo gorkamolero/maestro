@@ -8,6 +8,7 @@ import { GlowEffect } from '@/components/motion-primitives/glow-effect';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { SpaceEditor } from './SpaceEditor';
+import { ResourcePanel } from '@/components/Monitor/ResourcePanel';
 import { useState } from 'react';
 
 const SPACE_ICONS: Record<string, any> = {
@@ -47,10 +48,17 @@ export function Dock() {
   };
 
   return (
-    <div className="flex items-center gap-2">
-      <TooltipProvider delayDuration={0}>
-        {/* Space dots/icons - Arc Spaces style */}
-        {spaces.map((space) => {
+    <div className="space-y-3">
+      {/* Resource Monitor */}
+      <div className="px-2 py-2 bg-background/50 rounded-lg border border-border/50">
+        <ResourcePanel />
+      </div>
+
+      {/* Space Switcher */}
+      <div className="flex items-center gap-2">
+        <TooltipProvider delayDuration={0}>
+          {/* Space dots/icons - Arc Spaces style */}
+          {spaces.map((space) => {
           const Icon = SPACE_ICONS[space.icon || 'home'] || Home;
           const isActive = activeSpaceId === space.id;
           const hasActiveSegments = space.segments.filter((s) => s.status === 'active').length > 0;
@@ -133,7 +141,8 @@ export function Dock() {
             />
           </PopoverContent>
         </Popover>
-      </TooltipProvider>
+        </TooltipProvider>
+      </div>
     </div>
   );
 }

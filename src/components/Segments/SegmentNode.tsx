@@ -11,6 +11,7 @@ import { spacesActions } from '@/stores/spaces.store';
 import { timelineStore } from '@/stores/timeline.store';
 import { getSegmentWidth } from '@/lib/timeline-utils';
 import { GlowEffect } from '@/components/motion-primitives/glow-effect';
+import { SegmentMetrics } from '@/components/Monitor/SegmentMetrics';
 import {
   Expandable,
   ExpandableCard,
@@ -110,6 +111,13 @@ function SegmentNodeComponent({ data }: SegmentNodeProps) {
                       <p className="text-sm font-medium truncate">{data.title}</p>
                     </div>
 
+                    {/* Resource metrics in compact mode when collapsed */}
+                    {!isExpanded && isActive && (
+                      <div className="relative z-10">
+                        <SegmentMetrics segmentId={data.segmentId} compact />
+                      </div>
+                    )}
+
                     {/* Close button - only show for active segments */}
                     {isActive && (
                       <button
@@ -175,18 +183,23 @@ function SegmentNodeComponent({ data }: SegmentNodeProps) {
                       )}
 
                       {/* Metadata footer */}
-                      <div className="pt-2 border-t space-y-1 text-xs text-muted-foreground">
-                        <div className="flex justify-between">
-                          <span>Status</span>
-                          <span className="capitalize">{data.status}</span>
+                      <div className="pt-2 border-t space-y-3 text-xs text-muted-foreground">
+                        <div className="space-y-1">
+                          <div className="flex justify-between">
+                            <span>Status</span>
+                            <span className="capitalize">{data.status}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Duration</span>
+                            <span>
+                              {duration}
+                              {typeof duration === 'number' ? ' min' : ''}
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex justify-between">
-                          <span>Duration</span>
-                          <span>
-                            {duration}
-                            {typeof duration === 'number' ? ' min' : ''}
-                          </span>
-                        </div>
+
+                        {/* Full resource metrics when expanded */}
+                        {isActive && <SegmentMetrics segmentId={data.segmentId} />}
                       </div>
                     </div>
                   </ExpandableContent>

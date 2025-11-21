@@ -2,6 +2,8 @@ import { useSnapshot } from 'valtio';
 import { workspaceStore } from '@/stores/workspace.store';
 import { Terminal, Globe, FileText, Bot } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { SegmentMetrics } from '@/components/Monitor/SegmentMetrics';
+import { segmentsStore } from '@/stores/segments.store';
 
 export function WorkspacePanel() {
   const { tabs, activeTabId } = useSnapshot(workspaceStore);
@@ -61,6 +63,9 @@ export function WorkspacePanel() {
 
 // Placeholder components for Phase 2
 function TerminalPlaceholder({ tab }: { tab: any }) {
+  const { activeSegments } = useSnapshot(segmentsStore);
+  const segment = activeSegments.find((s) => s.id === tab.segmentId);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -73,10 +78,14 @@ function TerminalPlaceholder({ tab }: { tab: any }) {
           <Terminal className="w-4 h-4" />
           <span className="text-sm">{tab.title}</span>
         </div>
-        <div className="flex gap-1">
-          <div className="w-3 h-3 rounded-full bg-red-500/50" />
-          <div className="w-3 h-3 rounded-full bg-yellow-500/50" />
-          <div className="w-3 h-3 rounded-full bg-green-500/50" />
+        <div className="flex items-center gap-3">
+          {/* Resource metrics for this terminal */}
+          {segment && <SegmentMetrics segmentId={segment.id} compact />}
+          <div className="flex gap-1">
+            <div className="w-3 h-3 rounded-full bg-red-500/50" />
+            <div className="w-3 h-3 rounded-full bg-yellow-500/50" />
+            <div className="w-3 h-3 rounded-full bg-green-500/50" />
+          </div>
         </div>
       </div>
 
@@ -99,20 +108,36 @@ function TerminalPlaceholder({ tab }: { tab: any }) {
 }
 
 function BrowserPlaceholder({ tab }: { tab: any }) {
+  const { activeSegments } = useSnapshot(segmentsStore);
+  const segment = activeSegments.find((s) => s.id === tab.segmentId);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="flex-1 flex flex-col items-center justify-center bg-background p-8"
+      className="flex-1 flex flex-col bg-background"
     >
-      <motion.div
-        animate={{ rotate: 360 }}
-        transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-      >
-        <Globe className="w-12 h-12 mb-4 text-muted-foreground" />
-      </motion.div>
-      <p className="text-sm mb-2">{tab.title}</p>
-      <p className="text-xs text-muted-foreground mb-4">Browser integration coming in Phase 2</p>
+      {/* Browser header with metrics */}
+      {segment && (
+        <div className="flex items-center justify-between p-3 border-b border-border">
+          <div className="flex items-center gap-2">
+            <Globe className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm font-medium">{tab.title}</span>
+          </div>
+          <SegmentMetrics segmentId={segment.id} compact />
+        </div>
+      )}
+
+      {/* Browser content */}
+      <div className="flex-1 flex flex-col items-center justify-center p-8">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+        >
+          <Globe className="w-12 h-12 mb-4 text-muted-foreground" />
+        </motion.div>
+        <p className="text-sm mb-2">{!segment && tab.title}</p>
+        <p className="text-xs text-muted-foreground mb-4">Browser integration coming in Phase 2</p>
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -139,17 +164,33 @@ function BrowserPlaceholder({ tab }: { tab: any }) {
 }
 
 function AgentPlaceholder({ tab }: { tab: any }) {
+  const { activeSegments } = useSnapshot(segmentsStore);
+  const segment = activeSegments.find((s) => s.id === tab.segmentId);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="flex-1 flex flex-col items-center justify-center bg-background p-8"
+      className="flex-1 flex flex-col bg-background"
     >
-      <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 2, repeat: Infinity }}>
-        <Bot className="w-12 h-12 mb-4 text-primary" />
-      </motion.div>
-      <p className="text-sm mb-2">{tab.title}</p>
-      <p className="text-xs text-muted-foreground mb-4">Agent integration coming in Phase 2</p>
+      {/* Agent header with metrics */}
+      {segment && (
+        <div className="flex items-center justify-between p-3 border-b border-border">
+          <div className="flex items-center gap-2">
+            <Bot className="w-4 h-4 text-primary" />
+            <span className="text-sm font-medium">{tab.title}</span>
+          </div>
+          <SegmentMetrics segmentId={segment.id} compact />
+        </div>
+      )}
+
+      {/* Agent content */}
+      <div className="flex-1 flex flex-col items-center justify-center p-8">
+        <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 2, repeat: Infinity }}>
+          <Bot className="w-12 h-12 mb-4 text-primary" />
+        </motion.div>
+        <p className="text-sm mb-2">{!segment && tab.title}</p>
+        <p className="text-xs text-muted-foreground mb-4">Agent integration coming in Phase 2</p>
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -176,10 +217,17 @@ function AgentPlaceholder({ tab }: { tab: any }) {
 
 // Simple note editor (already works!)
 function NoteEditor({ tab }: { tab: any }) {
+  const { activeSegments } = useSnapshot(segmentsStore);
+  const segment = activeSegments.find((s) => s.id === tab.segmentId);
+
   return (
     <div className="flex-1 flex flex-col bg-background">
-      <div className="border-b border-border p-3">
-        <h2 className="text-sm font-medium">{tab.title}</h2>
+      <div className="border-b border-border p-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <FileText className="w-4 h-4 text-muted-foreground" />
+          <h2 className="text-sm font-medium">{tab.title}</h2>
+        </div>
+        {segment && <SegmentMetrics segmentId={segment.id} compact />}
       </div>
       <div className="flex-1 p-4">
         <textarea
