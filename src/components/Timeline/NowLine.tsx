@@ -1,7 +1,12 @@
 import { useSnapshot } from 'valtio';
 import { useReactFlow } from '@xyflow/react';
 import { timelineStore } from '@/stores/timeline.store';
+import { tracksStore } from '@/stores/tracks.store';
+import { segmentsActions } from '@/stores/segments.store';
+import { tracksActions } from '@/stores/tracks.store';
 import { timeToPixels } from '@/lib/timeline-utils';
+import { CreateSegmentMenu } from './CreateSegmentMenu';
+import type { SegmentType } from '@/types';
 
 interface NowLineProps {
   referenceTime: Date;
@@ -9,9 +14,11 @@ interface NowLineProps {
 
 /**
  * NowLine component - renders in viewport coordinates, spans full height
+ * Right-click to create a new segment at NOW
  */
 export function NowLine({ referenceTime }: NowLineProps) {
   const { now, zoomLevel } = useSnapshot(timelineStore);
+  const { tracks } = useSnapshot(tracksStore);
   const { getViewport } = useReactFlow();
   const viewport = getViewport();
 
@@ -21,21 +28,46 @@ export function NowLine({ referenceTime }: NowLineProps) {
   // Convert to viewport X position
   const viewportX = canvasX * viewport.zoom + viewport.x;
 
+  const handleCreateSegment = (type: SegmentType) => {
+    // If no tracks exist, create one first
+    if (tracks.length === 0) {
+      tracksActions.addTrack('Main Track');
+    }
+
+    // Create segment on the first track
+    const track = tracks[0];
+    const segment = segmentsActions.createSegment(
+      track.id,
+      `New ${type}`,
+      type
+    );
+
+    // Add segment to track
+    tracksActions.addSegment(track.id, segment);
+  };
+
   return (
-    <div
-      className="absolute top-0 bottom-0 w-0.5 bg-primary pointer-events-none"
-      style={{
-        left: `${viewportX}px`,
-        boxShadow: '0 0 10px hsl(var(--primary))',
-        zIndex: 1000,
-      }}
-    >
-      <div className="absolute top-0 -left-2 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-        <div className="w-2 h-2 bg-background rounded-full" />
+    <CreateSegmentMenu onCreateSegment={handleCreateSegment}>
+      <div
+        className="absolute top-0 bottom-0 w-2 bg-primary/20 hover:bg-primary/30 cursor-context-menu"
+        style={{
+          left: `${viewportX - 4}px`, // Center the clickable area
+          zIndex: 1000,
+        }}
+      >
+        <div
+          className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-0.5 bg-primary pointer-events-none"
+          style={{
+            boxShadow: '0 0 10px hsl(var(--primary))',
+          }}
+        />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 -ml-0.5 w-5 h-5 bg-primary rounded-full flex items-center justify-center pointer-events-none">
+          <div className="w-2 h-2 bg-background rounded-full" />
+        </div>
+        <div className="absolute top-6 left-1/2 ml-2 text-xs font-mono text-primary whitespace-nowrap pointer-events-none">
+          NOW
+        </div>
       </div>
-      <div className="absolute top-6 left-2 text-xs font-mono text-primary whitespace-nowrap">
-        NOW
-      </div>
-    </div>
+    </CreateSegmentMenu>
   );
 }
