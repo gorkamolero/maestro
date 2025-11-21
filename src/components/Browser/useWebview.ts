@@ -6,7 +6,7 @@ import { LogicalPosition, LogicalSize } from '@tauri-apps/api/dpi';
 interface UseWebviewOptions {
   tabId: string;
   initialUrl: string;
-  containerRef: React.RefObject<HTMLDivElement>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
 }
 
 export function useWebview({ tabId, initialUrl, containerRef }: UseWebviewOptions) {

@@ -1,13 +1,12 @@
-import { MutableRefObject } from 'react';
+import { MutableRefObject, RefObject } from 'react';
 import { Webview } from '@tauri-apps/api/webview';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { LogicalPosition, LogicalSize } from '@tauri-apps/api/dpi';
 import { normalizeUrl, isSafeUrl } from './browser.utils';
 
 interface UseNavigationOptions {
   webviewRef: MutableRefObject<Webview | null>;
   currentUrlRef: MutableRefObject<string>;
-  containerRef: MutableRefObject<HTMLDivElement | null>;
+  containerRef: RefObject<HTMLDivElement | null>;
   tabId: string;
   setIsLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
