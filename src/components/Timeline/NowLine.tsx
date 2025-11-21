@@ -1,9 +1,9 @@
 import { useSnapshot } from 'valtio';
 import { useReactFlow } from '@xyflow/react';
 import { timelineStore } from '@/stores/timeline.store';
-import { spacesStore } from "@/stores/spaces.store";
+import { spacesStore } from '@/stores/spaces.store';
 import { segmentsActions } from '@/stores/segments.store';
-import { spacesActions } from "@/stores/spaces.store";
+import { spacesActions } from '@/stores/spaces.store';
 import { timeToPixels } from '@/lib/timeline-utils';
 import { CreateSegmentMenu } from './CreateSegmentMenu';
 import type { SegmentType } from '@/types';

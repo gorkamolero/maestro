@@ -1,6 +1,6 @@
 import type { Space as TrackType } from '@/types';
 import { Button } from '@/components/ui/button';
-import { spacesActions } from "@/stores/spaces.store";
+import { spacesActions } from '@/stores/spaces.store';
 import { segmentsActions } from '@/stores/segments.store';
 import { Plus } from 'lucide-react';
 

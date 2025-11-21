@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useSnapshot } from 'valtio';
 import { subscribe } from 'valtio';
 import { timelineStore, timelineActions } from '@/stores/timeline.store';
-import { spacesStore, spacesActions } from "@/stores/spaces.store";
+import { spacesStore, spacesActions } from '@/stores/spaces.store';
 import { segmentsStore } from '@/stores/segments.store';
 import {
   initDB,

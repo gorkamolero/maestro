@@ -7,7 +7,7 @@ import { BaseNode } from '@/components/base-node';
 import { BaseHandle } from '@/components/base-handle';
 import { cn } from '@/lib/utils';
 import { segmentsActions } from '@/stores/segments.store';
-import { spacesActions } from "@/stores/spaces.store";
+import { spacesActions } from '@/stores/spaces.store';
 import { timelineStore } from '@/stores/timeline.store';
 import { getSegmentWidth } from '@/lib/timeline-utils';
 import { GlowEffect } from '@/components/motion-primitives/glow-effect';

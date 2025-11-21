@@ -2,7 +2,7 @@ import { useCallback, useState, type RefObject } from 'react';
 import { useReactFlow } from '@xyflow/react';
 import type { Node } from '@xyflow/react';
 import { useSnapshot } from 'valtio';
-import { spacesStore, spacesActions } from "@/stores/spaces.store";
+import { spacesStore, spacesActions } from '@/stores/spaces.store';
 import { segmentsActions } from '@/stores/segments.store';
 import { timelineStore } from '@/stores/timeline.store';
 import { pixelsToTime, TRACK_HEIGHT } from '@/lib/timeline-utils';

@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useSnapshot } from 'valtio';
 import type { Node } from '@xyflow/react';
 import { timelineStore } from '@/stores/timeline.store';
-import { spacesStore } from "@/stores/spaces.store";
+import { spacesStore } from '@/stores/spaces.store';
 import { timeToPixels, getSegmentWidth, TRACK_HEIGHT } from '@/lib/timeline-utils';
 
 /**

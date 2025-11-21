@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { useReactFlow } from '@xyflow/react';
 import { BaseNode } from '@/components/base-node';
 import { Button } from '@/components/ui/button';
-import { spacesActions } from "@/stores/spaces.store";
+import { spacesActions } from '@/stores/spaces.store';
 import { segmentsActions } from '@/stores/segments.store';
 import { Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';

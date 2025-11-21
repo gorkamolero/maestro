@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { spacesActions } from "@/stores/spaces.store";
+import { spacesActions } from '@/stores/spaces.store';
 import type { Segment, SegmentType, SegmentStatus } from '@/types';
 import { Terminal, Globe, Bot, FileText, ExternalLink, Clock, Trash2 } from 'lucide-react';
 

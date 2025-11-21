@@ -1,5 +1,5 @@
 import { useSnapshot } from 'valtio';
-import { spacesStore } from "@/stores/spaces.store";
+import { spacesStore } from '@/stores/spaces.store';
 import { Space } from './Space';
 
 export function TrackList() {

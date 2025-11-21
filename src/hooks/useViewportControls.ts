@@ -2,7 +2,7 @@ import { useEffect, useCallback, type RefObject } from 'react';
 import { useReactFlow } from '@xyflow/react';
 import { useSnapshot } from 'valtio';
 import { timelineStore, timelineActions } from '@/stores/timeline.store';
-import { spacesStore } from "@/stores/spaces.store";
+import { spacesStore } from '@/stores/spaces.store';
 import { timeToPixels, TRACK_HEIGHT } from '@/lib/timeline-utils';
 import type { ZoomLevel } from '@/types';
 
