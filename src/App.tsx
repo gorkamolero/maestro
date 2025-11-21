@@ -1,13 +1,18 @@
 import { useState, useEffect, useRef } from "react";
 import { Timeline, TimelineHandle } from "@/components/Timeline/Timeline";
+import { TabBar } from "@/components/Tabs/TabBar";
+import { TabContent } from "@/components/Tabs/TabContent";
 import { Button } from "@/components/ui/button";
 import { tracksActions } from "@/stores/tracks.store";
 import { usePersistence } from "@/hooks/usePersistence";
+import { useSnapshot } from "valtio";
+import { tabsStore } from "@/stores/tabs.store";
 import { Plus } from "lucide-react";
 
 function App() {
   const [darkMode, setDarkMode] = useState(true);
   const timelineRef = useRef<TimelineHandle>(null);
+  const { tabs } = useSnapshot(tabsStore);
 
   // Initialize state persistence
   usePersistence();
@@ -28,8 +33,18 @@ function App() {
   };
 
   return (
-    <div className="h-screen bg-background text-foreground">
-      <Timeline ref={timelineRef} onAddTrack={handleAddTrack} />
+    <div className="h-screen bg-background text-foreground flex flex-col">
+      <TabBar />
+      <div className="flex-1 flex">
+        {tabs.length > 0 && (
+          <div className="w-1/2 border-r border-border flex flex-col">
+            <TabContent />
+          </div>
+        )}
+        <div className={tabs.length > 0 ? "w-1/2" : "w-full"}>
+          <Timeline ref={timelineRef} onAddTrack={handleAddTrack} />
+        </div>
+      </div>
     </div>
   );
 }

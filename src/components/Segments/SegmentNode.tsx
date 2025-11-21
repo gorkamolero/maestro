@@ -1,12 +1,13 @@
 import { memo } from 'react';
 import { Position } from '@xyflow/react';
-import type { SegmentType, SegmentStatus } from '@/types';
+import type { SegmentType, SegmentStatus, Segment } from '@/types';
 import { Terminal, Globe, Bot, FileText, ExternalLink, Clock, X } from 'lucide-react';
 import { BaseNode } from '@/components/base-node';
 import { BaseHandle } from '@/components/base-handle';
 import { cn } from '@/lib/utils';
 import { segmentsActions } from '@/stores/segments.store';
 import { tracksActions } from '@/stores/tracks.store';
+import { tabsActions } from '@/stores/tabs.store';
 import { GlowEffect } from '@/components/motion-primitives/glow-effect';
 
 interface SegmentNodeData {
@@ -38,6 +39,21 @@ function SegmentNodeComponent({ data }: SegmentNodeProps) {
   const isActive = data.status === 'active';
   const isPlanted = data.status === 'scheduled';
 
+  const handleClick = () => {
+    // Open segment in a tab
+    const segment: Segment = {
+      id: data.segmentId,
+      trackId: data.trackId,
+      title: data.title,
+      startTime: data.startTime,
+      endTime: data.endTime,
+      type: data.type,
+      status: data.status,
+      config: {},
+    };
+    tabsActions.openTab(segment);
+  };
+
   const handleEndSegment = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent segment click event
     segmentsActions.endSegment(data.segmentId);
@@ -50,6 +66,7 @@ function SegmentNodeComponent({ data }: SegmentNodeProps) {
 
   return (
     <BaseNode
+      onClick={handleClick}
       className={cn(
         'h-16 px-3 py-0 flex items-center gap-2 transition-all cursor-pointer group overflow-hidden',
         isActive && 'border-primary',
