@@ -138,27 +138,28 @@ function BrowserPlaceholder({ tab }: { tab: any }) {
         </motion.div>
         <p className="text-sm mb-2">{!segment && tab.title}</p>
         <p className="text-xs text-muted-foreground mb-4">Browser integration coming in Phase 2</p>
-      <motion.div
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.2 }}
-        className="w-full max-w-md p-4 border rounded-lg"
-      >
-        <input
-          type="text"
-          placeholder="https://..."
-          className="w-full p-2 bg-background border rounded text-sm"
-          disabled
-        />
         <motion.div
-          initial={{ height: 0 }}
-          animate={{ height: 192 }}
-          transition={{ delay: 0.4 }}
-          className="mt-4 bg-muted rounded flex items-center justify-center text-xs text-muted-foreground overflow-hidden"
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="w-full max-w-md p-4 border rounded-lg"
         >
-          Webview preview
+          <input
+            type="text"
+            placeholder="https://..."
+            className="w-full p-2 bg-background border rounded text-sm"
+            disabled
+          />
+          <motion.div
+            initial={{ height: 0 }}
+            animate={{ height: 192 }}
+            transition={{ delay: 0.4 }}
+            className="mt-4 bg-muted rounded flex items-center justify-center text-xs text-muted-foreground overflow-hidden"
+          >
+            Webview preview
+          </motion.div>
         </motion.div>
-      </motion.div>
+      </div>
     </motion.div>
   );
 }
@@ -191,26 +192,27 @@ function AgentPlaceholder({ tab }: { tab: any }) {
         </motion.div>
         <p className="text-sm mb-2">{!segment && tab.title}</p>
         <p className="text-xs text-muted-foreground mb-4">Agent integration coming in Phase 2</p>
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: 0.2 }}
-        className="w-full max-w-md space-y-3"
-      >
         <motion.div
-          initial={{ x: -20, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          className="flex gap-2"
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="w-full max-w-md space-y-3"
         >
-          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-            <Bot className="w-4 h-4" />
-          </div>
-          <div className="flex-1 p-3 bg-muted rounded-lg">
-            <p className="text-xs">AI agent conversations will appear here</p>
-          </div>
+          <motion.div
+            initial={{ x: -20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="flex gap-2"
+          >
+            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+              <Bot className="w-4 h-4" />
+            </div>
+            <div className="flex-1 p-3 bg-muted rounded-lg">
+              <p className="text-xs">AI agent conversations will appear here</p>
+            </div>
+          </motion.div>
         </motion.div>
-      </motion.div>
+      </div>
     </motion.div>
   );
 }

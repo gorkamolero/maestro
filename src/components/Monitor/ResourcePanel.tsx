@@ -45,7 +45,7 @@ export function ResourcePanel() {
   };
 
   return (
-    <div className="flex items-center gap-3 text-xs">
+    <div className="flex items-center justify-center gap-3 text-xs h-full">
       {/* RAM Indicator */}
       <div className="flex items-center gap-1.5">
         <HardDrive className="w-3.5 h-3.5 text-muted-foreground" />

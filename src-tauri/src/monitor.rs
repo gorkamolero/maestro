@@ -1,13 +1,13 @@
 use serde::{Deserialize, Serialize};
-use std::sync::{Arc, Mutex};
-use sysinfo::{System, Pid, ProcessRefreshKind, RefreshKind, Process};
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+use sysinfo::{Pid, System};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SystemMetrics {
-    pub total_ram: u64,      // in MB
-    pub used_ram: u64,       // in MB
-    pub total_cpu: f32,      // percentage
+    pub total_ram: u64, // in MB
+    pub used_ram: u64,  // in MB
+    pub total_cpu: f32, // percentage
     pub process_count: usize,
 }
 
@@ -15,15 +15,15 @@ pub struct SystemMetrics {
 pub struct ProcessMetrics {
     pub pid: u32,
     pub name: String,
-    pub ram: u64,  // in MB
-    pub cpu: f32,  // percentage
+    pub ram: u64, // in MB
+    pub cpu: f32, // percentage
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SegmentResourceMetrics {
     pub segment_id: String,
-    pub ram: u64,       // in MB
-    pub cpu: f32,       // percentage
+    pub ram: u64, // in MB
+    pub cpu: f32, // percentage
     pub processes: Vec<ProcessMetrics>,
     pub last_updated: String,
 }
@@ -44,17 +44,40 @@ impl ResourceMonitor {
     pub fn get_system_metrics(&self) -> SystemMetrics {
         let mut sys = self.system.lock().unwrap();
         sys.refresh_memory();
-        sys.refresh_cpu_all();
+        sys.refresh_cpu();
+        sys.refresh_processes();
 
-        // Count processes
-        sys.refresh_processes(ProcessRefreshKind::new());
-        let process_count = sys.processes().len();
+        // Get current process (Maestro app)
+        let current_pid = std::process::id();
+
+        let mut app_ram = 0u64;
+        let mut app_cpu = 0f32;
+        let mut app_process_count = 0usize;
+
+        // Track this process and all child processes
+        if let Some(process) = sys.process(Pid::from_u32(current_pid)) {
+            app_ram += process.memory() / 1024 / 1024; // Convert to MB
+            app_cpu += process.cpu_usage();
+            app_process_count += 1;
+
+            // Get all tracked segment processes too
+            let segment_processes = self.segment_processes.lock().unwrap();
+            for pids in segment_processes.values() {
+                for &pid in pids {
+                    if let Some(proc) = sys.process(Pid::from_u32(pid)) {
+                        app_ram += proc.memory() / 1024 / 1024;
+                        app_cpu += proc.cpu_usage();
+                        app_process_count += 1;
+                    }
+                }
+            }
+        }
 
         SystemMetrics {
-            total_ram: sys.total_memory() / 1024 / 1024, // Convert to MB
-            used_ram: sys.used_memory() / 1024 / 1024,   // Convert to MB
-            total_cpu: sys.global_cpu_usage(),
-            process_count,
+            total_ram: sys.total_memory() / 1024 / 1024, // Total system RAM for reference
+            used_ram: app_ram,                           // Only Maestro's RAM usage
+            total_cpu: app_cpu,                          // Only Maestro's CPU usage
+            process_count: app_process_count,            // Only Maestro's process count
         }
     }
 
@@ -65,7 +88,7 @@ impl ResourceMonitor {
         sys.process(Pid::from_u32(pid)).map(|process| {
             ProcessMetrics {
                 pid,
-                name: process.name().to_string_lossy().to_string(),
+                name: process.name().to_string(),
                 ram: process.memory() / 1024 / 1024, // Convert to MB
                 cpu: process.cpu_usage(),
             }
@@ -125,13 +148,13 @@ impl ResourceMonitor {
 
     pub fn get_all_processes(&self) -> Vec<ProcessMetrics> {
         let mut sys = self.system.lock().unwrap();
-        sys.refresh_processes(ProcessRefreshKind::new());
+        sys.refresh_processes();
 
         sys.processes()
             .iter()
             .map(|(pid, process)| ProcessMetrics {
                 pid: pid.as_u32(),
-                name: process.name().to_string_lossy().to_string(),
+                name: process.name().to_string(),
                 ram: process.memory() / 1024 / 1024, // Convert to MB
                 cpu: process.cpu_usage(),
             })

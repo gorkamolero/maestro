@@ -6,6 +6,7 @@ import { Dock } from '@/components/Workspace/Dock';
 import { Sidebar } from '@/components/Workspace/Sidebar';
 import { WorkspacePanel } from '@/components/Workspace/WorkspacePanel';
 import { FloatingControls } from '@/components/Workspace/FloatingControls';
+import { ResourcePanel } from '@/components/Monitor/ResourcePanel';
 import { spacesActions } from '@/stores/spaces.store';
 import { workspaceStore, workspaceActions } from '@/stores/workspace.store';
 import {

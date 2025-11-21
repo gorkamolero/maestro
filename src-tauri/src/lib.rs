@@ -1,8 +1,8 @@
 mod monitor;
 
-use monitor::{ResourceMonitor, SystemMetrics, ProcessMetrics, SegmentResourceMetrics};
+use monitor::{ProcessMetrics, ResourceMonitor, SegmentResourceMetrics, SystemMetrics};
 use std::sync::{Arc, Mutex};
-use tauri::{Manager, State};
+use tauri::{Emitter, State};
 
 // Global state for the resource monitor
 struct AppState {
@@ -28,7 +28,11 @@ fn get_process_metrics(pid: u32, state: State<AppState>) -> Result<Option<Proces
 }
 
 #[tauri::command]
-fn track_segment_process(segment_id: String, pid: u32, state: State<AppState>) -> Result<(), String> {
+fn track_segment_process(
+    segment_id: String,
+    pid: u32,
+    state: State<AppState>,
+) -> Result<(), String> {
     let monitor = state.monitor.lock().map_err(|e| e.to_string())?;
     monitor.track_segment_process(segment_id, pid);
     Ok(())
@@ -42,7 +46,10 @@ fn untrack_segment(segment_id: String, state: State<AppState>) -> Result<(), Str
 }
 
 #[tauri::command]
-fn get_segment_metrics(segment_id: String, state: State<AppState>) -> Result<Option<SegmentResourceMetrics>, String> {
+fn get_segment_metrics(
+    segment_id: String,
+    state: State<AppState>,
+) -> Result<Option<SegmentResourceMetrics>, String> {
     let monitor = state.monitor.lock().map_err(|e| e.to_string())?;
     Ok(monitor.get_segment_metrics(&segment_id))
 }
@@ -83,14 +90,12 @@ pub fn run() {
             let app_handle = app.handle().clone();
             let monitor_clone = monitor.clone();
 
-            std::thread::spawn(move || {
-                loop {
-                    std::thread::sleep(std::time::Duration::from_secs(1));
+            std::thread::spawn(move || loop {
+                std::thread::sleep(std::time::Duration::from_secs(1));
 
-                    if let Ok(monitor) = monitor_clone.lock() {
-                        let metrics = monitor.get_system_metrics();
-                        let _ = app_handle.emit("system-metrics", metrics);
-                    }
+                if let Ok(monitor) = monitor_clone.lock() {
+                    let metrics = monitor.get_system_metrics();
+                    let _ = app_handle.emit("system-metrics", metrics);
                 }
             });
 
