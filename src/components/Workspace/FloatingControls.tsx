@@ -16,15 +16,21 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ResourcePanel } from '@/components/Monitor/ResourcePanel';
 
 export function FloatingControls() {
   const { viewMode, activeSpaceId } = useSnapshot(workspaceStore);
 
   return (
     <div className="absolute top-4 right-4 z-[100] flex gap-2">
+      {/* Resource Monitor */}
+      <div className="bg-background/80 backdrop-blur-xl border border-border/50 rounded-lg px-3 shadow-lg flex items-center justify-center h-10">
+        <ResourcePanel />
+      </div>
+
       {/* Quick actions dock */}
       <TooltipProvider delayDuration={0}>
-        <div className="flex gap-1 bg-background/80 backdrop-blur-xl border border-border/50 rounded-lg p-1 shadow-lg">
+        <div className="flex gap-1 bg-background/80 backdrop-blur-xl border border-border/50 rounded-lg p-1 shadow-lg h-10">
           <Tooltip>
             <TooltipTrigger asChild>
               <button
