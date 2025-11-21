@@ -1,6 +1,6 @@
 import type { ZoomLevel } from '@/types';
 
-export const TRACK_HEIGHT = 80; // Height of each track lane in pixels
+export const TRACK_HEIGHT = 60; // Height of each track lane in pixels
 
 // Pixels per minute at different zoom levels
 const ZOOM_SCALES: Record<ZoomLevel, number> = {
