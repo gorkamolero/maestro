@@ -16,10 +16,19 @@ const ZOOM_LEVELS: { value: ZoomLevel; label: string }[] = [
 interface TimelineControlsProps {
   onBackToNow?: () => void;
   onAddTrack?: () => void;
+  centerOnNow?: () => void;
 }
 
-export function TimelineControls({ onBackToNow, onAddTrack }: TimelineControlsProps) {
+export function TimelineControls({ onBackToNow, onAddTrack, centerOnNow }: TimelineControlsProps) {
   const { zoomLevel, backgroundVariant } = useSnapshot(timelineStore);
+
+  const handleZoomChange = (level: ZoomLevel) => {
+    timelineActions.setZoomLevel(level);
+    // Center on NOW after zoom change
+    if (centerOnNow) {
+      centerOnNow();
+    }
+  };
 
   return (
     <Panel position="top-right" className="mr-4 mb-4 ml-4" style={{ marginTop: '40px' }}>
@@ -62,7 +71,7 @@ export function TimelineControls({ onBackToNow, onAddTrack }: TimelineControlsPr
               key={level.value}
               size="sm"
               variant={zoomLevel === level.value ? 'default' : 'ghost'}
-              onClick={() => timelineActions.setZoomLevel(level.value)}
+              onClick={() => handleZoomChange(level.value)}
               className={cn(
                 'h-7 px-3 text-xs',
                 zoomLevel === level.value && 'bg-primary text-primary-foreground'

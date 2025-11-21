@@ -101,7 +101,7 @@ function TimelineCanvas({ onCenterOnNow, onCenterOnTrack, onAddTrack }: Timeline
           zoomable
           pannable
         />
-        <TimelineControls onBackToNow={centerOnNow} onAddTrack={onAddTrack} />
+        <TimelineControls onBackToNow={centerOnNow} onAddTrack={onAddTrack} centerOnNow={centerOnNow} />
       </ReactFlow>
       <TimeRuler referenceTime={referenceTime} />
       <NowLine referenceTime={referenceTime} />
