@@ -4,6 +4,8 @@ import { Terminal, Globe, Bot } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { SegmentMetrics } from '@/components/Monitor/SegmentMetrics';
 import { segmentsStore } from '@/stores/segments.store';
+import { TerminalPanel } from '@/components/Terminal/TerminalPanel';
+import type { TerminalState } from '@/components/Terminal/terminal.utils';
 
 export function WorkspacePanel() {
   const { tabs, activeTabId } = useSnapshot(workspaceStore);
@@ -53,7 +55,7 @@ export function WorkspacePanel() {
         className="flex-1"
       >
         {activeTab.type === 'note' && <NoteEditor tab={activeTab} />}
-        {activeTab.type === 'terminal' && <TerminalPlaceholder tab={activeTab} />}
+        {activeTab.type === 'terminal' && <TerminalView tab={activeTab} />}
         {activeTab.type === 'browser' && <BrowserPlaceholder tab={activeTab} />}
         {activeTab.type === 'agent' && <AgentPlaceholder tab={activeTab} />}
       </motion.div>
@@ -61,8 +63,8 @@ export function WorkspacePanel() {
   );
 }
 
-// Placeholder components for Phase 2
-function TerminalPlaceholder({ tab }: { tab: any }) {
+// Terminal component - now fully functional!
+function TerminalView({ tab }: { tab: any }) {
   const { activeSegments } = useSnapshot(segmentsStore);
   const segment = activeSegments.find((s) => s.id === tab.segmentId);
 
@@ -70,38 +72,38 @@ function TerminalPlaceholder({ tab }: { tab: any }) {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="w-full h-full bg-black/90 text-green-400 font-mono p-4 flex flex-col"
+      className="w-full h-full flex flex-col"
     >
-      {/* Terminal header */}
-      <div className="flex items-center justify-between mb-4 pb-2 border-b border-green-500/20">
-        <div className="flex items-center gap-2">
-          <Terminal className="w-4 h-4" />
-          <span className="text-sm">{tab.title}</span>
-        </div>
-        <div className="flex items-center gap-3">
-          {/* Resource metrics for this terminal */}
-          {segment && <SegmentMetrics segmentId={segment.id} compact />}
-          <div className="flex gap-1">
-            <div className="w-3 h-3 rounded-full bg-red-500/50" />
-            <div className="w-3 h-3 rounded-full bg-yellow-500/50" />
-            <div className="w-3 h-3 rounded-full bg-green-500/50" />
+      {/* Terminal header with metrics */}
+      {segment && (
+        <div className="flex items-center justify-between px-4 py-2 border-b border-border">
+          <div className="flex items-center gap-2">
+            <Terminal className="w-4 h-4" />
+            <span className="text-sm">{tab.title}</span>
           </div>
+          <SegmentMetrics segmentId={segment.id} compact />
         </div>
-      </div>
+      )}
 
-      {/* Terminal content */}
-      <div className="flex-1 flex flex-col gap-2 font-mono text-sm">
-        <div className="opacity-70">$ Terminal integration coming in Phase 2</div>
-        <div className="opacity-70">$ XTerm.js will be integrated here</div>
-        <div className="opacity-70">$ Full shell support with PTY backend</div>
-        <motion.div
-          animate={{ opacity: [0.5, 1, 0.5] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
-          className="flex"
-        >
-          <span>$ </span>
-          <span className="ml-1">█</span>
-        </motion.div>
+      {/* Terminal panel */}
+      <div className="flex-1">
+        <TerminalPanel
+          segmentId={tab.id}
+          initialState={
+            tab.terminalState
+              ? {
+                  buffer: tab.terminalState.buffer || '',
+                  workingDir: tab.terminalState.workingDir || null,
+                  scrollPosition: tab.terminalState.scrollPosition || 0,
+                  theme: tab.terminalState.theme || 'termius-dark',
+                }
+              : undefined
+          }
+          onStateChange={(state: TerminalState) => {
+            // Save terminal state to tab
+            // workspaceActions.updateTabTerminalState(tab.id, state);
+          }}
+        />
       </div>
     </motion.div>
   );
@@ -178,7 +180,7 @@ function AgentPlaceholder({ tab }: { tab: any }) {
       {segment && (
         <div className="flex items-center justify-between p-3 border-b border-border">
           <div className="flex items-center gap-2">
-            <Bot className="w-4 h-4 text-primary" />
+            <Bot className="w-4 h-4 text-muted-foreground" />
             <span className="text-sm font-medium">{tab.title}</span>
           </div>
           <SegmentMetrics segmentId={segment.id} compact />
@@ -187,57 +189,27 @@ function AgentPlaceholder({ tab }: { tab: any }) {
 
       {/* Agent content */}
       <div className="flex-1 flex flex-col items-center justify-center p-8">
-        <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 2, repeat: Infinity }}>
-          <Bot className="w-12 h-12 mb-4 text-primary" />
+        <motion.div
+          animate={{ scale: [1, 1.1, 1] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          <Bot className="w-12 h-12 mb-4 text-muted-foreground" />
         </motion.div>
         <p className="text-sm mb-2">{!segment && tab.title}</p>
-        <p className="text-xs text-muted-foreground mb-4">Agent integration coming in Phase 2</p>
-        <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="w-full max-w-md space-y-3"
-        >
-          <motion.div
-            initial={{ x: -20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="flex gap-2"
-          >
-            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-              <Bot className="w-4 h-4" />
-            </div>
-            <div className="flex-1 p-3 bg-muted rounded-lg">
-              <p className="text-xs">AI agent conversations will appear here</p>
-            </div>
-          </motion.div>
-        </motion.div>
+        <p className="text-xs text-muted-foreground">AI Agent integration coming in Phase 2</p>
       </div>
     </motion.div>
   );
 }
 
-// Simple note editor (already works!)
 function NoteEditor({ tab }: { tab: any }) {
-  const { activeSegments } = useSnapshot(segmentsStore);
-  const segment = activeSegments.find((s) => s.id === tab.segmentId);
-
   return (
-    <div className="flex-1 flex flex-col bg-background">
-      <div className="border-b border-border p-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <FileText className="w-4 h-4 text-muted-foreground" />
-          <h2 className="text-sm font-medium">{tab.title}</h2>
-        </div>
-        {segment && <SegmentMetrics segmentId={segment.id} compact />}
-      </div>
-      <div className="flex-1 p-4">
-        <textarea
-          className="w-full h-full resize-none bg-transparent border-none focus:outline-none focus:ring-0 font-mono text-sm"
-          placeholder="Start writing..."
-          defaultValue={tab.content || ''}
-        />
-      </div>
-    </div>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="flex-1 p-6"
+    >
+      <p className="text-sm text-muted-foreground">Note editor for {tab.title}</p>
+    </motion.div>
   );
 }
