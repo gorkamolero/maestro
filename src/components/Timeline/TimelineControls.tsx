@@ -13,12 +13,12 @@ const ZOOM_LEVELS: { value: ZoomLevel; label: string }[] = [
   { value: 'month', label: 'Month' },
 ];
 
-interface ZoomControlsProps {
+interface TimelineControlsProps {
   onBackToNow?: () => void;
   onAddTrack?: () => void;
 }
 
-export function ZoomControls({ onBackToNow, onAddTrack }: ZoomControlsProps) {
+export function TimelineControls({ onBackToNow, onAddTrack }: TimelineControlsProps) {
   const { zoomLevel, backgroundVariant } = useSnapshot(timelineStore);
 
   return (

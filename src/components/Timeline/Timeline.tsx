@@ -13,7 +13,7 @@ import { SegmentEditor } from '@/components/Segments/SegmentEditor';
 import { TrackLabelNode } from '@/components/Tracks/TrackLabelNode';
 import { NowLine } from './NowLine';
 import { TimeRuler } from './TimeRuler';
-import { ZoomControls } from './ZoomControls';
+import { TimelineControls } from './TimelineControls';
 import { TRACK_HEIGHT } from '@/lib/timeline-utils';
 import { timelineStore } from '@/stores/timeline.store';
 import { useTimelineViewport } from '@/hooks/useTimelineViewport';
@@ -91,7 +91,7 @@ function TimelineCanvas({ onCenterOnNow, onAddTrack }: TimelineCanvasProps) {
           zoomable
           pannable
         />
-        <ZoomControls onBackToNow={centerOnNow} onAddTrack={onAddTrack} />
+        <TimelineControls onBackToNow={centerOnNow} onAddTrack={onAddTrack} />
       </ReactFlow>
       <TimeRuler referenceTime={referenceTime} />
       <NowLine referenceTime={referenceTime} />
