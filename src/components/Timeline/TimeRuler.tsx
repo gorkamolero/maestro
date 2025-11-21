@@ -74,7 +74,7 @@ export function TimeRuler({ referenceTime }: TimeRulerProps) {
   }, [referenceTime, zoomLevel, viewportWidth, viewport.x, viewport.zoom]);
 
   return (
-    <div className="absolute top-0 left-0 right-0 h-6 border-b border-border/50 bg-background/95 backdrop-blur-sm pointer-events-none z-[999]">
+    <div className="absolute top-12 left-0 right-0 h-6 border-b border-border/50 bg-background/95 backdrop-blur-sm pointer-events-none z-[999]">
       {timeMarkers.map((marker, i) => (
         <div
           key={i}
