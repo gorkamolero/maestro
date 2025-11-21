@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { useReactFlow } from '@xyflow/react';
 import { BaseNode } from '@/components/base-node';
 import { Button } from '@/components/ui/button';
 import { tracksActions } from '@/stores/tracks.store';
@@ -18,6 +19,11 @@ interface TrackLabelNodeProps {
 }
 
 function TrackLabelNodeComponent({ data }: TrackLabelNodeProps) {
+  const { getViewport } = useReactFlow();
+  const viewport = getViewport();
+
+  // Prevent labels from scaling up beyond default size
+  const scale = viewport.zoom > 1 ? 1 / viewport.zoom : 1;
   const handleAddSegment = () => {
     const types = ['browser', 'terminal', 'agent', 'note'] as const;
     const randomType = types[Math.floor(Math.random() * types.length)];
@@ -36,6 +42,7 @@ function TrackLabelNodeComponent({ data }: TrackLabelNodeProps) {
       className={cn(
         'h-16 px-4 py-0 flex items-center justify-between gap-3 bg-card/95 backdrop-blur-sm min-w-[200px] group'
       )}
+      style={{ transform: `scale(${scale})`, transformOrigin: 'left center' }}
     >
       <div className="flex items-center gap-3 flex-1 min-w-0">
         <div
