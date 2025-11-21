@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, RotateCw, Home } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Webview } from '@tauri-apps/api/webview';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { LogicalPosition, LogicalSize } from '@tauri-apps/api/dpi';
 import { BrowserTab as BrowserTabType } from '@/types';
 import { normalizeUrl, isNavigableUrl, isSafeUrl } from './browser.utils';
 import { Button } from '@/components/ui/button';
@@ -29,9 +30,10 @@ export function BrowserTab({ tab, onUrlChange, onTitleChange }: BrowserTabProps)
   // Create and manage Tauri webview
   useEffect(() => {
     let webview: Webview | null = null;
+    let mounted = true;
 
     const createWebview = async () => {
-      if (!containerRef.current) return;
+      if (!containerRef.current || !mounted) return;
 
       const rect = containerRef.current.getBoundingClientRect();
       const window = getCurrentWindow();
@@ -40,17 +42,33 @@ export function BrowserTab({ tab, onUrlChange, onTitleChange }: BrowserTabProps)
         // Create native Tauri webview
         webview = new Webview(window, `browser-${tab.id}`, {
           url: tab.url || 'about:blank',
-          x: rect.x,
-          y: rect.y,
-          width: rect.width,
-          height: rect.height,
+          x: Math.round(rect.x),
+          y: Math.round(rect.y),
+          width: Math.round(rect.width),
+          height: Math.round(rect.height),
         });
 
-        webviewRef.current = webview;
-        setIsLoading(false);
+        // Wait for webview to be created
+        await new Promise<void>((resolve, reject) => {
+          const createdUnlisten = webview!.once('tauri://created', () => {
+            if (mounted) {
+              webviewRef.current = webview;
+              setIsLoading(false);
+              resolve();
+            }
+          });
+
+          const errorUnlisten = webview!.once('tauri://error', (error) => {
+            console.error('Failed to create webview:', error);
+            setIsLoading(false);
+            reject(error);
+          });
+        });
       } catch (error) {
         console.error('Failed to create webview:', error);
-        setIsLoading(false);
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
     };
 
@@ -58,28 +76,43 @@ export function BrowserTab({ tab, onUrlChange, onTitleChange }: BrowserTabProps)
 
     // Cleanup webview on unmount
     return () => {
+      mounted = false;
       if (webview) {
         webview.close().catch(console.error);
       }
     };
-  }, [tab.id]);
+  }, [tab.id, tab.url]);
 
   // Update webview position when container resizes
   useEffect(() => {
     if (!containerRef.current || !webviewRef.current) return;
 
-    const updatePosition = () => {
+    const updatePosition = async () => {
       if (!containerRef.current || !webviewRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
 
-      webviewRef.current.setPosition({ x: rect.x, y: rect.y }).catch(console.error);
-      webviewRef.current.setSize({ width: rect.width, height: rect.height }).catch(console.error);
+      try {
+        await webviewRef.current.setPosition(
+          new LogicalPosition(Math.round(rect.x), Math.round(rect.y))
+        );
+        await webviewRef.current.setSize(
+          new LogicalSize(Math.round(rect.width), Math.round(rect.height))
+        );
+      } catch (error) {
+        console.error('Failed to update webview position:', error);
+      }
     };
 
     const resizeObserver = new ResizeObserver(updatePosition);
     resizeObserver.observe(containerRef.current);
 
-    return () => resizeObserver.disconnect();
+    // Also update on scroll
+    window.addEventListener('scroll', updatePosition);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('scroll', updatePosition);
+    };
   }, []);
 
   const handleNavigate = async (url: string) => {
@@ -94,11 +127,33 @@ export function BrowserTab({ tab, onUrlChange, onTitleChange }: BrowserTabProps)
     onUrlChange(normalizedUrl);
     setUrlInput(normalizedUrl);
 
-    // Navigate the webview
+    // Recreate webview with new URL
     if (webviewRef.current) {
       try {
-        await webviewRef.current.navigate(normalizedUrl);
-        setIsLoading(false);
+        await webviewRef.current.close();
+        webviewRef.current = null;
+
+        // Recreate with new URL
+        if (containerRef.current) {
+          const rect = containerRef.current.getBoundingClientRect();
+          const window = getCurrentWindow();
+
+          const newWebview = new Webview(window, `browser-${tab.id}-${Date.now()}`, {
+            url: normalizedUrl,
+            x: Math.round(rect.x),
+            y: Math.round(rect.y),
+            width: Math.round(rect.width),
+            height: Math.round(rect.height),
+          });
+
+          await new Promise<void>((resolve) => {
+            newWebview.once('tauri://created', () => {
+              webviewRef.current = newWebview;
+              setIsLoading(false);
+              resolve();
+            });
+          });
+        }
       } catch (error) {
         console.error('Navigation failed:', error);
         setIsLoading(false);
@@ -117,19 +172,18 @@ export function BrowserTab({ tab, onUrlChange, onTitleChange }: BrowserTabProps)
   };
 
   const handleRefresh = () => {
-    if (webviewRef.current && tab.url) {
+    if (tab.url) {
       handleNavigate(tab.url);
     }
   };
 
   const handleGoBack = () => {
-    // Note: Tauri webview doesn't expose history navigation directly
-    // This would need to be tracked manually or via webview events
+    // Note: Would need to implement history tracking
     console.warn('Back navigation not yet implemented for native webview');
   };
 
   const handleGoForward = () => {
-    // Note: Tauri webview doesn't expose history navigation directly
+    // Note: Would need to implement history tracking
     console.warn('Forward navigation not yet implemented for native webview');
   };
 
@@ -242,7 +296,7 @@ export function BrowserTab({ tab, onUrlChange, onTitleChange }: BrowserTabProps)
 
       {/* Info about native webview */}
       <div className="px-3 py-1.5 text-[10px] text-muted-foreground/70 border-t border-border/50">
-        Native Tauri webview - Full browser capabilities with profile isolation
+        Native Tauri webview - Full browser capabilities
       </div>
     </div>
   );
