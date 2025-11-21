@@ -2,6 +2,18 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## ⚠️ CRITICAL RULES
+
+### Git Commit Policy
+
+**NEVER commit code without explicit user approval.**
+
+- This is the user's project, not Claude's
+- Always wait for the user to review changes before committing
+- Only create commits when the user explicitly says "commit" or "commit this"
+- If the user wants to see changes first, show them and wait for approval
+- Exception: Only commit automatically if the user has previously established a clear pattern of wanting automatic commits in the current session
+
 ## Project Overview
 
 Maestro is a Tauri v2 desktop application combining a Rust backend with a React + TypeScript + Vite frontend. The application uses pnpm as its package manager.

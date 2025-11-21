@@ -13,6 +13,8 @@ export interface Tab {
   content?: any; // Type-specific content
 }
 
+export type ViewMode = 'timeline' | 'workspace' | 'split';
+
 export interface WorkspaceLayout {
   timelineHeight: number; // Percentage (20-50)
   sidebarWidth: number; // Fixed pixels
@@ -24,6 +26,7 @@ interface WorkspaceState {
   activeTabId: string | null;
   tabs: Tab[];
   layout: WorkspaceLayout;
+  viewMode: ViewMode;
 }
 
 export const workspaceStore = proxy<WorkspaceState>({
@@ -35,6 +38,7 @@ export const workspaceStore = proxy<WorkspaceState>({
     sidebarWidth: 200,
     dockHeight: 48,
   },
+  viewMode: 'split',
 });
 
 export const workspaceActions = {
@@ -97,5 +101,9 @@ export const workspaceActions = {
 
   setTimelineHeight: (height: number) => {
     workspaceStore.layout.timelineHeight = Math.max(20, Math.min(50, height));
+  },
+
+  setViewMode: (mode: ViewMode) => {
+    workspaceStore.viewMode = mode;
   },
 };

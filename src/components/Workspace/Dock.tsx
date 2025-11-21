@@ -24,73 +24,55 @@ export function Dock() {
   };
 
   return (
-    <div className="relative">
+    <div className="flex items-center gap-2">
       <TooltipProvider delayDuration={0}>
-        <DockPrimitive
-          className="bg-background/80 backdrop-blur-xl border-border shadow-2xl"
-          iconSize={48}
-          iconMagnification={64}
-          iconDistance={120}
-        >
-          {/* Track icons */}
-          {tracks.map((track) => {
-            const Icon = TRACK_ICONS[track.icon || 'home'] || Home;
-            const isActive = activeTrackId === track.id;
-            const hasActiveSegments = track.segments.filter((s) => s.status === 'active').length > 0;
+        {/* Track dots/icons - Arc Spaces style */}
+        {tracks.map((track) => {
+          const Icon = TRACK_ICONS[track.icon || 'home'] || Home;
+          const isActive = activeTrackId === track.id;
+          const hasActiveSegments = track.segments.filter((s) => s.status === 'active').length > 0;
 
-            return (
-              <Tooltip key={track.id}>
-                <TooltipTrigger asChild>
-                  <DockIcon
-                    onClick={() => workspaceActions.switchTrack(track.id)}
-                    className={cn(
-                      'relative bg-muted/50 hover:bg-muted border border-transparent transition-all',
-                      isActive && 'bg-primary/20 border-primary'
-                    )}
-                  >
-                    {isActive && (
-                      <GlowEffect
-                        mode="pulse"
-                        colors={['hsl(var(--primary))', 'hsl(var(--primary) / 0.5)']}
-                        blur="strong"
-                        duration={2}
-                        className="rounded-full"
-                      />
-                    )}
-                    <Icon className="w-5 h-5" />
-                    {hasActiveSegments && (
-                      <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-primary animate-pulse" />
-                    )}
-                  </DockIcon>
-                </TooltipTrigger>
-                <TooltipContent side="top" sideOffset={10}>
-                  <p className="text-sm font-medium">{track.name}</p>
-                  {hasActiveSegments && (
-                    <p className="text-xs text-muted-foreground">Active segments</p>
+          return (
+            <Tooltip key={track.id}>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => workspaceActions.switchTrack(track.id)}
+                  className={cn(
+                    'relative w-8 h-8 rounded-lg flex items-center justify-center transition-all',
+                    'hover:bg-background/80',
+                    isActive ? 'bg-background shadow-sm' : 'bg-muted/50'
                   )}
-                </TooltipContent>
-              </Tooltip>
-            );
-          })}
+                >
+                  <Icon className="w-4 h-4" />
+                  {hasActiveSegments && (
+                    <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-primary" />
+                  )}
+                  {isActive && (
+                    <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-1 h-4 bg-primary rounded-r-full" />
+                  )}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" sideOffset={10}>
+                <p className="text-sm font-medium">{track.name}</p>
+              </TooltipContent>
+            </Tooltip>
+          );
+        })}
 
-          {/* Separator */}
-          <div className="h-10 w-px bg-border mx-1" />
-
-          {/* Add track button */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <DockIcon
-                onClick={handleAddTrack}
-                className="bg-muted/30 hover:bg-muted border border-dashed border-muted-foreground/30"
-              >
-                <Plus className="w-5 h-5" />
-              </DockIcon>
-            </TooltipTrigger>
-            <TooltipContent side="top" sideOffset={10}>
-              <p className="text-sm">New Track</p>
-            </TooltipContent>
-          </Tooltip>
-        </DockPrimitive>
+        {/* Add track button */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={handleAddTrack}
+              className="w-8 h-8 rounded-lg flex items-center justify-center bg-muted/30 hover:bg-muted/50 transition-colors border border-dashed border-border"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="right" sideOffset={10}>
+            <p className="text-sm">New Space</p>
+          </TooltipContent>
+        </Tooltip>
       </TooltipProvider>
     </div>
   );
