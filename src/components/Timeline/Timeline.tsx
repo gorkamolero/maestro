@@ -18,7 +18,7 @@ import { timelineStore } from '@/stores/timeline.store';
 import { useTimelineViewport } from '@/hooks/useTimelineViewport';
 import { useTimelineNodes } from '@/hooks/useTimelineNodes';
 import { useTimelineHandlers } from '@/hooks/useTimelineHandlers';
-import { useKeyboardNavigation } from '@/hooks/useKeyboardNavigation';
+import { useViewportControls } from '@/hooks/useViewportControls';
 
 const nodeTypes = {
   segment: SegmentNode,
@@ -53,7 +53,7 @@ function TimelineCanvas({ onCenterOnNow, onCenterOnTrack, onAddTrack }: Timeline
 
   const nodes = useTimelineNodes(referenceTime, trackLabelOffset);
 
-  const { centerOnNow, centerOnTrack } = useKeyboardNavigation({ containerRef, referenceTime });
+  const { centerOnNow, centerOnTrack, changeZoomLevelAndCenter } = useViewportControls({ containerRef, referenceTime });
 
   // Expose methods to parent
   if (onCenterOnNow) {
@@ -95,7 +95,7 @@ function TimelineCanvas({ onCenterOnNow, onCenterOnTrack, onAddTrack }: Timeline
           size={backgroundVariant === 'dots' ? 2 : undefined}
           className={backgroundVariant === 'dots' ? 'opacity-30' : 'opacity-10'}
         />
-        <TimelineControls onBackToNow={centerOnNow} onAddTrack={onAddTrack} centerOnNow={centerOnNow} />
+        <TimelineControls onBackToNow={centerOnNow} onAddTrack={onAddTrack} onZoomChange={changeZoomLevelAndCenter} />
       </ReactFlow>
       <TimeRuler referenceTime={referenceTime} />
       <NowLine referenceTime={referenceTime} />

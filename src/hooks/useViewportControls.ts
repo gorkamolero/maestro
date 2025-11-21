@@ -5,15 +5,15 @@ import { timelineStore, timelineActions } from '@/stores/timeline.store';
 import { tracksStore } from '@/stores/tracks.store';
 import { timeToPixels, TRACK_HEIGHT } from '@/lib/timeline-utils';
 
-interface KeyboardNavigationOptions {
+interface ViewportControlsOptions {
   containerRef: RefObject<HTMLDivElement>;
   referenceTime: Date;
 }
 
 /**
- * Hook to handle keyboard navigation and viewport centering
+ * Hook to handle viewport centering and keyboard navigation
  */
-export function useKeyboardNavigation({ containerRef, referenceTime }: KeyboardNavigationOptions) {
+export function useViewportControls({ containerRef, referenceTime }: ViewportControlsOptions) {
   const reactFlowInstance = useReactFlow();
   const { now, zoomLevel } = useSnapshot(timelineStore);
   const { tracks } = useSnapshot(tracksStore);
@@ -66,5 +66,21 @@ export function useKeyboardNavigation({ containerRef, referenceTime }: KeyboardN
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [centerOnNow]);
 
-  return { centerOnNow, centerOnTrack };
+  const changeZoomLevelAndCenter = useCallback((targetZoomLevel: ZoomLevel) => {
+    // Calculate where NOW will be at the new zoom level
+    const nowX = timeToPixels(now, targetZoomLevel, referenceTime);
+    const { width, height } = containerRef.current?.getBoundingClientRect() || { width: 1000, height: 800 };
+    const totalTracksHeight = tracks.length * TRACK_HEIGHT;
+    const middleY = totalTracksHeight / 2;
+
+    // Update zoom level and viewport position together
+    timelineActions.setZoomLevel(targetZoomLevel);
+    reactFlowInstance.setViewport({
+      x: -nowX + width / 2,
+      y: -middleY + height / 2,
+      zoom: 1,
+    });
+  }, [now, referenceTime, reactFlowInstance, containerRef, tracks.length]);
+
+  return { centerOnNow, centerOnTrack, changeZoomLevelAndCenter };
 }
