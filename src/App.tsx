@@ -42,15 +42,15 @@ function App() {
         <PanelResizeHandle className="h-1 bg-border hover:bg-primary/50 transition-colors cursor-row-resize" />
 
         {/* Workspace area at bottom */}
-        <Panel defaultSize={70}>
-          <PanelGroup direction="horizontal">
+        <Panel defaultSize={70} className="flex">
+          <PanelGroup direction="horizontal" className="flex-1">
             {/* Sidebar on left (fixed width via min/max) */}
-            <Panel defaultSize={15} minSize={10} maxSize={20}>
+            <Panel defaultSize={15} minSize={10} maxSize={30}>
               <Sidebar />
             </Panel>
 
             {/* Resize handle */}
-            <PanelResizeHandle className="w-1 bg-border hover:bg-primary/50 transition-colors cursor-col-resize" />
+            <PanelResizeHandle className="w-1 bg-border hover:bg-primary/50 transition-colors cursor-col-resize active:bg-primary" />
 
             {/* Main workspace content */}
             <Panel defaultSize={85}>

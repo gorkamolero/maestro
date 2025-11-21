@@ -3,6 +3,9 @@ import { tracksStore, tracksActions } from '@/stores/tracks.store';
 import { workspaceStore, workspaceActions } from '@/stores/workspace.store';
 import { Plus, Home, Music, FlaskConical } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Dock as DockPrimitive, DockIcon } from '@/components/ui/dock';
+import { GlowEffect } from '@/components/motion-primitives/glow-effect';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const TRACK_ICONS: Record<string, any> = {
   home: Home,
@@ -21,48 +24,77 @@ export function Dock() {
   };
 
   return (
-    <div className="h-12 bg-background/95 backdrop-blur-xl border-t border-border flex items-center px-3 gap-2">
-      {/* Track buttons */}
-      {tracks.map((track) => {
-        const Icon = TRACK_ICONS[track.icon || 'home'] || Home;
-        const isActive = activeTrackId === track.id;
+    <div className="h-16 bg-background/95 backdrop-blur-xl border-t border-border flex items-center justify-center px-3 relative">
+      <TooltipProvider delayDuration={0}>
+        <DockPrimitive
+          className="bg-muted/30 border-muted-foreground/20"
+          iconSize={44}
+          iconMagnification={54}
+          iconDistance={100}
+        >
+          {/* Track icons */}
+          {tracks.map((track) => {
+            const Icon = TRACK_ICONS[track.icon || 'home'] || Home;
+            const isActive = activeTrackId === track.id;
+            const hasActiveSegments = track.segments.filter((s) => s.status === 'active').length > 0;
 
-        return (
-          <button
-            key={track.id}
-            onClick={() => workspaceActions.switchTrack(track.id)}
-            className={cn(
-              'px-4 py-2 rounded-lg flex items-center gap-2 transition-all',
-              'bg-muted/50 border border-transparent',
-              'hover:bg-muted hover:border-muted-foreground/20',
-              isActive && [
-                'bg-primary/20 border-primary',
-                'shadow-[0_0_20px_rgba(var(--primary-rgb),0.3)]',
-              ]
-            )}
-          >
-            <Icon className="w-4 h-4" />
-            <span className="text-sm font-medium">{track.name}</span>
-            {track.segments.filter((s) => s.status === 'active').length > 0 && (
-              <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            )}
-          </button>
-        );
-      })}
+            return (
+              <Tooltip key={track.id}>
+                <TooltipTrigger asChild>
+                  <DockIcon
+                    onClick={() => workspaceActions.switchTrack(track.id)}
+                    className={cn(
+                      'relative bg-muted/50 hover:bg-muted border border-transparent transition-all',
+                      isActive && 'bg-primary/20 border-primary'
+                    )}
+                  >
+                    {isActive && (
+                      <GlowEffect
+                        mode="pulse"
+                        colors={['hsl(var(--primary))', 'hsl(var(--primary) / 0.5)']}
+                        blur="strong"
+                        duration={2}
+                        className="rounded-full"
+                      />
+                    )}
+                    <Icon className="w-5 h-5" />
+                    {hasActiveSegments && (
+                      <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-primary animate-pulse" />
+                    )}
+                  </DockIcon>
+                </TooltipTrigger>
+                <TooltipContent side="top" sideOffset={10}>
+                  <p className="text-sm font-medium">{track.name}</p>
+                  {hasActiveSegments && (
+                    <p className="text-xs text-muted-foreground">Active segments</p>
+                  )}
+                </TooltipContent>
+              </Tooltip>
+            );
+          })}
 
-      {/* Add track button */}
-      <button
-        onClick={handleAddTrack}
-        className="px-3 py-2 rounded-lg bg-muted/30 hover:bg-muted border border-dashed border-muted-foreground/30 transition-colors"
-      >
-        <Plus className="w-4 h-4" />
-      </button>
+          {/* Separator */}
+          <div className="h-10 w-px bg-border mx-1" />
 
-      {/* Spacer */}
-      <div className="flex-1" />
+          {/* Add track button */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DockIcon
+                onClick={handleAddTrack}
+                className="bg-muted/30 hover:bg-muted border border-dashed border-muted-foreground/30"
+              >
+                <Plus className="w-5 h-5" />
+              </DockIcon>
+            </TooltipTrigger>
+            <TooltipContent side="top" sideOffset={10}>
+              <p className="text-sm">New Track</p>
+            </TooltipContent>
+          </Tooltip>
+        </DockPrimitive>
+      </TooltipProvider>
 
       {/* Resource monitor placeholder */}
-      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+      <div className="absolute right-4 flex items-center gap-3 text-xs text-muted-foreground">
         <div className="flex items-center gap-1">
           <div className="w-2 h-2 rounded-full bg-green-500" />
           <span>2.3GB</span>
