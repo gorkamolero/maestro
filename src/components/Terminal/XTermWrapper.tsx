@@ -5,6 +5,8 @@ import { WebLinksAddon } from '@xterm/addon-web-links';
 import { SearchAddon } from '@xterm/addon-search';
 import { WebglAddon } from '@xterm/addon-webgl';
 import '@xterm/xterm/css/xterm.css';
+import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 
 import { termiusDark, dracula, nord } from './themes';
 import type { TerminalState } from './terminal.utils';
@@ -99,20 +101,60 @@ export function XTermWrapper({
       terminal.writeln('');
     }
 
-    // Handle terminal input
-    const disposable = terminal.onData((data) => {
-      // Echo back input for now (until PTY backend is connected)
-      // Handle special keys
-      if (data === '\r') {
-        // Enter key
-        terminal.write('\r\n');
-      } else if (data === '\u007F') {
-        // Backspace
-        terminal.write('\b \b');
-      } else {
-        // Regular character
-        terminal.write(data);
+    // Create PTY terminal session
+    invoke('create_terminal', { segmentId })
+      .then(() => {
+        console.log('Terminal PTY session created for segment:', segmentId);
+        // Now spawn the shell
+        return invoke('create_shell', { segmentId });
+      })
+      .then(() => {
+        console.log('Shell spawned successfully');
+      })
+      .catch((err) => {
+        console.error('Failed to create terminal session:', err);
+        terminal.writeln('\x1b[1;31mFailed to create terminal session\x1b[0m');
+      });
+
+    // Poll for terminal output using requestAnimationFrame
+    let isReading = true;
+
+    const readFromPty = async () => {
+      if (!isReading) return;
+
+      try {
+        const data = await invoke<string | null>('terminal_read', { segmentId });
+        if (data) {
+          terminal.write(data);
+        }
+      } catch (err) {
+        console.error('Failed to read from terminal:', err);
       }
+
+      if (isReading) {
+        window.requestAnimationFrame(readFromPty);
+      }
+    };
+
+    // Start polling
+    window.requestAnimationFrame(readFromPty);
+
+    // Stop polling on cleanup
+    const stopReading = () => {
+      isReading = false;
+    };
+
+    // Store cleanup function
+    (terminal as any)._stopReading = stopReading;
+
+    // Handle terminal input - send to PTY
+    const disposable = terminal.onData((data) => {
+      console.log('Terminal input:', data);
+
+      invoke('terminal_write', { segmentId, data })
+        .catch((err) => {
+          console.error('Failed to write to terminal:', err);
+        });
 
       if (onData) {
         onData(data);
@@ -129,9 +171,13 @@ export function XTermWrapper({
 
     // Handle resize
     const resizeObserver = new ResizeObserver(() => {
-      if (fitAddonRef.current) {
+      if (fitAddonRef.current && terminalRef.current) {
         try {
           fitAddonRef.current.fit();
+          // Notify PTY of size change
+          const rows = terminalRef.current.rows;
+          const cols = terminalRef.current.cols;
+          invoke('terminal_resize', { segmentId, rows, cols }).catch(console.error);
         } catch (e) {
           // Ignore fit errors during rapid resizing
         }
@@ -147,6 +193,15 @@ export function XTermWrapper({
       disposable.dispose();
       clearInterval(saveInterval);
       resizeObserver.disconnect();
+
+      // Stop polling
+      if ((terminal as any)._stopReading) {
+        (terminal as any)._stopReading();
+      }
+
+      // Close PTY session
+      invoke('close_terminal', { segmentId }).catch(console.error);
+
       terminal.dispose();
       isInitializedRef.current = false;
     };
@@ -159,35 +214,7 @@ export function XTermWrapper({
     }
   }, [theme]);
 
-  // Public API for parent components
-  const writeToTerminal = useCallback((data: string) => {
-    if (terminalRef.current) {
-      terminalRef.current.write(data);
-    }
-  }, []);
-
-  const writeLineToTerminal = useCallback((data: string) => {
-    if (terminalRef.current) {
-      terminalRef.current.writeln(data);
-    }
-  }, []);
-
-  const clearTerminal = useCallback(() => {
-    if (terminalRef.current) {
-      terminalRef.current.clear();
-      terminalRef.current.reset();
-    }
-  }, []);
-
-  // Expose terminal API via ref
-  useEffect(() => {
-    if (terminalRef.current) {
-      // Attach methods to terminal for external access
-      (terminalRef.current as any).write = writeToTerminal;
-      (terminalRef.current as any).writeln = writeLineToTerminal;
-      (terminalRef.current as any).clear = clearTerminal;
-    }
-  }, [writeToTerminal, writeLineToTerminal, clearTerminal]);
+  // Public API for parent components (not used, terminal already has these methods)
 
   return (
     <div

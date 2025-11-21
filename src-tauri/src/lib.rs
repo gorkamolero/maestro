@@ -1,44 +1,19 @@
 mod monitor;
+mod terminal;
 
 use monitor::{ProcessMetrics, ResourceMonitor, SegmentResourceMetrics, SystemMetrics};
-use std::collections::HashMap;
-use std::io::{Read, Write};
-use std::sync::{Arc, Mutex};
-use tauri::{AppHandle, Emitter, Manager, State};
-use portable_pty::{native_pty_system, CommandBuilder, PtySize, MasterPty};
+use terminal::TerminalManager;
+use std::sync::Arc;
+use tauri::{Emitter, State};
+use tauri::async_runtime::Mutex as AsyncMutex;
 
-// Global state for the resource monitor
+// Global state for the application
 struct AppState {
-    monitor: Arc<Mutex<ResourceMonitor>>,
+    monitor: Arc<std::sync::Mutex<ResourceMonitor>>,
 }
 
-// Terminal session with PTY
-struct TerminalSession {
-    pty_master: Box<dyn MasterPty + Send>,
-}
-
-struct TerminalManager {
-    sessions: HashMap<String, TerminalSession>,
-}
-
-impl TerminalManager {
-    fn new() -> Self {
-        Self {
-            sessions: HashMap::new(),
-        }
-    }
-}
-
-// Global terminal manager
-static TERMINAL_MANAGER: Mutex<Option<TerminalManager>> = Mutex::new(None);
-
-fn get_terminal_manager() -> std::sync::MutexGuard<'static, Option<TerminalManager>> {
-    let mut manager = TERMINAL_MANAGER.lock().unwrap();
-    if manager.is_none() {
-        *manager = Some(TerminalManager::new());
-    }
-    manager
-}
+// Terminal state (separate from AppState for cleaner separation)
+use terminal::TerminalState;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -98,153 +73,19 @@ fn get_all_processes(state: State<AppState>) -> Result<Vec<ProcessMetrics>, Stri
     Ok(monitor.get_all_processes())
 }
 
-// Terminal Commands
-
-/// Create a new terminal session with PTY
-#[tauri::command]
-async fn create_terminal(app: AppHandle, segment_id: String) -> Result<(), String> {
-    let pty_system = native_pty_system();
-
-    // Create a new PTY
-    let pair = pty_system
-        .openpty(PtySize {
-            rows: 24,
-            cols: 80,
-            pixel_width: 0,
-            pixel_height: 0,
-        })
-        .map_err(|e| format!("Failed to open PTY: {}", e))?;
-
-    // Determine which shell to use
-    let shell = if cfg!(target_os = "windows") {
-        CommandBuilder::new("powershell.exe")
-    } else {
-        // Try to get user's shell from environment, fallback to bash
-        let shell_path = std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string());
-        CommandBuilder::new(shell_path)
-    };
-
-    // Spawn the shell
-    let _child = pair
-        .slave
-        .spawn_command(shell)
-        .map_err(|e| format!("Failed to spawn shell: {}", e))?;
-
-    // Get reader for output streaming
-    let mut reader = pair.master.try_clone_reader().map_err(|e| format!("Failed to clone reader: {}", e))?;
-
-    // Store the master PTY in the session (for writing and resizing)
-    let mut manager = get_terminal_manager();
-    if let Some(ref mut manager) = *manager {
-        manager.sessions.insert(
-            segment_id.clone(),
-            TerminalSession { pty_master: pair.master },
-        );
-    }
-
-    // Spawn a task to read PTY output and emit events
-    let segment_id_clone = segment_id.clone();
-    let app_clone = app.clone();
-
-    tauri::async_runtime::spawn_blocking(move || {
-        let mut buf = [0u8; 8192];
-        loop {
-            match reader.read(&mut buf) {
-                Ok(0) => {
-                    // EOF - shell exited
-                    let _ = app_clone.emit(
-                        &format!("terminal-exit-{}", segment_id_clone),
-                        "Shell process exited",
-                    );
-                    break;
-                }
-                Ok(n) => {
-                    // Got data from PTY
-                    let data = String::from_utf8_lossy(&buf[0..n]).to_string();
-                    let _ = app_clone.emit(
-                        &format!("terminal-output-{}", segment_id_clone),
-                        data,
-                    );
-                }
-                Err(e) => {
-                    let _ = app_clone.emit(
-                        &format!("terminal-error-{}", segment_id_clone),
-                        format!("PTY read error: {}", e),
-                    );
-                    break;
-                }
-            }
-        }
-    });
-
-    Ok(())
-}
-
-/// Write data to terminal (PTY stdin)
-#[tauri::command]
-fn terminal_write(_app: AppHandle, segment_id: String, data: String) -> Result<(), String> {
-    let mut manager = get_terminal_manager();
-    if let Some(ref mut manager) = *manager {
-        if let Some(session) = manager.sessions.get_mut(&segment_id) {
-            let mut writer = session.pty_master.take_writer()
-                .map_err(|e| format!("Failed to get PTY writer: {}", e))?;
-            writer
-                .write_all(data.as_bytes())
-                .map_err(|e| format!("Failed to write to PTY: {}", e))?;
-            writer
-                .flush()
-                .map_err(|e| format!("Failed to flush PTY: {}", e))?;
-            return Ok(());
-        }
-    }
-    Err("Terminal session not found".to_string())
-}
-
-/// Resize the PTY
-#[tauri::command]
-fn terminal_resize(segment_id: String, rows: u16, cols: u16) -> Result<(), String> {
-    let mut manager = get_terminal_manager();
-    if let Some(ref mut manager) = *manager {
-        if let Some(session) = manager.sessions.get_mut(&segment_id) {
-            session.pty_master
-                .resize(PtySize {
-                    rows,
-                    cols,
-                    pixel_width: 0,
-                    pixel_height: 0,
-                })
-                .map_err(|e| format!("Failed to resize PTY: {}", e))?;
-            return Ok(());
-        }
-    }
-    Err("Terminal session not found".to_string())
-}
-
-/// Close a terminal session
-#[tauri::command]
-fn close_terminal(segment_id: String) -> Result<(), String> {
-    let mut manager = get_terminal_manager();
-    if let Some(ref mut manager) = *manager {
-        manager.sessions.remove(&segment_id);
-    }
-    Ok(())
-}
-
-/// Get terminal buffer (not really needed with PTY approach, kept for compatibility)
-#[tauri::command]
-fn get_terminal_buffer(_segment_id: String) -> Result<String, String> {
-    Ok(String::new())
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let monitor = Arc::new(Mutex::new(ResourceMonitor::new()));
+    let monitor = Arc::new(std::sync::Mutex::new(ResourceMonitor::new()));
+    let terminal_manager = Arc::new(AsyncMutex::new(TerminalManager::new()));
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
         .manage(AppState {
             monitor: monitor.clone(),
+        })
+        .manage(TerminalState {
+            terminal_manager,
         })
         .invoke_handler(tauri::generate_handler![
             greet,
@@ -255,11 +96,12 @@ pub fn run() {
             get_segment_metrics,
             kill_process,
             get_all_processes,
-            terminal_write,
-            get_terminal_buffer,
-            create_terminal,
-            close_terminal,
-            terminal_resize
+            terminal::create_terminal,
+            terminal::create_shell,
+            terminal::terminal_write,
+            terminal::terminal_read,
+            terminal::terminal_resize,
+            terminal::close_terminal
         ])
         .setup(move |app| {
             // Start metrics emission thread
