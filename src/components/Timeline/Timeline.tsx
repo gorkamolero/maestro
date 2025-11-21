@@ -6,6 +6,7 @@ import {
   Panel,
   MiniMap,
 } from '@xyflow/react';
+import { useSnapshot } from 'valtio';
 
 import { SegmentNode } from '@/components/Segments/SegmentNode';
 import { SegmentEditor } from '@/components/Segments/SegmentEditor';
@@ -14,6 +15,7 @@ import { NowLine } from './NowLine';
 import { TimeRuler } from './TimeRuler';
 import { ZoomControls } from './ZoomControls';
 import { TRACK_HEIGHT } from '@/lib/timeline-utils';
+import { timelineStore } from '@/stores/timeline.store';
 import { useTimelineViewport } from '@/hooks/useTimelineViewport';
 import { useTimelineNodes } from '@/hooks/useTimelineNodes';
 import { useTimelineHandlers } from '@/hooks/useTimelineHandlers';
@@ -22,7 +24,6 @@ import { useKeyboardNavigation } from '@/hooks/useKeyboardNavigation';
 const nodeTypes = {
   segment: SegmentNode,
   trackLabel: TrackLabelNode,
-  nowLine: NowLine,
 };
 
 export interface TimelineHandle {
@@ -31,6 +32,7 @@ export interface TimelineHandle {
 
 function TimelineCanvas({ onCenterOnNow }: { onCenterOnNow?: (fn: () => void) => void }) {
   const { containerRef, referenceTime } = useTimelineViewport();
+  const { backgroundVariant } = useSnapshot(timelineStore);
 
   const {
     trackLabelOffset,
@@ -78,15 +80,16 @@ function TimelineCanvas({ onCenterOnNow }: { onCenterOnNow?: (fn: () => void) =>
         nodesConnectable={false}
         elementsSelectable={true}
       >
-        <Background variant="lines" gap={TRACK_HEIGHT} className="opacity-10" />
+        <Background variant={backgroundVariant} gap={TRACK_HEIGHT} className="opacity-10" />
         <MiniMap
           nodeStrokeWidth={3}
           zoomable
           pannable
         />
-        <TimeRuler referenceTime={referenceTime} />
         <ZoomControls onBackToNow={centerOnNow} />
       </ReactFlow>
+      <TimeRuler referenceTime={referenceTime} />
+      <NowLine referenceTime={referenceTime} />
       <SegmentEditor segment={selectedSegment} onClose={() => setSelectedSegment(null)} />
     </div>
   );

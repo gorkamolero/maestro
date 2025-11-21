@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
-import { Panel } from '@xyflow/react';
+import { useReactFlow } from '@xyflow/react';
 import { useSnapshot } from 'valtio';
 import { timelineStore } from '@/stores/timeline.store';
-import { timeToPixels } from '@/lib/timeline-utils';
+import { timeToPixels, getPixelsPerMinute } from '@/lib/timeline-utils';
 import type { ZoomLevel } from '@/types';
 
 interface TimeRulerProps {
@@ -31,53 +31,64 @@ function formatTimeLabel(date: Date, zoomLevel: ZoomLevel): string {
   }
 }
 
+/**
+ * TimeRuler component - renders in viewport coordinates, sticks to top
+ */
 export function TimeRuler({ referenceTime }: TimeRulerProps) {
   const { zoomLevel, viewportWidth } = useSnapshot(timelineStore);
+  const { getViewport } = useReactFlow();
+  const viewport = getViewport();
 
   const timeMarkers = useMemo(() => {
     if (!viewportWidth) return [];
 
     const interval = TIME_INTERVALS[zoomLevel];
-    const markers: { x: number; label: string; time: Date }[] = [];
+    const markers: { canvasX: number; viewportX: number; label: string }[] = [];
 
-    // Calculate visible time range (with padding)
-    const minutesVisible = viewportWidth / (zoomLevel === 'hour' ? 2 : zoomLevel === 'day' ? 0.5 : zoomLevel === 'week' ? 0.1 : 0.025);
-    const startMinutes = -minutesVisible;
-    const endMinutes = minutesVisible * 2;
+    // Calculate visible time range based on viewport
+    const visibleStartX = -viewport.x / viewport.zoom;
+    const visibleEndX = (viewportWidth - viewport.x) / viewport.zoom;
+
+    // Convert to minutes
+    const pixelsPerMinute = getPixelsPerMinute(zoomLevel);
+    const startMinutes = Math.floor((visibleStartX / pixelsPerMinute) / interval) * interval;
+    const endMinutes = Math.ceil((visibleEndX / pixelsPerMinute) / interval) * interval;
 
     // Generate markers at intervals
-    for (let minutes = Math.floor(startMinutes / interval) * interval; minutes <= endMinutes; minutes += interval) {
+    for (let minutes = startMinutes; minutes <= endMinutes; minutes += interval) {
       const markerTime = new Date(referenceTime.getTime() + minutes * 60000);
-      const x = timeToPixels(markerTime, zoomLevel, referenceTime);
+      const canvasX = timeToPixels(markerTime, zoomLevel, referenceTime);
+      const viewportX = canvasX * viewport.zoom + viewport.x;
 
-      markers.push({
-        x,
-        label: formatTimeLabel(markerTime, zoomLevel),
-        time: markerTime,
-      });
+      // Only include markers that are within viewport bounds
+      if (viewportX >= -50 && viewportX <= viewportWidth + 50) {
+        markers.push({
+          canvasX,
+          viewportX,
+          label: formatTimeLabel(markerTime, zoomLevel),
+        });
+      }
     }
 
     return markers;
-  }, [referenceTime, zoomLevel, viewportWidth]);
+  }, [referenceTime, zoomLevel, viewportWidth, viewport.x, viewport.zoom]);
 
   return (
-    <Panel position="top-center" className="pointer-events-none w-full">
-      <div className="relative h-8 border-b border-border/50 bg-background/95 backdrop-blur-sm">
-        {timeMarkers.map((marker, i) => (
-          <div
-            key={i}
-            className="absolute top-0 h-full flex items-center"
-            style={{ left: `${marker.x}px` }}
-          >
-            <div className="flex flex-col items-center">
-              <div className="w-px h-2 bg-border" />
-              <span className="text-[10px] font-mono text-muted-foreground mt-1 whitespace-nowrap">
-                {marker.label}
-              </span>
-            </div>
+    <div className="absolute top-0 left-0 right-0 h-8 border-b border-border/50 bg-background/95 backdrop-blur-sm pointer-events-none z-[999]">
+      {timeMarkers.map((marker, i) => (
+        <div
+          key={i}
+          className="absolute top-0 h-full flex items-center"
+          style={{ left: `${marker.viewportX}px` }}
+        >
+          <div className="flex flex-col items-center">
+            <div className="w-px h-2 bg-border" />
+            <span className="text-[10px] font-mono text-muted-foreground mt-1 whitespace-nowrap">
+              {marker.label}
+            </span>
           </div>
-        ))}
-      </div>
-    </Panel>
+        </div>
+      ))}
+    </div>
   );
 }

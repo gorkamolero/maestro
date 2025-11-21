@@ -3,7 +3,7 @@ import { useSnapshot } from 'valtio';
 import { timelineStore, timelineActions } from '@/stores/timeline.store';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { LocateFixed } from 'lucide-react';
+import { LocateFixed, Grid3x3, Circle } from 'lucide-react';
 import type { ZoomLevel } from '@/types';
 
 const ZOOM_LEVELS: { value: ZoomLevel; label: string }[] = [
@@ -18,7 +18,7 @@ interface ZoomControlsProps {
 }
 
 export function ZoomControls({ onBackToNow }: ZoomControlsProps) {
-  const { zoomLevel } = useSnapshot(timelineStore);
+  const { zoomLevel, backgroundVariant } = useSnapshot(timelineStore);
 
   return (
     <Panel position="top-right" className="m-4">
@@ -32,6 +32,19 @@ export function ZoomControls({ onBackToNow }: ZoomControlsProps) {
         >
           <LocateFixed className="w-3.5 h-3.5 mr-1.5" />
           Now
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => timelineActions.toggleBackgroundVariant()}
+          className="h-8 px-2 bg-card/95 backdrop-blur-sm border-border"
+          title={`Switch to ${backgroundVariant === 'lines' ? 'Dots' : 'Grid'}`}
+        >
+          {backgroundVariant === 'lines' ? (
+            <Circle className="w-3.5 h-3.5" />
+          ) : (
+            <Grid3x3 className="w-3.5 h-3.5" />
+          )}
         </Button>
         <div className="flex items-center gap-1 bg-card/95 backdrop-blur-sm border border-border rounded-lg p-1">
           {ZOOM_LEVELS.map((level) => (

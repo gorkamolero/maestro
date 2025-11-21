@@ -1,12 +1,15 @@
 import { proxy } from 'valtio';
 import type { ZoomLevel } from '@/types';
 
+type BackgroundVariant = 'lines' | 'dots';
+
 interface TimelineState {
   now: Date;
   scrollPosition: number;
   zoomLevel: ZoomLevel;
   viewportWidth: number;
   viewportHeight: number;
+  backgroundVariant: BackgroundVariant;
 }
 
 export const timelineStore = proxy<TimelineState>({
@@ -15,6 +18,7 @@ export const timelineStore = proxy<TimelineState>({
   zoomLevel: 'day',
   viewportWidth: 0,
   viewportHeight: 0,
+  backgroundVariant: 'lines',
 });
 
 export const timelineActions = {
@@ -33,6 +37,14 @@ export const timelineActions = {
   setViewportSize: (width: number, height: number) => {
     timelineStore.viewportWidth = width;
     timelineStore.viewportHeight = height;
+  },
+
+  setBackgroundVariant: (variant: BackgroundVariant) => {
+    timelineStore.backgroundVariant = variant;
+  },
+
+  toggleBackgroundVariant: () => {
+    timelineStore.backgroundVariant = timelineStore.backgroundVariant === 'lines' ? 'dots' : 'lines';
   },
 
   jumpToNow: () => {
