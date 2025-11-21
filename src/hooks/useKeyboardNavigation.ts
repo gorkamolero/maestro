@@ -17,15 +17,18 @@ export function useKeyboardNavigation({ containerRef, referenceTime }: KeyboardN
   const { now, zoomLevel } = useSnapshot(timelineStore);
 
   const centerOnNow = useCallback(() => {
-    const nowX = timeToPixels(now, zoomLevel, referenceTime);
+    // Set zoom to default (day)
+    timelineActions.setZoomLevel('day');
+
+    const nowX = timeToPixels(now, 'day', referenceTime);
     const { width } = containerRef.current?.getBoundingClientRect() || { width: 1000 };
 
     reactFlowInstance.setViewport({
       x: -nowX + width / 2,
       y: reactFlowInstance.getViewport().y,
-      zoom: reactFlowInstance.getViewport().zoom,
+      zoom: 1,
     }, { duration: 300 });
-  }, [now, zoomLevel, referenceTime, reactFlowInstance, containerRef]);
+  }, [now, referenceTime, reactFlowInstance, containerRef]);
 
   const centerOnTrack = useCallback((trackPosition: number) => {
     // Set zoom to default (day)
