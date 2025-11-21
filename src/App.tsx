@@ -24,20 +24,8 @@ function App() {
   };
 
   return (
-    <div className="h-screen bg-background text-foreground flex flex-col">
-      {/* Header */}
-      <div className="h-12 border-b border-border flex items-center justify-between px-4 flex-shrink-0">
-        <h1 className="text-lg font-semibold">Maestro</h1>
-        <Button size="sm" onClick={handleAddTrack}>
-          <Plus className="w-4 h-4 mr-1" />
-          Add Track
-        </Button>
-      </div>
-
-      {/* Timeline */}
-      <div className="flex-1 overflow-hidden">
-        <Timeline ref={timelineRef} />
-      </div>
+    <div className="h-screen bg-background text-foreground">
+      <Timeline ref={timelineRef} onAddTrack={handleAddTrack} />
     </div>
   );
 }

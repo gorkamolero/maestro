@@ -30,7 +30,12 @@ export interface TimelineHandle {
   centerOnNow: () => void;
 }
 
-function TimelineCanvas({ onCenterOnNow }: { onCenterOnNow?: (fn: () => void) => void }) {
+interface TimelineCanvasProps {
+  onCenterOnNow?: (fn: () => void) => void;
+  onAddTrack?: () => void;
+}
+
+function TimelineCanvas({ onCenterOnNow, onAddTrack }: TimelineCanvasProps) {
   const { containerRef, referenceTime } = useTimelineViewport();
   const { backgroundVariant } = useSnapshot(timelineStore);
 
@@ -86,7 +91,7 @@ function TimelineCanvas({ onCenterOnNow }: { onCenterOnNow?: (fn: () => void) =>
           zoomable
           pannable
         />
-        <ZoomControls onBackToNow={centerOnNow} />
+        <ZoomControls onBackToNow={centerOnNow} onAddTrack={onAddTrack} />
       </ReactFlow>
       <TimeRuler referenceTime={referenceTime} />
       <NowLine referenceTime={referenceTime} />
@@ -95,7 +100,11 @@ function TimelineCanvas({ onCenterOnNow }: { onCenterOnNow?: (fn: () => void) =>
   );
 }
 
-export const Timeline = forwardRef<TimelineHandle>((props, ref) => {
+interface TimelineProps {
+  onAddTrack?: () => void;
+}
+
+export const Timeline = forwardRef<TimelineHandle, TimelineProps>(({ onAddTrack }, ref) => {
   let centerOnNowFn: (() => void) | null = null;
 
   useImperativeHandle(ref, () => ({
@@ -112,6 +121,7 @@ export const Timeline = forwardRef<TimelineHandle>((props, ref) => {
         onCenterOnNow={(fn) => {
           centerOnNowFn = fn;
         }}
+        onAddTrack={onAddTrack}
       />
     </ReactFlowProvider>
   );

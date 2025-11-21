@@ -3,7 +3,7 @@ import { useSnapshot } from 'valtio';
 import { timelineStore, timelineActions } from '@/stores/timeline.store';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { LocateFixed, Grid3x3, Circle } from 'lucide-react';
+import { LocateFixed, Grid3x3, Circle, Plus } from 'lucide-react';
 import type { ZoomLevel } from '@/types';
 
 const ZOOM_LEVELS: { value: ZoomLevel; label: string }[] = [
@@ -15,14 +15,25 @@ const ZOOM_LEVELS: { value: ZoomLevel; label: string }[] = [
 
 interface ZoomControlsProps {
   onBackToNow?: () => void;
+  onAddTrack?: () => void;
 }
 
-export function ZoomControls({ onBackToNow }: ZoomControlsProps) {
+export function ZoomControls({ onBackToNow, onAddTrack }: ZoomControlsProps) {
   const { zoomLevel, backgroundVariant } = useSnapshot(timelineStore);
 
   return (
     <Panel position="top-right" className="m-4">
       <div className="flex items-center gap-2">
+        <Button
+          size="sm"
+          variant="default"
+          onClick={onAddTrack}
+          className="h-8 px-3 text-xs"
+          title="Add Track"
+        >
+          <Plus className="w-3.5 h-3.5 mr-1.5" />
+          Add Track
+        </Button>
         <Button
           size="sm"
           variant="outline"
