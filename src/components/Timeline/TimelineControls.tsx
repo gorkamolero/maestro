@@ -22,7 +22,7 @@ export function TimelineControls({ onBackToNow, onAddTrack }: TimelineControlsPr
   const { zoomLevel, backgroundVariant } = useSnapshot(timelineStore);
 
   return (
-    <Panel position="top-right" className="m-4">
+    <Panel position="top-right" className="mr-4 mb-4 ml-4" style={{ marginTop: '40px' }}>
       <div className="flex items-center gap-2">
         <Button
           size="sm"
@@ -38,11 +38,10 @@ export function TimelineControls({ onBackToNow, onAddTrack }: TimelineControlsPr
           size="sm"
           variant="outline"
           onClick={onBackToNow}
-          className="h-8 px-3 text-xs bg-card/95 backdrop-blur-sm border-border"
+          className="h-8 px-2 bg-card/95 backdrop-blur-sm border-border"
           title="Back to Now (Space)"
         >
-          <LocateFixed className="w-3.5 h-3.5 mr-1.5" />
-          Now
+          <LocateFixed className="w-3.5 h-3.5" />
         </Button>
         <Button
           size="sm"
