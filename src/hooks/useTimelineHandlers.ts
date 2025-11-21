@@ -27,20 +27,10 @@ export function useTimelineHandlers({ containerRef, referenceTime }: TimelineHan
   const onNodesChange = useCallback(() => {}, []);
   const onEdgesChange = useCallback(() => {}, []);
 
-  // Handle node clicks to open segment editor
-  const onNodeClick = useCallback((event: any, node: Node) => {
-    // Only open editor for segment nodes, not track labels
-    if (node.type === 'segment') {
-      // Find the segment in the tracks
-      for (const track of tracks) {
-        const segment = track.segments.find(s => s.id === node.id);
-        if (segment) {
-          setSelectedSegment(segment);
-          break;
-        }
-      }
-    }
-  }, [tracks]);
+  // Handle node clicks - segments handle their own expansion now
+  const onNodeClick = useCallback(() => {
+    // Segments use Expandable component internally
+  }, []);
 
   // Update track label offset to keep them at left edge
   const onMove = useCallback((event: any, viewport: any) => {
