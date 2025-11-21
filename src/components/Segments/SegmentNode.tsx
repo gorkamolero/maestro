@@ -73,7 +73,7 @@ function SegmentNodeComponent({ data }: SegmentNodeProps) {
 
   return (
     <Expandable expandDirection="both" expandBehavior="replace">
-      {({ isExpanded }) => (
+      {() => (
         <ExpandableTrigger>
           <ExpandableCard
             collapsedSize={{ width: currentWidth, height: 64 }}

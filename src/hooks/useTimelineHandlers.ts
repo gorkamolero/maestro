@@ -1,6 +1,5 @@
 import { useCallback, useState, type RefObject } from 'react';
 import { useReactFlow } from '@xyflow/react';
-import type { Node } from '@xyflow/react';
 import { useSnapshot } from 'valtio';
 import { spacesStore, spacesActions } from '@/stores/spaces.store';
 import { segmentsActions } from '@/stores/segments.store';
@@ -33,7 +32,7 @@ export function useTimelineHandlers({ containerRef, referenceTime }: TimelineHan
   }, []);
 
   // Update space label offset to keep them at left edge
-  const onMove = useCallback((event: any, viewport: any) => {
+  const onMove = useCallback((_event: any, viewport: any) => {
     setTrackLabelOffset(-viewport.x / viewport.zoom);
   }, []);
 

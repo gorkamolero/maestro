@@ -1,5 +1,5 @@
 import { forwardRef, useImperativeHandle } from 'react';
-import { ReactFlow, Background, ReactFlowProvider, Panel } from '@xyflow/react';
+import { ReactFlow, Background, ReactFlowProvider } from '@xyflow/react';
 import { useSnapshot } from 'valtio';
 
 import { SegmentNode } from '@/components/Segments/SegmentNode';

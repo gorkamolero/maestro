@@ -1,7 +1,7 @@
 import { useSnapshot } from 'valtio';
 import { workspaceStore, workspaceActions, type TabType } from '@/stores/workspace.store';
 import { spacesStore } from '@/stores/spaces.store';
-import { Terminal, Globe, FileText, Bot, Plus, X, Star, Edit2, Check } from 'lucide-react';
+import { Terminal, Globe, FileText, Bot, X, Star, Edit2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { motion, AnimatePresence } from 'motion/react';
@@ -313,7 +313,7 @@ export function Sidebar() {
                                 }}
                                 className="p-0.5 hover:bg-muted rounded"
                               >
-                                <Star className={cn("w-3 h-3", tab.isFavorite && "fill-primary")} />
+                                <Star className={cn('w-3 h-3', tab.isFavorite && 'fill-primary')} />
                               </button>
                               <button
                                 onClick={(e) => {

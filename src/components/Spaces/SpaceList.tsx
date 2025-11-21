@@ -1,6 +1,7 @@
 import { useSnapshot } from 'valtio';
 import { spacesStore } from '@/stores/spaces.store';
-import { Space } from './Space';
+import { Space as SpaceComponent } from './Space';
+import type { Space } from '@/types';
 
 export function TrackList() {
   const { spaces } = useSnapshot(spacesStore);
@@ -16,7 +17,7 @@ export function TrackList() {
   return (
     <div className="h-full overflow-y-auto">
       {spaces.map((space) => (
-        <Space key={space.id} space={space} />
+        <SpaceComponent key={space.id} space={space as Space} />
       ))}
     </div>
   );

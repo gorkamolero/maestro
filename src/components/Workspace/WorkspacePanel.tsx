@@ -1,6 +1,6 @@
 import { useSnapshot } from 'valtio';
 import { workspaceStore } from '@/stores/workspace.store';
-import { Terminal, Globe, FileText, Bot } from 'lucide-react';
+import { Terminal, Globe, Bot } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { SegmentMetrics } from '@/components/Monitor/SegmentMetrics';
 import { segmentsStore } from '@/stores/segments.store';

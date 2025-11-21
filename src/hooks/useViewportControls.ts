@@ -16,7 +16,7 @@ interface ViewportControlsOptions {
  */
 export function useViewportControls({ containerRef, referenceTime }: ViewportControlsOptions) {
   const reactFlowInstance = useReactFlow();
-  const { now, zoomLevel } = useSnapshot(timelineStore);
+  const { now } = useSnapshot(timelineStore);
   const { spaces } = useSnapshot(spacesStore);
 
   const centerOnNow = useCallback(() => {

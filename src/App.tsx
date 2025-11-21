@@ -8,30 +8,10 @@ import { WorkspacePanel } from '@/components/Workspace/WorkspacePanel';
 import { FloatingControls } from '@/components/Workspace/FloatingControls';
 import { ResourcePanel } from '@/components/Monitor/ResourcePanel';
 import { spacesActions } from '@/stores/spaces.store';
-import { workspaceStore, workspaceActions } from '@/stores/workspace.store';
-import {
-  LayoutGrid,
-  LayoutList,
-  Columns2,
-  ChevronDown,
-  Terminal,
-  Globe,
-  FileText,
-  Plus,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { workspaceStore } from '@/stores/workspace.store';
 
 function App() {
-  const [darkMode, setDarkMode] = useState(true);
-  const [viewDropdownOpen, setViewDropdownOpen] = useState(false);
+  const [darkMode] = useState(true);
   const timelineRef = useRef<TimelineHandle>(null);
   const { viewMode } = useSnapshot(workspaceStore);
 
