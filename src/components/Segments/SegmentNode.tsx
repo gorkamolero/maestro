@@ -1,12 +1,16 @@
 import { memo } from 'react';
 import { Position } from '@xyflow/react';
 import type { SegmentType, SegmentStatus } from '@/types';
-import { Terminal, Globe, Bot, FileText, ExternalLink, Clock } from 'lucide-react';
+import { Terminal, Globe, Bot, FileText, ExternalLink, Clock, X } from 'lucide-react';
 import { BaseNode } from '@/components/base-node';
 import { BaseHandle } from '@/components/base-handle';
 import { cn } from '@/lib/utils';
+import { segmentsActions } from '@/stores/segments.store';
+import { tracksActions } from '@/stores/tracks.store';
 
 interface SegmentNodeData {
+  segmentId: string;
+  trackId: string;
   title: string;
   type: SegmentType;
   status: SegmentStatus;
@@ -33,10 +37,20 @@ function SegmentNodeComponent({ data }: SegmentNodeProps) {
   const isActive = data.status === 'active';
   const isPlanted = data.status === 'scheduled';
 
+  const handleEndSegment = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent segment click event
+    segmentsActions.endSegment(data.segmentId);
+    // Update the segment in the track as well
+    tracksActions.updateSegment(data.trackId, data.segmentId, {
+      endTime: new Date(),
+      status: 'completed',
+    });
+  };
+
   return (
     <BaseNode
       className={cn(
-        'h-16 px-3 py-0 flex items-center gap-2 transition-all cursor-pointer',
+        'h-16 px-3 py-0 flex items-center gap-2 transition-all cursor-pointer group',
         isActive && 'shadow-[0_0_20px_rgba(100,116,139,0.5)] border-primary',
         isPlanted && 'border-dashed'
       )}
@@ -50,6 +64,17 @@ function SegmentNodeComponent({ data }: SegmentNodeProps) {
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate">{data.title}</p>
       </div>
+
+      {/* Close button - only show for active segments */}
+      {isActive && (
+        <button
+          onClick={handleEndSegment}
+          className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 w-5 h-5 flex items-center justify-center rounded-sm hover:bg-destructive/20 hover:text-destructive"
+          title="End segment"
+        >
+          <X className="w-3 h-3" />
+        </button>
+      )}
     </BaseNode>
   );
 }

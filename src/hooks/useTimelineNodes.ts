@@ -48,6 +48,8 @@ export function useTimelineNodes(referenceTime: Date, trackLabelOffset: number):
             y: track.position * TRACK_HEIGHT,
           },
           data: {
+            segmentId: segment.id,
+            trackId: track.id,
             title: segment.title,
             type: segment.type,
             status: segment.status,

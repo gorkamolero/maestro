@@ -2,11 +2,15 @@ import { useState, useEffect, useRef } from "react";
 import { Timeline, TimelineHandle } from "@/components/Timeline/Timeline";
 import { Button } from "@/components/ui/button";
 import { tracksActions } from "@/stores/tracks.store";
+import { usePersistence } from "@/hooks/usePersistence";
 import { Plus } from "lucide-react";
 
 function App() {
   const [darkMode, setDarkMode] = useState(true);
   const timelineRef = useRef<TimelineHandle>(null);
+
+  // Initialize state persistence
+  usePersistence();
 
   useEffect(() => {
     if (darkMode) {

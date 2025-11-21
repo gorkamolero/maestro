@@ -25,6 +25,7 @@
     "@eldoraui": "https://eldoraui.site/r/{name}.json",
     "@glass-ui": "https://glass-ui.crenspire.com/r/{name}.json",
     "@hextaui": "https://hextaui.com/r/{name}.json",
-    "@hooks": "https://shadcn-hooks.vercel.app/r/{name}.json"
+    "@hooks": "https://shadcn-hooks.vercel.app/r/{name}.json",
+    "@magicui": "https://magicui.design/r/{name}"
   }
 }
