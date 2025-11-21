@@ -11,11 +11,12 @@ import {
 } from '@xyflow/react';
 
 import { timelineStore, timelineActions } from '@/stores/timeline.store';
-import { tracksStore } from '@/stores/tracks.store';
+import { tracksStore, tracksActions } from '@/stores/tracks.store';
+import { segmentsActions } from '@/stores/segments.store';
 import { SegmentNode } from '@/components/Segments/SegmentNode';
 import { TrackLabelNode } from '@/components/Tracks/TrackLabelNode';
 import { NowLine } from './NowLine';
-import { timeToPixels, getSegmentWidth, TRACK_HEIGHT } from '@/lib/timeline-utils';
+import { timeToPixels, pixelsToTime, getSegmentWidth, TRACK_HEIGHT } from '@/lib/timeline-utils';
 
 const nodeTypes = {
   segment: SegmentNode,
@@ -127,6 +128,58 @@ function TimelineCanvas() {
     setTrackLabelOffset(-viewport.x / viewport.zoom);
   }, []);
 
+  // Click on canvas to create segment
+  const onPaneClick = useCallback((event: any) => {
+    const bounds = containerRef.current?.getBoundingClientRect();
+    if (!bounds) return;
+
+    // Get click position in viewport coordinates
+    const viewport = reactFlowInstance.getViewport();
+    const clickX = (event.clientX - bounds.left - viewport.x) / viewport.zoom;
+    const clickY = (event.clientY - bounds.top - viewport.y) / viewport.zoom;
+
+    // Convert X to time
+    const clickTime = pixelsToTime(clickX, zoomLevel, referenceTime);
+
+    // Convert Y to track index
+    const trackIndex = Math.floor(clickY / TRACK_HEIGHT);
+    if (trackIndex < 0 || trackIndex >= tracks.length) return;
+
+    const track = tracks[trackIndex];
+
+    // Create new segment at clicked time
+    const segment = segmentsActions.createSegment(
+      track.id,
+      'New segment',
+      'note' // Default to note type
+    );
+
+    // Override start time to clicked time
+    segment.startTime = clickTime;
+
+    tracksActions.addSegment(track.id, segment);
+  }, [zoomLevel, referenceTime, tracks]);
+
+  // Space bar to center on NOW
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.code === 'Space' && !event.repeat) {
+        event.preventDefault();
+        const nowX = timeToPixels(now, zoomLevel, referenceTime);
+        const { width } = containerRef.current?.getBoundingClientRect() || { width: 1000 };
+
+        reactFlowInstance.setViewport({
+          x: -nowX + width / 2,
+          y: reactFlowInstance.getViewport().y,
+          zoom: reactFlowInstance.getViewport().zoom,
+        }, { duration: 300 });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [now, zoomLevel, referenceTime, reactFlowInstance]);
+
   return (
     <div
       ref={containerRef}
@@ -139,6 +192,7 @@ function TimelineCanvas() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onMove={onMove}
+        onPaneClick={onPaneClick}
         panOnDrag={true}
         panOnScroll={true}
         zoomOnScroll={false}
