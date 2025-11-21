@@ -4,6 +4,7 @@ import { subscribe } from 'valtio';
 import { timelineStore, timelineActions } from '@/stores/timeline.store';
 import { spacesStore, spacesActions } from '@/stores/spaces.store';
 import { segmentsStore } from '@/stores/segments.store';
+import { workspaceStore, workspaceActions } from '@/stores/workspace.store';
 import { initDB, saveWorkspace, loadWorkspace } from '@/lib/persistence';
 
 const AUTO_SAVE_INTERVAL = 30000; // 30 seconds
@@ -34,6 +35,14 @@ export function usePersistence() {
         timelineActions.setScrollPosition(savedData.timeline.scrollPosition);
         timelineActions.setBackgroundVariant(savedData.timeline.backgroundVariant);
 
+        // Restore workspace state
+        if (savedData.workspace) {
+          workspaceStore.viewMode = savedData.workspace.viewMode;
+          workspaceStore.activeSpaceId = savedData.workspace.activeSpaceId;
+          workspaceStore.activeTabId = savedData.workspace.activeTabId;
+          workspaceStore.tabs = savedData.workspace.tabs;
+        }
+
         // Restore tracks
         spacesStore.spaces = savedData.spaces.map((space: any) => ({
           ...space,
@@ -55,6 +64,7 @@ export function usePersistence() {
         console.log('[Persistence] Workspace restored', {
           spaces: spacesStore.spaces.length,
           segments: segmentsStore.activeSegments.length,
+          viewMode: workspaceStore.viewMode,
         });
       } else {
         console.log('[Persistence] No saved workspace found, starting fresh');
@@ -83,6 +93,12 @@ export function usePersistence() {
         scrollPosition: timelineStore.scrollPosition,
         backgroundVariant: timelineStore.backgroundVariant,
       },
+      workspace: {
+        viewMode: workspaceStore.viewMode,
+        activeSpaceId: workspaceStore.activeSpaceId,
+        activeTabId: workspaceStore.activeTabId,
+        tabs: workspaceStore.tabs,
+      },
       spaces: spacesStore.spaces,
       segments: segmentsStore.activeSegments,
     };
@@ -93,13 +109,15 @@ export function usePersistence() {
   // Subscribe to store changes
   useEffect(() => {
     const unsubscribeTimeline = subscribe(timelineStore, scheduleSave);
-    const unsubscribeTracks = subscribe(spacesStore, scheduleSave);
+    const unsubscribeSpaces = subscribe(spacesStore, scheduleSave);
     const unsubscribeSegments = subscribe(segmentsStore, scheduleSave);
+    const unsubscribeWorkspace = subscribe(workspaceStore, scheduleSave);
 
     return () => {
       unsubscribeTimeline();
-      unsubscribeTracks();
+      unsubscribeSpaces();
       unsubscribeSegments();
+      unsubscribeWorkspace();
     };
   }, []);
 
@@ -125,6 +143,12 @@ export function usePersistence() {
           zoomLevel: timelineStore.zoomLevel,
           scrollPosition: timelineStore.scrollPosition,
           backgroundVariant: timelineStore.backgroundVariant,
+        },
+        workspace: {
+          viewMode: workspaceStore.viewMode,
+          activeSpaceId: workspaceStore.activeSpaceId,
+          activeTabId: workspaceStore.activeTabId,
+          tabs: workspaceStore.tabs,
         },
         spaces: spacesStore.spaces,
         segments: segmentsStore.activeSegments,
