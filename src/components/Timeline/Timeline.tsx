@@ -84,7 +84,7 @@ function TimelineCanvas({ onCenterOnNow, onCenterOnTrack, onAddTrack }: Timeline
         zoomOnPinch={true}
         preventScrolling={false}
         minZoom={0.1}
-        maxZoom={4}
+        maxZoom={1}
         fitView={false}
         nodesDraggable={false}
         nodesConnectable={false}
