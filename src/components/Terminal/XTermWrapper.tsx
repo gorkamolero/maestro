@@ -23,8 +23,8 @@ interface XTermWrapperProps {
 
 const THEMES = {
   'termius-dark': termiusDark,
-  'dracula': dracula,
-  'nord': nord,
+  dracula: dracula,
+  nord: nord,
 };
 
 export function XTermWrapper({
@@ -92,13 +92,28 @@ export function XTermWrapper({
     } else {
       // Welcome message for new terminals
       terminal.writeln('\x1b[1;36m╭──────────────────────────────────────────╮\x1b[0m');
-      terminal.writeln('\x1b[1;36m│\x1b[0m  \x1b[1mMaestro Terminal\x1b[0m                      \x1b[1;36m│\x1b[0m');
+      terminal.writeln(
+        '\x1b[1;36m│\x1b[0m  \x1b[1mMaestro Terminal\x1b[0m                      \x1b[1;36m│\x1b[0m'
+      );
       terminal.writeln('\x1b[1;36m╰──────────────────────────────────────────╯\x1b[0m');
       terminal.writeln('');
     }
 
     // Handle terminal input
     const disposable = terminal.onData((data) => {
+      // Echo back input for now (until PTY backend is connected)
+      // Handle special keys
+      if (data === '\r') {
+        // Enter key
+        terminal.write('\r\n');
+      } else if (data === '\u007F') {
+        // Backspace
+        terminal.write('\b \b');
+      } else {
+        // Regular character
+        terminal.write(data);
+      }
+
       if (onData) {
         onData(data);
       }
