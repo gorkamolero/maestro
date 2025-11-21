@@ -2,6 +2,7 @@ import { useEffect, useCallback, type RefObject } from 'react';
 import { useReactFlow } from '@xyflow/react';
 import { useSnapshot } from 'valtio';
 import { timelineStore, timelineActions } from '@/stores/timeline.store';
+import { tracksStore } from '@/stores/tracks.store';
 import { timeToPixels, TRACK_HEIGHT } from '@/lib/timeline-utils';
 
 interface KeyboardNavigationOptions {
@@ -15,20 +16,25 @@ interface KeyboardNavigationOptions {
 export function useKeyboardNavigation({ containerRef, referenceTime }: KeyboardNavigationOptions) {
   const reactFlowInstance = useReactFlow();
   const { now, zoomLevel } = useSnapshot(timelineStore);
+  const { tracks } = useSnapshot(tracksStore);
 
   const centerOnNow = useCallback(() => {
     // Set zoom to default (day)
     timelineActions.setZoomLevel('day');
 
     const nowX = timeToPixels(now, 'day', referenceTime);
-    const { width } = containerRef.current?.getBoundingClientRect() || { width: 1000 };
+    const { width, height } = containerRef.current?.getBoundingClientRect() || { width: 1000, height: 800 };
+
+    // Center on middle of all tracks vertically
+    const totalTracksHeight = tracks.length * TRACK_HEIGHT;
+    const middleY = totalTracksHeight / 2;
 
     reactFlowInstance.setViewport({
       x: -nowX + width / 2,
-      y: reactFlowInstance.getViewport().y,
+      y: -middleY + height / 2,
       zoom: 1,
     }, { duration: 300 });
-  }, [now, referenceTime, reactFlowInstance, containerRef]);
+  }, [now, referenceTime, reactFlowInstance, containerRef, tracks.length]);
 
   const centerOnTrack = useCallback((trackPosition: number) => {
     // Set zoom to default (day)
