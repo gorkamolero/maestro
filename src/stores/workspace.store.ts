@@ -12,6 +12,7 @@ export interface Tab {
   status: TabStatus;
   segmentId?: string; // Link to timeline segment
   content?: any; // Type-specific content
+  isFavorite?: boolean; // Whether this tab is favorited
 }
 
 export type ViewMode = 'timeline' | 'workspace' | 'split';
@@ -115,5 +116,19 @@ export const workspaceActions = {
 
   setViewMode: (mode: ViewMode) => {
     workspaceStore.viewMode = mode;
+  },
+
+  renameTab: (tabId: string, newTitle: string) => {
+    const tab = workspaceStore.tabs.find((t) => t.id === tabId);
+    if (tab) {
+      tab.title = newTitle;
+    }
+  },
+
+  toggleTabFavorite: (tabId: string) => {
+    const tab = workspaceStore.tabs.find((t) => t.id === tabId);
+    if (tab) {
+      tab.isFavorite = !tab.isFavorite;
+    }
   },
 };
