@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { Position } from '@xyflow/react';
+import { useSnapshot } from 'valtio';
 import type { SegmentType, SegmentStatus } from '@/types';
 import { Terminal, Globe, Bot, FileText, ExternalLink, Clock, X } from 'lucide-react';
 import { BaseNode } from '@/components/base-node';
@@ -7,6 +8,8 @@ import { BaseHandle } from '@/components/base-handle';
 import { cn } from '@/lib/utils';
 import { segmentsActions } from '@/stores/segments.store';
 import { tracksActions } from '@/stores/tracks.store';
+import { timelineStore } from '@/stores/timeline.store';
+import { getSegmentWidth } from '@/lib/timeline-utils';
 import { GlowEffect } from '@/components/motion-primitives/glow-effect';
 import {
   Expandable,
@@ -46,6 +49,14 @@ function SegmentNodeComponent({ data }: SegmentNodeProps) {
   const isActive = data.status === 'active';
   const isPlanted = data.status === 'scheduled';
 
+  // Subscribe to timeline updates for live width calculation
+  const { now, zoomLevel } = useSnapshot(timelineStore);
+
+  // Recalculate width in real-time for active segments
+  const currentWidth = isActive
+    ? getSegmentWidth(data.startTime, data.endTime, zoomLevel, data.startTime, now)
+    : data.width;
+
   const handleEndSegment = (e: React.MouseEvent) => {
     e.stopPropagation();
     segmentsActions.endSegment(data.segmentId);
@@ -64,7 +75,7 @@ function SegmentNodeComponent({ data }: SegmentNodeProps) {
       {({ isExpanded }) => (
         <ExpandableTrigger>
           <ExpandableCard
-            collapsedSize={{ width: data.width, height: 64 }}
+            collapsedSize={{ width: currentWidth, height: 64 }}
             expandedSize={{ width: 600, height: 320 }}
             className="!max-w-none"
           >

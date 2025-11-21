@@ -4,6 +4,7 @@ import { useSnapshot } from 'valtio';
 import { timelineStore, timelineActions } from '@/stores/timeline.store';
 import { tracksStore } from '@/stores/tracks.store';
 import { timeToPixels, TRACK_HEIGHT } from '@/lib/timeline-utils';
+import type { ZoomLevel } from '@/types';
 
 interface ViewportControlsOptions {
   containerRef: RefObject<HTMLDivElement>;
