@@ -18,9 +18,9 @@ function App() {
 
   const handleAddTrack = () => {
     const trackNumber = Math.floor(Math.random() * 1000);
-    tracksActions.addTrack(`Track ${trackNumber}`);
-    // Center viewport on NOW after adding track
-    timelineRef.current?.centerOnNow();
+    const newTrack = tracksActions.addTrack(`Track ${trackNumber}`);
+    // Center viewport on new track with default zoom
+    timelineRef.current?.centerOnTrack(newTrack.position);
   };
 
   return (

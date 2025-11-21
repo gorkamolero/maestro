@@ -28,14 +28,16 @@ const nodeTypes = {
 
 export interface TimelineHandle {
   centerOnNow: () => void;
+  centerOnTrack: (trackPosition: number) => void;
 }
 
 interface TimelineCanvasProps {
   onCenterOnNow?: (fn: () => void) => void;
+  onCenterOnTrack?: (fn: (trackPosition: number) => void) => void;
   onAddTrack?: () => void;
 }
 
-function TimelineCanvas({ onCenterOnNow, onAddTrack }: TimelineCanvasProps) {
+function TimelineCanvas({ onCenterOnNow, onCenterOnTrack, onAddTrack }: TimelineCanvasProps) {
   const { containerRef, referenceTime } = useTimelineViewport();
   const { backgroundVariant } = useSnapshot(timelineStore);
 
@@ -52,11 +54,14 @@ function TimelineCanvas({ onCenterOnNow, onAddTrack }: TimelineCanvasProps) {
 
   const nodes = useTimelineNodes(referenceTime, trackLabelOffset);
 
-  const { centerOnNow } = useKeyboardNavigation({ containerRef, referenceTime });
+  const { centerOnNow, centerOnTrack } = useKeyboardNavigation({ containerRef, referenceTime });
 
-  // Expose centerOnNow to parent
+  // Expose methods to parent
   if (onCenterOnNow) {
     onCenterOnNow(centerOnNow);
+  }
+  if (onCenterOnTrack) {
+    onCenterOnTrack(centerOnTrack);
   }
 
   return (
@@ -106,11 +111,17 @@ interface TimelineProps {
 
 export const Timeline = forwardRef<TimelineHandle, TimelineProps>(({ onAddTrack }, ref) => {
   let centerOnNowFn: (() => void) | null = null;
+  let centerOnTrackFn: ((trackPosition: number) => void) | null = null;
 
   useImperativeHandle(ref, () => ({
     centerOnNow: () => {
       if (centerOnNowFn) {
         centerOnNowFn();
+      }
+    },
+    centerOnTrack: (trackPosition: number) => {
+      if (centerOnTrackFn) {
+        centerOnTrackFn(trackPosition);
       }
     },
   }));
@@ -120,6 +131,9 @@ export const Timeline = forwardRef<TimelineHandle, TimelineProps>(({ onAddTrack 
       <TimelineCanvas
         onCenterOnNow={(fn) => {
           centerOnNowFn = fn;
+        }}
+        onCenterOnTrack={(fn) => {
+          centerOnTrackFn = fn;
         }}
         onAddTrack={onAddTrack}
       />

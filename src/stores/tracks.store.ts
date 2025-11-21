@@ -10,7 +10,7 @@ export const tracksStore = proxy<TracksState>({
 });
 
 export const tracksActions = {
-  addTrack: (name: string) => {
+  addTrack: (name: string): Track => {
     const newTrack: Track = {
       id: crypto.randomUUID(),
       name,
@@ -20,6 +20,7 @@ export const tracksActions = {
       markers: [],
     };
     tracksStore.tracks.push(newTrack);
+    return newTrack;
   },
 
   removeTrack: (trackId: string) => {
