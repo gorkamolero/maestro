@@ -14,8 +14,12 @@ import { timelineStore, timelineActions } from '@/stores/timeline.store';
 import { tracksStore, tracksActions } from '@/stores/tracks.store';
 import { segmentsActions } from '@/stores/segments.store';
 import { SegmentNode } from '@/components/Segments/SegmentNode';
+import { SegmentEditor } from '@/components/Segments/SegmentEditor';
 import { TrackLabelNode } from '@/components/Tracks/TrackLabelNode';
+import type { Segment } from '@/types';
 import { NowLine } from './NowLine';
+import { TimeRuler } from './TimeRuler';
+import { ZoomControls } from './ZoomControls';
 import { timeToPixels, pixelsToTime, getSegmentWidth, TRACK_HEIGHT } from '@/lib/timeline-utils';
 
 const nodeTypes = {
@@ -29,13 +33,14 @@ function TimelineCanvas() {
   const { now, zoomLevel } = useSnapshot(timelineStore);
   const { tracks } = useSnapshot(tracksStore);
   const [trackLabelOffset, setTrackLabelOffset] = useState(0);
+  const [selectedSegment, setSelectedSegment] = useState<Segment | null>(null);
 
   // Reference time for the timeline (start of today)
   const referenceTime = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return today;
-  }, []);
+  }, []); // 12am today
 
   useEffect(() => {
     if (containerRef.current) {
@@ -123,6 +128,21 @@ function TimelineCanvas() {
   const onNodesChange = useCallback(() => {}, []);
   const onEdgesChange = useCallback(() => {}, []);
 
+  // Handle node clicks to open segment editor
+  const onNodeClick = useCallback((event: any, node: Node) => {
+    // Only open editor for segment nodes, not track labels
+    if (node.type === 'segment') {
+      // Find the segment in the tracks
+      for (const track of tracks) {
+        const segment = track.segments.find(s => s.id === node.id);
+        if (segment) {
+          setSelectedSegment(segment);
+          break;
+        }
+      }
+    }
+  }, [tracks]);
+
   // Update track label offset to keep them at left edge
   const onMove = useCallback((event: any, viewport: any) => {
     setTrackLabelOffset(-viewport.x / viewport.zoom);
@@ -193,6 +213,7 @@ function TimelineCanvas() {
         onEdgesChange={onEdgesChange}
         onMove={onMove}
         onPaneClick={onPaneClick}
+        onNodeClick={onNodeClick}
         panOnDrag={true}
         panOnScroll={true}
         zoomOnScroll={false}
@@ -211,8 +232,11 @@ function TimelineCanvas() {
           zoomable
           pannable
         />
+        <TimeRuler referenceTime={referenceTime} />
+        <ZoomControls />
         <NowLine referenceTime={referenceTime} />
       </ReactFlow>
+      <SegmentEditor segment={selectedSegment} onClose={() => setSelectedSegment(null)} />
     </div>
   );
 }
