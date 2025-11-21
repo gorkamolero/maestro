@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Write",
+      "Edit",
+      "Bash",
+      "Task",
+      "WebFetch(ui.shadcn.com)",
+      "WebFetch(tailwindcss.com)",
+      "WebFetch(vitejs.dev)",
+      "WebFetch(tauri.app)",
+      "WebFetch(react.dev)",
+      "WebFetch(github.com)",
+      "WebFetch(npmjs.com)",
+      "WebFetch(*)",
+      "WebSearch"
+    ]
+  }
+}

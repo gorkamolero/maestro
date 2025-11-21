@@ -1,0 +1,71 @@
+# Claude Code Configuration for Maestro Project
+
+# Permissions Configuration
+permissions:
+  # Allow file system operations
+  file_system:
+    # Allow read/write access to the development folder
+    allowed_paths:
+      - /Users/gorkolas/Documents/www/maestro
+      - /Users/gorkolas/Documents/www
+      - /Users/gorkolas/Projects
+      - /Users/gorkolas/Code
+
+    # Allow creating new files and directories
+    allow_create: true
+    allow_modify: true
+    allow_delete: true
+
+  # Allow shell command execution
+  shell:
+    allow_commands: true
+    # Allow package managers
+    allowed_commands:
+      - npm
+      - pnpm
+      - cargo
+      - yarn
+      - bun
+      - git
+      - node
+      - rustc
+      - cargo-watch
+
+  # Allow package installation
+  package_managers:
+    npm:
+      allow_install: true
+      allow_update: true
+    pnpm:
+      allow_install: true
+      allow_update: true
+    cargo:
+      allow_install: true
+      allow_update: true
+    yarn:
+      allow_install: true
+    bun:
+      allow_install: true
+
+  # Allow PATH modifications if needed
+  environment:
+    allow_path_modification: true
+    allow_env_vars: true
+
+  # Allow web access
+  web:
+    allow_fetch: true
+    allow_search: true
+    allowed_domains:
+      - "*"  # Allow all domains
+
+# Auto-approve certain operations to streamline development
+auto_approve:
+  - read_files
+  - write_files
+  - create_directories
+  - install_packages
+  - run_build_commands
+  - run_test_commands
+  - web_fetch
+  - web_search
