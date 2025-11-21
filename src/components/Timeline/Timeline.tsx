@@ -1,10 +1,5 @@
 import { forwardRef, useImperativeHandle } from 'react';
-import {
-  ReactFlow,
-  Background,
-  ReactFlowProvider,
-  Panel,
-} from '@xyflow/react';
+import { ReactFlow, Background, ReactFlowProvider, Panel } from '@xyflow/react';
 import { useSnapshot } from 'valtio';
 
 import { SegmentNode } from '@/components/Segments/SegmentNode';
@@ -53,7 +48,10 @@ function TimelineCanvas({ onCenterOnNow, onCenterOnSpace, onAddSpace }: Timeline
 
   const nodes = useTimelineNodes(referenceTime, trackLabelOffset);
 
-  const { centerOnNow, centerOnSpace, changeZoomLevelAndCenter } = useViewportControls({ containerRef, referenceTime });
+  const { centerOnNow, centerOnSpace, changeZoomLevelAndCenter } = useViewportControls({
+    containerRef,
+    referenceTime,
+  });
 
   // Expose methods to parent
   if (onCenterOnNow) {
@@ -64,10 +62,7 @@ function TimelineCanvas({ onCenterOnNow, onCenterOnSpace, onAddSpace }: Timeline
   }
 
   return (
-    <div
-      ref={containerRef}
-      className="relative w-full h-full bg-background overflow-hidden"
-    >
+    <div ref={containerRef} className="relative w-full h-full bg-background overflow-hidden">
       <ReactFlow
         nodes={nodes}
         nodeTypes={nodeTypes}
@@ -95,7 +90,11 @@ function TimelineCanvas({ onCenterOnNow, onCenterOnSpace, onAddSpace }: Timeline
           size={backgroundVariant === 'dots' ? 2 : undefined}
           className={backgroundVariant === 'dots' ? 'opacity-30' : 'opacity-10'}
         />
-        <TimelineControls onBackToNow={centerOnNow} onAddSpace={onAddSpace} onZoomChange={changeZoomLevelAndCenter} />
+        <TimelineControls
+          onBackToNow={centerOnNow}
+          onAddSpace={onAddSpace}
+          onZoomChange={changeZoomLevelAndCenter}
+        />
       </ReactFlow>
       <TimeRuler referenceTime={referenceTime} />
       <NowLine referenceTime={referenceTime} />

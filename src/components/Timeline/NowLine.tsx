@@ -36,11 +36,7 @@ export function NowLine({ referenceTime }: NowLineProps) {
 
     // Create segment on the first track
     const space = spaces[0];
-    const segment = segmentsActions.createSegment(
-      space.id,
-      `New ${type}`,
-      type
-    );
+    const segment = segmentsActions.createSegment(space.id, `New ${type}`, type);
 
     // Add segment to track
     spacesActions.addSegment(space.id, segment);

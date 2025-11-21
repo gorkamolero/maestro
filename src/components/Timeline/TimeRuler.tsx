@@ -11,10 +11,10 @@ interface TimeRulerProps {
 
 // Time intervals for each zoom level (in minutes)
 const TIME_INTERVALS: Record<ZoomLevel, number> = {
-  hour: 60,      // Every hour
-  day: 360,      // Every 6 hours
-  week: 1440,    // Every day
-  month: 10080,  // Every week
+  hour: 60, // Every hour
+  day: 360, // Every 6 hours
+  week: 1440, // Every day
+  month: 10080, // Every week
 };
 
 // Format time labels based on zoom level
@@ -51,8 +51,8 @@ export function TimeRuler({ referenceTime }: TimeRulerProps) {
 
     // Convert to minutes
     const pixelsPerMinute = getPixelsPerMinute(zoomLevel);
-    const startMinutes = Math.floor((visibleStartX / pixelsPerMinute) / interval) * interval;
-    const endMinutes = Math.ceil((visibleEndX / pixelsPerMinute) / interval) * interval;
+    const startMinutes = Math.floor(visibleStartX / pixelsPerMinute / interval) * interval;
+    const endMinutes = Math.ceil(visibleEndX / pixelsPerMinute / interval) * interval;
 
     // Generate markers at intervals
     for (let minutes = startMinutes; minutes <= endMinutes; minutes += interval) {

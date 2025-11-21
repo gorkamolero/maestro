@@ -112,9 +112,7 @@ function BrowserPlaceholder({ tab }: { tab: any }) {
         <Globe className="w-12 h-12 mb-4 text-muted-foreground" />
       </motion.div>
       <p className="text-sm mb-2">{tab.title}</p>
-      <p className="text-xs text-muted-foreground mb-4">
-        Browser integration coming in Phase 2
-      </p>
+      <p className="text-xs text-muted-foreground mb-4">Browser integration coming in Phase 2</p>
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -147,16 +145,11 @@ function AgentPlaceholder({ tab }: { tab: any }) {
       animate={{ opacity: 1 }}
       className="flex-1 flex flex-col items-center justify-center bg-background p-8"
     >
-      <motion.div
-        animate={{ y: [0, -10, 0] }}
-        transition={{ duration: 2, repeat: Infinity }}
-      >
+      <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 2, repeat: Infinity }}>
         <Bot className="w-12 h-12 mb-4 text-primary" />
       </motion.div>
       <p className="text-sm mb-2">{tab.title}</p>
-      <p className="text-xs text-muted-foreground mb-4">
-        Agent integration coming in Phase 2
-      </p>
+      <p className="text-xs text-muted-foreground mb-4">Agent integration coming in Phase 2</p>
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}

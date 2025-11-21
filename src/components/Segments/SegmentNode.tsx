@@ -182,7 +182,10 @@ function SegmentNodeComponent({ data }: SegmentNodeProps) {
                         </div>
                         <div className="flex justify-between">
                           <span>Duration</span>
-                          <span>{duration}{typeof duration === 'number' ? ' min' : ''}</span>
+                          <span>
+                            {duration}
+                            {typeof duration === 'number' ? ' min' : ''}
+                          </span>
                         </div>
                       </div>
                     </div>

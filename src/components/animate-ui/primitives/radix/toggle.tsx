@@ -13,22 +13,12 @@ type ToggleContextType = {
   disabled?: boolean;
 };
 
-const [ToggleProvider, useToggle] =
-  getStrictContext<ToggleContextType>('ToggleContext');
+const [ToggleProvider, useToggle] = getStrictContext<ToggleContextType>('ToggleContext');
 
-type ToggleProps = Omit<
-  React.ComponentProps<typeof TogglePrimitive.Root>,
-  'asChild'
-> &
+type ToggleProps = Omit<React.ComponentProps<typeof TogglePrimitive.Root>, 'asChild'> &
   HTMLMotionProps<'button'>;
 
-function Toggle({
-  pressed,
-  defaultPressed,
-  onPressedChange,
-  disabled,
-  ...props
-}: ToggleProps) {
+function Toggle({ pressed, defaultPressed, onPressedChange, disabled, ...props }: ToggleProps) {
   const [isPressed, setIsPressed] = useControlledState({
     value: pressed,
     defaultValue: defaultPressed,
@@ -44,11 +34,7 @@ function Toggle({
         disabled={disabled}
         asChild
       >
-        <motion.button
-          data-slot="toggle"
-          whileTap={{ scale: 0.95 }}
-          {...props}
-        />
+        <motion.button data-slot="toggle" whileTap={{ scale: 0.95 }} {...props} />
       </TogglePrimitive.Root>
     </ToggleProvider>
   );

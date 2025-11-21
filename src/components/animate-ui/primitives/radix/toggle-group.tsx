@@ -28,18 +28,12 @@ function ToggleGroup(props: ToggleGroupProps) {
   const [value, setValue] = useControlledState<string | string[] | undefined>({
     value: props.value,
     defaultValue: props.defaultValue,
-    onChange: props.onValueChange as (
-      value: string | string[] | undefined,
-    ) => void,
+    onChange: props.onValueChange as (value: string | string[] | undefined) => void,
   });
 
   return (
     <ToggleGroupProvider value={{ value, setValue, type: props.type }}>
-      <ToggleGroupPrimitive.Root
-        data-slot="toggle-group"
-        {...props}
-        onValueChange={setValue}
-      />
+      <ToggleGroupPrimitive.Root data-slot="toggle-group" {...props} onValueChange={setValue} />
     </ToggleGroupProvider>
   );
 }
@@ -53,11 +47,7 @@ type ToggleGroupItemProps = Omit<
 function ToggleGroupItem({ value, disabled, ...props }: ToggleGroupItemProps) {
   return (
     <ToggleGroupPrimitive.Item value={value} disabled={disabled} asChild>
-      <motion.button
-        data-slot="toggle-group-item"
-        whileTap={{ scale: 0.95 }}
-        {...props}
-      />
+      <motion.button data-slot="toggle-group-item" whileTap={{ scale: 0.95 }} {...props} />
     </ToggleGroupPrimitive.Item>
   );
 }
@@ -87,11 +77,7 @@ type ToggleGroupHighlightItemProps = HighlightItemProps &
     children: React.ReactElement;
   };
 
-function ToggleGroupHighlightItem({
-  children,
-  style,
-  ...props
-}: ToggleGroupHighlightItemProps) {
+function ToggleGroupHighlightItem({ children, style, ...props }: ToggleGroupHighlightItemProps) {
   const { type, value } = useToggleGroup();
 
   if (type === 'single') {
@@ -142,7 +128,7 @@ function ToggleGroupHighlightItem({
         >
           {element.props.children}
         </div>
-      </>,
+      </>
     );
   }
 }

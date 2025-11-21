@@ -102,7 +102,9 @@ export function Sidebar() {
       {/* Favorites section - Arc style */}
       <div className="p-3">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Favorites</h3>
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            Favorites
+          </h3>
           <Plus className="w-3 h-3 text-muted-foreground cursor-pointer hover:text-foreground" />
         </div>
         <div className="space-y-1">

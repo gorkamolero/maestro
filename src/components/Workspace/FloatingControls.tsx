@@ -1,6 +1,14 @@
 import { useSnapshot } from 'valtio';
 import { workspaceStore, workspaceActions } from '@/stores/workspace.store';
-import { LayoutGrid, LayoutList, Columns2, ChevronDown, Terminal, Globe, FileText } from 'lucide-react';
+import {
+  LayoutGrid,
+  LayoutList,
+  Columns2,
+  ChevronDown,
+  Terminal,
+  Globe,
+  FileText,
+} from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,

@@ -38,36 +38,39 @@ export function useTimelineHandlers({ containerRef, referenceTime }: TimelineHan
   }, []);
 
   // Click on canvas to create segment
-  const onPaneClick = useCallback((event: any) => {
-    const bounds = containerRef.current?.getBoundingClientRect();
-    if (!bounds) return;
+  const onPaneClick = useCallback(
+    (event: any) => {
+      const bounds = containerRef.current?.getBoundingClientRect();
+      if (!bounds) return;
 
-    // Get click position in viewport coordinates
-    const viewport = reactFlowInstance.getViewport();
-    const clickX = (event.clientX - bounds.left - viewport.x) / viewport.zoom;
-    const clickY = (event.clientY - bounds.top - viewport.y) / viewport.zoom;
+      // Get click position in viewport coordinates
+      const viewport = reactFlowInstance.getViewport();
+      const clickX = (event.clientX - bounds.left - viewport.x) / viewport.zoom;
+      const clickY = (event.clientY - bounds.top - viewport.y) / viewport.zoom;
 
-    // Convert X to time
-    const clickTime = pixelsToTime(clickX, zoomLevel, referenceTime);
+      // Convert X to time
+      const clickTime = pixelsToTime(clickX, zoomLevel, referenceTime);
 
-    // Convert Y to space index
-    const trackIndex = Math.floor(clickY / TRACK_HEIGHT);
-    if (trackIndex < 0 || trackIndex >= spaces.length) return;
+      // Convert Y to space index
+      const trackIndex = Math.floor(clickY / TRACK_HEIGHT);
+      if (trackIndex < 0 || trackIndex >= spaces.length) return;
 
-    const space = spaces[trackIndex];
+      const space = spaces[trackIndex];
 
-    // Create new segment at clicked time
-    const segment = segmentsActions.createSegment(
-      space.id,
-      'New segment',
-      'note' // Default to note type
-    );
+      // Create new segment at clicked time
+      const segment = segmentsActions.createSegment(
+        space.id,
+        'New segment',
+        'note' // Default to note type
+      );
 
-    // Override start time to clicked time
-    segment.startTime = clickTime;
+      // Override start time to clicked time
+      segment.startTime = clickTime;
 
-    spacesActions.addSegment(space.id, segment);
-  }, [zoomLevel, referenceTime, spaces, containerRef, reactFlowInstance]);
+      spacesActions.addSegment(space.id, segment);
+    },
+    [zoomLevel, referenceTime, spaces, containerRef, reactFlowInstance]
+  );
 
   return {
     trackLabelOffset,

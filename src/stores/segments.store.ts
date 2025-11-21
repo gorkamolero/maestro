@@ -33,25 +33,23 @@ export const segmentsActions = {
   },
 
   endSegment: (segmentId: string) => {
-    const segment = segmentsStore.activeSegments.find(s => s.id === segmentId);
+    const segment = segmentsStore.activeSegments.find((s) => s.id === segmentId);
     if (segment) {
       segment.endTime = new Date();
       segment.status = 'completed';
-      segmentsStore.activeSegments = segmentsStore.activeSegments.filter(
-        s => s.id !== segmentId
-      );
+      segmentsStore.activeSegments = segmentsStore.activeSegments.filter((s) => s.id !== segmentId);
     }
   },
 
   pauseSegment: (segmentId: string) => {
-    const segment = segmentsStore.activeSegments.find(s => s.id === segmentId);
+    const segment = segmentsStore.activeSegments.find((s) => s.id === segmentId);
     if (segment) {
       segment.status = 'paused';
     }
   },
 
   resumeSegment: (segmentId: string) => {
-    const segment = segmentsStore.activeSegments.find(s => s.id === segmentId);
+    const segment = segmentsStore.activeSegments.find((s) => s.id === segmentId);
     if (segment) {
       segment.status = 'active';
     }
@@ -62,7 +60,7 @@ export const segmentsActions = {
   },
 
   updateSegmentConfig: (segmentId: string, config: Partial<SegmentConfig>) => {
-    const segment = segmentsStore.activeSegments.find(s => s.id === segmentId);
+    const segment = segmentsStore.activeSegments.find((s) => s.id === segmentId);
     if (segment) {
       segment.config = { ...segment.config, ...config };
     }

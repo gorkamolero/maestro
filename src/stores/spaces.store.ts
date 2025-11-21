@@ -24,11 +24,11 @@ export const spacesActions = {
   },
 
   removeSpace: (spaceId: string) => {
-    spacesStore.spaces = spacesStore.spaces.filter(t => t.id !== spaceId);
+    spacesStore.spaces = spacesStore.spaces.filter((t) => t.id !== spaceId);
   },
 
   updateSpace: (spaceId: string, updates: Partial<Space>) => {
-    const index = spacesStore.spaces.findIndex(t => t.id === spaceId);
+    const index = spacesStore.spaces.findIndex((t) => t.id === spaceId);
     if (index !== -1) {
       spacesStore.spaces[index] = { ...spacesStore.spaces[index], ...updates };
     }
@@ -39,23 +39,23 @@ export const spacesActions = {
   },
 
   addSegment: (spaceId: string, segment: Segment) => {
-    const space = spacesStore.spaces.find(t => t.id === spaceId);
+    const space = spacesStore.spaces.find((t) => t.id === spaceId);
     if (space) {
       space.segments.push(segment);
     }
   },
 
   removeSegment: (spaceId: string, segmentId: string) => {
-    const space = spacesStore.spaces.find(t => t.id === spaceId);
+    const space = spacesStore.spaces.find((t) => t.id === spaceId);
     if (space) {
-      space.segments = space.segments.filter(s => s.id !== segmentId);
+      space.segments = space.segments.filter((s) => s.id !== segmentId);
     }
   },
 
   updateSegment: (spaceId: string, segmentId: string, updates: Partial<Segment>) => {
-    const space = spacesStore.spaces.find(t => t.id === spaceId);
+    const space = spacesStore.spaces.find((t) => t.id === spaceId);
     if (space) {
-      const index = space.segments.findIndex(s => s.id === segmentId);
+      const index = space.segments.findIndex((s) => s.id === segmentId);
       if (index !== -1) {
         space.segments[index] = { ...space.segments[index], ...updates };
       }

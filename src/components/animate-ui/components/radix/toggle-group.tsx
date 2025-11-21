@@ -17,23 +17,16 @@ import { getStrictContext } from '@/lib/get-strict-context';
 const [ToggleGroupProvider, useToggleGroup] =
   getStrictContext<VariantProps<typeof toggleVariants>>('ToggleGroupContext');
 
-type ToggleGroupProps = ToggleGroupPrimitiveProps &
-  VariantProps<typeof toggleVariants>;
+type ToggleGroupProps = ToggleGroupPrimitiveProps & VariantProps<typeof toggleVariants>;
 
-function ToggleGroup({
-  className,
-  variant,
-  size,
-  children,
-  ...props
-}: ToggleGroupProps) {
+function ToggleGroup({ className, variant, size, children, ...props }: ToggleGroupProps) {
   return (
     <ToggleGroupPrimitive
       data-variant={variant}
       data-size={size}
       className={cn(
         'group/toggle-group flex gap-0.5 w-fit items-center rounded-lg data-[variant=outline]:shadow-xs data-[variant=outline]:border data-[variant=outline]:p-0.5',
-        className,
+        className
       )}
       {...props}
     >
@@ -50,16 +43,9 @@ function ToggleGroup({
   );
 }
 
-type ToggleGroupItemProps = ToggleGroupItemPrimitiveProps &
-  VariantProps<typeof toggleVariants>;
+type ToggleGroupItemProps = ToggleGroupItemPrimitiveProps & VariantProps<typeof toggleVariants>;
 
-function ToggleGroupItem({
-  className,
-  children,
-  variant,
-  size,
-  ...props
-}: ToggleGroupItemProps) {
+function ToggleGroupItem({ className, children, variant, size, ...props }: ToggleGroupItemProps) {
   const { variant: contextVariant, size: contextSize } = useToggleGroup();
   const { type } = useToggleGroupPrimitive();
 
@@ -77,7 +63,7 @@ function ToggleGroupItem({
             size: contextSize || size,
           }),
           'min-w-0 border-0 flex-1 shrink-0 shadow-none rounded-md focus:z-10 focus-visible:z-10',
-          className,
+          className
         )}
         {...props}
       >
@@ -87,9 +73,4 @@ function ToggleGroupItem({
   );
 }
 
-export {
-  ToggleGroup,
-  ToggleGroupItem,
-  type ToggleGroupProps,
-  type ToggleGroupItemProps,
-};
+export { ToggleGroup, ToggleGroupItem, type ToggleGroupProps, type ToggleGroupItemProps };

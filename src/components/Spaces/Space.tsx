@@ -13,11 +13,7 @@ export function Space({ space }: TrackProps) {
     const types = ['browser', 'terminal', 'agent', 'note'] as const;
     const randomType = types[Math.floor(Math.random() * types.length)];
 
-    const segment = segmentsActions.createSegment(
-      space.id,
-      `${randomType} work`,
-      randomType
-    );
+    const segment = segmentsActions.createSegment(space.id, `${randomType} work`, randomType);
 
     // Add to track
     spacesActions.addSegment(space.id, segment);
@@ -26,15 +22,10 @@ export function Space({ space }: TrackProps) {
   return (
     <div className="h-20 border-b border-border flex items-center justify-between px-4 hover:bg-accent/50 transition-colors group">
       <div className="flex items-center gap-3">
-        <div
-          className="w-1 h-12 rounded"
-          style={{ backgroundColor: space.color }}
-        />
+        <div className="w-1 h-12 rounded" style={{ backgroundColor: space.color }} />
         <div>
           <h3 className="text-sm font-medium">{space.name}</h3>
-          <p className="text-xs text-muted-foreground">
-            {space.segments.length} segments
-          </p>
+          <p className="text-xs text-muted-foreground">{space.segments.length} segments</p>
         </div>
       </div>
 

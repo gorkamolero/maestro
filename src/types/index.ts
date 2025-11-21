@@ -35,20 +35,9 @@ export interface Segment {
   metrics?: ResourceMetrics;
 }
 
-export type SegmentType =
-  | 'browser'
-  | 'terminal'
-  | 'agent'
-  | 'note'
-  | 'external'
-  | 'planted';
+export type SegmentType = 'browser' | 'terminal' | 'agent' | 'note' | 'external' | 'planted';
 
-export type SegmentStatus =
-  | 'active'
-  | 'paused'
-  | 'completed'
-  | 'agent-working'
-  | 'scheduled';
+export type SegmentStatus = 'active' | 'paused' | 'completed' | 'agent-working' | 'scheduled';
 
 export interface SegmentConfig {
   // Browser
@@ -98,8 +87,8 @@ export interface Marker {
 }
 
 export interface ResourceMetrics {
-  ram: number;  // in MB
-  cpu: number;  // percentage
+  ram: number; // in MB
+  cpu: number; // percentage
   processes: number;
   lastUpdated: Date;
 }

@@ -44,7 +44,8 @@ export const timelineActions = {
   },
 
   toggleBackgroundVariant: () => {
-    timelineStore.backgroundVariant = timelineStore.backgroundVariant === 'lines' ? 'dots' : 'lines';
+    timelineStore.backgroundVariant =
+      timelineStore.backgroundVariant === 'lines' ? 'dots' : 'lines';
   },
 
   jumpToNow: () => {

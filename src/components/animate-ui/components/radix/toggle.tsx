@@ -30,7 +30,7 @@ const toggleVariants = cva(
       variant: 'default',
       size: 'default',
     },
-  },
+  }
 );
 
 type ToggleProps = TogglePrimitiveProps &

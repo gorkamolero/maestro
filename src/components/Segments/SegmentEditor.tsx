@@ -25,7 +25,6 @@ interface SegmentEditorProps {
   onClose: () => void;
 }
 
-
 const SEGMENT_TYPES: { value: SegmentType; label: string; icon: any }[] = [
   { value: 'terminal', label: 'Terminal', icon: Terminal },
   { value: 'browser', label: 'Browser', icon: Globe },

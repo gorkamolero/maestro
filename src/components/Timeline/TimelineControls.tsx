@@ -4,12 +4,7 @@ import { timelineStore, timelineActions } from '@/stores/timeline.store';
 import { LocateFixed, Grid3x3, Circle, Plus } from 'lucide-react';
 import { Dock, DockIcon } from '@/components/ui/dock';
 import { Separator } from '@/components/ui/separator';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   ToggleGroup,
   ToggleGroupItem,

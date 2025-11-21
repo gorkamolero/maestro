@@ -24,36 +24,51 @@ export function useViewportControls({ containerRef, referenceTime }: ViewportCon
     timelineActions.setZoomLevel('day');
 
     const nowX = timeToPixels(now, 'day', referenceTime);
-    const { width, height } = containerRef.current?.getBoundingClientRect() || { width: 1000, height: 800 };
+    const { width, height } = containerRef.current?.getBoundingClientRect() || {
+      width: 1000,
+      height: 800,
+    };
 
     // Center on middle of all spaces vertically
     const totalTracksHeight = spaces.length * TRACK_HEIGHT;
     const middleY = totalTracksHeight / 2;
 
-    reactFlowInstance.setViewport({
-      x: -nowX + width / 2,
-      y: -middleY + height / 2,
-      zoom: 1,
-    }, { duration: 300 });
+    reactFlowInstance.setViewport(
+      {
+        x: -nowX + width / 2,
+        y: -middleY + height / 2,
+        zoom: 1,
+      },
+      { duration: 300 }
+    );
   }, [now, referenceTime, reactFlowInstance, containerRef, spaces.length]);
 
-  const centerOnSpace = useCallback((trackPosition: number) => {
-    // Set zoom to default (day)
-    timelineActions.setZoomLevel('day');
+  const centerOnSpace = useCallback(
+    (trackPosition: number) => {
+      // Set zoom to default (day)
+      timelineActions.setZoomLevel('day');
 
-    // Calculate space Y position
-    const trackY = trackPosition * TRACK_HEIGHT;
-    const { width, height } = containerRef.current?.getBoundingClientRect() || { width: 1000, height: 800 };
+      // Calculate space Y position
+      const trackY = trackPosition * TRACK_HEIGHT;
+      const { width, height } = containerRef.current?.getBoundingClientRect() || {
+        width: 1000,
+        height: 800,
+      };
 
-    // Center on NOW horizontally and on space vertically
-    const nowX = timeToPixels(now, 'day', referenceTime);
+      // Center on NOW horizontally and on space vertically
+      const nowX = timeToPixels(now, 'day', referenceTime);
 
-    reactFlowInstance.setViewport({
-      x: -nowX + width / 2,
-      y: -trackY + height / 2,
-      zoom: 1,
-    }, { duration: 300 });
-  }, [now, referenceTime, reactFlowInstance, containerRef]);
+      reactFlowInstance.setViewport(
+        {
+          x: -nowX + width / 2,
+          y: -trackY + height / 2,
+          zoom: 1,
+        },
+        { duration: 300 }
+      );
+    },
+    [now, referenceTime, reactFlowInstance, containerRef]
+  );
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -67,21 +82,27 @@ export function useViewportControls({ containerRef, referenceTime }: ViewportCon
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [centerOnNow]);
 
-  const changeZoomLevelAndCenter = useCallback((targetZoomLevel: ZoomLevel) => {
-    // Calculate where NOW will be at the new zoom level
-    const nowX = timeToPixels(now, targetZoomLevel, referenceTime);
-    const { width, height } = containerRef.current?.getBoundingClientRect() || { width: 1000, height: 800 };
-    const totalTracksHeight = spaces.length * TRACK_HEIGHT;
-    const middleY = totalTracksHeight / 2;
+  const changeZoomLevelAndCenter = useCallback(
+    (targetZoomLevel: ZoomLevel) => {
+      // Calculate where NOW will be at the new zoom level
+      const nowX = timeToPixels(now, targetZoomLevel, referenceTime);
+      const { width, height } = containerRef.current?.getBoundingClientRect() || {
+        width: 1000,
+        height: 800,
+      };
+      const totalTracksHeight = spaces.length * TRACK_HEIGHT;
+      const middleY = totalTracksHeight / 2;
 
-    // Update zoom level and viewport position together
-    timelineActions.setZoomLevel(targetZoomLevel);
-    reactFlowInstance.setViewport({
-      x: -nowX + width / 2,
-      y: -middleY + height / 2,
-      zoom: 1,
-    });
-  }, [now, referenceTime, reactFlowInstance, containerRef, spaces.length]);
+      // Update zoom level and viewport position together
+      timelineActions.setZoomLevel(targetZoomLevel);
+      reactFlowInstance.setViewport({
+        x: -nowX + width / 2,
+        y: -middleY + height / 2,
+        zoom: 1,
+      });
+    },
+    [now, referenceTime, reactFlowInstance, containerRef, spaces.length]
+  );
 
   return { centerOnNow, centerOnSpace, changeZoomLevelAndCenter };
 }

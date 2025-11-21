@@ -28,11 +28,7 @@ function SpaceLabelNodeComponent({ data }: SpaceLabelNodeProps) {
     const types = ['browser', 'terminal', 'agent', 'note'] as const;
     const randomType = types[Math.floor(Math.random() * types.length)];
 
-    const segment = segmentsActions.createSegment(
-      data.spaceId,
-      `${randomType} work`,
-      randomType
-    );
+    const segment = segmentsActions.createSegment(data.spaceId, `${randomType} work`, randomType);
 
     spacesActions.addSegment(data.spaceId, segment);
   };
@@ -45,15 +41,10 @@ function SpaceLabelNodeComponent({ data }: SpaceLabelNodeProps) {
       style={{ transform: `scale(${scale})`, transformOrigin: 'left center' }}
     >
       <div className="flex items-center gap-3 flex-1 min-w-0">
-        <div
-          className="w-1 h-12 rounded flex-shrink-0"
-          style={{ backgroundColor: data.color }}
-        />
+        <div className="w-1 h-12 rounded flex-shrink-0" style={{ backgroundColor: data.color }} />
         <div className="flex-1 min-w-0">
           <h3 className="text-sm font-medium truncate">{data.name}</h3>
-          <p className="text-xs text-muted-foreground">
-            {data.segmentCount} segments
-          </p>
+          <p className="text-xs text-muted-foreground">{data.segmentCount} segments</p>
         </div>
       </div>
       <Button

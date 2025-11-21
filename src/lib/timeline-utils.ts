@@ -4,9 +4,9 @@ export const TRACK_HEIGHT = 80; // Height of each space lane in pixels
 
 // Pixels per minute at different zoom levels
 const ZOOM_SCALES: Record<ZoomLevel, number> = {
-  hour: 2,    // 120px per hour
-  day: 0.5,   // 720px per day
-  week: 0.1,  // ~1000px per week
+  hour: 2, // 120px per hour
+  day: 0.5, // 720px per day
+  week: 0.1, // ~1000px per week
   month: 0.025, // ~1080px per month
 };
 

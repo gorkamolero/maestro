@@ -22,9 +22,7 @@ const SEGMENT_TYPES: { type: SegmentType; label: string; icon: any }[] = [
 export function CreateSegmentMenu({ children, onCreateSegment }: CreateSegmentMenuProps) {
   return (
     <ContextMenu>
-      <ContextMenuTrigger asChild>
-        {children}
-      </ContextMenuTrigger>
+      <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
       <ContextMenuContent className="w-48">
         {SEGMENT_TYPES.map(({ type, label, icon: Icon }) => (
           <ContextMenuItem

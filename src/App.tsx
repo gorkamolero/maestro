@@ -1,24 +1,33 @@
-import { useState, useEffect, useRef } from "react";
-import { useSnapshot } from "valtio";
-import { PanelGroup, Panel, PanelResizeHandle } from "react-resizable-panels";
-import { Timeline, TimelineHandle } from "@/components/Timeline/Timeline";
-import { Dock } from "@/components/Workspace/Dock";
-import { Sidebar } from "@/components/Workspace/Sidebar";
-import { WorkspacePanel } from "@/components/Workspace/WorkspacePanel";
-import { FloatingControls } from "@/components/Workspace/FloatingControls";
+import { useState, useEffect, useRef } from 'react';
+import { useSnapshot } from 'valtio';
+import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels';
+import { Timeline, TimelineHandle } from '@/components/Timeline/Timeline';
+import { Dock } from '@/components/Workspace/Dock';
+import { Sidebar } from '@/components/Workspace/Sidebar';
+import { WorkspacePanel } from '@/components/Workspace/WorkspacePanel';
+import { FloatingControls } from '@/components/Workspace/FloatingControls';
 import { spacesActions } from '@/stores/spaces.store';
-import { workspaceStore, workspaceActions } from "@/stores/workspace.store";
-import { usePersistence } from "@/hooks/usePersistence";
-import { LayoutGrid, LayoutList, Columns2, ChevronDown, Terminal, Globe, FileText, Plus } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { workspaceStore, workspaceActions } from '@/stores/workspace.store';
+import { usePersistence } from '@/hooks/usePersistence';
+import {
+  LayoutGrid,
+  LayoutList,
+  Columns2,
+  ChevronDown,
+  Terminal,
+  Globe,
+  FileText,
+  Plus,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+} from '@/components/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 function App() {
   const [darkMode, setDarkMode] = useState(true);
@@ -31,9 +40,9 @@ function App() {
 
   useEffect(() => {
     if (darkMode) {
-      document.documentElement.classList.add("dark");
+      document.documentElement.classList.add('dark');
     } else {
-      document.documentElement.classList.remove("dark");
+      document.documentElement.classList.remove('dark');
     }
   }, [darkMode]);
 
@@ -66,13 +75,9 @@ function App() {
 
         {/* Timeline area with rounded corners and inset */}
         <div className="flex-1 rounded-xl overflow-hidden bg-background border border-border/50 shadow-lg">
-          {viewMode === 'timeline' && (
-            <Timeline ref={timelineRef} onAddSpace={handleAddSpace} />
-          )}
+          {viewMode === 'timeline' && <Timeline ref={timelineRef} onAddSpace={handleAddSpace} />}
 
-          {viewMode === 'workspace' && (
-            <WorkspacePanel />
-          )}
+          {viewMode === 'workspace' && <WorkspacePanel />}
 
           {viewMode === 'split' && (
             <PanelGroup direction="vertical">

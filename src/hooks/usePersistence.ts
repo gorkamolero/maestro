@@ -4,11 +4,7 @@ import { subscribe } from 'valtio';
 import { timelineStore, timelineActions } from '@/stores/timeline.store';
 import { spacesStore, spacesActions } from '@/stores/spaces.store';
 import { segmentsStore } from '@/stores/segments.store';
-import {
-  initDB,
-  saveWorkspace,
-  loadWorkspace,
-} from '@/lib/persistence';
+import { initDB, saveWorkspace, loadWorkspace } from '@/lib/persistence';
 
 const AUTO_SAVE_INTERVAL = 30000; // 30 seconds
 const DEBOUNCE_DELAY = 1000; // 1 second
