@@ -1,15 +1,7 @@
 import { useCallback } from 'react';
 import { XTermWrapper, type TerminalTheme } from './XTermWrapper';
 import type { TerminalState } from './terminal.utils';
-import { X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-
-export interface TerminalTabData {
-  id: string;
-  title: string;
-  workingDir: string | null;
-  isActive: boolean;
-}
+import type { TerminalTabData } from './hooks/useTerminalTabs';
 
 interface TerminalTabProps {
   tab: TerminalTabData;
