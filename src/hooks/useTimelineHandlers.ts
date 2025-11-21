@@ -2,7 +2,7 @@ import { useCallback, useState, type RefObject } from 'react';
 import { useReactFlow } from '@xyflow/react';
 import type { Node } from '@xyflow/react';
 import { useSnapshot } from 'valtio';
-import { tracksStore, tracksActions } from '@/stores/tracks.store';
+import { spacesStore, spacesActions } from "@/stores/spaces.store";
 import { segmentsActions } from '@/stores/segments.store';
 import { timelineStore } from '@/stores/timeline.store';
 import { pixelsToTime, TRACK_HEIGHT } from '@/lib/timeline-utils';
@@ -18,7 +18,7 @@ interface TimelineHandlersOptions {
  */
 export function useTimelineHandlers({ containerRef, referenceTime }: TimelineHandlersOptions) {
   const reactFlowInstance = useReactFlow();
-  const { tracks } = useSnapshot(tracksStore);
+  const { spaces } = useSnapshot(spacesStore);
   const { zoomLevel } = useSnapshot(timelineStore);
   const [selectedSegment, setSelectedSegment] = useState<Segment | null>(null);
   const [trackLabelOffset, setTrackLabelOffset] = useState(0);
@@ -32,7 +32,7 @@ export function useTimelineHandlers({ containerRef, referenceTime }: TimelineHan
     // Segments use Expandable component internally
   }, []);
 
-  // Update track label offset to keep them at left edge
+  // Update space label offset to keep them at left edge
   const onMove = useCallback((event: any, viewport: any) => {
     setTrackLabelOffset(-viewport.x / viewport.zoom);
   }, []);
@@ -50,15 +50,15 @@ export function useTimelineHandlers({ containerRef, referenceTime }: TimelineHan
     // Convert X to time
     const clickTime = pixelsToTime(clickX, zoomLevel, referenceTime);
 
-    // Convert Y to track index
+    // Convert Y to space index
     const trackIndex = Math.floor(clickY / TRACK_HEIGHT);
-    if (trackIndex < 0 || trackIndex >= tracks.length) return;
+    if (trackIndex < 0 || trackIndex >= spaces.length) return;
 
-    const track = tracks[trackIndex];
+    const space = spaces[trackIndex];
 
     // Create new segment at clicked time
     const segment = segmentsActions.createSegment(
-      track.id,
+      space.id,
       'New segment',
       'note' // Default to note type
     );
@@ -66,8 +66,8 @@ export function useTimelineHandlers({ containerRef, referenceTime }: TimelineHan
     // Override start time to clicked time
     segment.startTime = clickTime;
 
-    tracksActions.addSegment(track.id, segment);
-  }, [zoomLevel, referenceTime, tracks, containerRef, reactFlowInstance]);
+    spacesActions.addSegment(space.id, segment);
+  }, [zoomLevel, referenceTime, spaces, containerRef, reactFlowInstance]);
 
   return {
     trackLabelOffset,

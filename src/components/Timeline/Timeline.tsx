@@ -27,16 +27,16 @@ const nodeTypes = {
 
 export interface TimelineHandle {
   centerOnNow: () => void;
-  centerOnTrack: (trackPosition: number) => void;
+  centerOnSpace: (trackPosition: number) => void;
 }
 
 interface TimelineCanvasProps {
   onCenterOnNow?: (fn: () => void) => void;
-  onCenterOnTrack?: (fn: (trackPosition: number) => void) => void;
-  onAddTrack?: () => void;
+  onCenterOnSpace?: (fn: (trackPosition: number) => void) => void;
+  onAddSpace?: () => void;
 }
 
-function TimelineCanvas({ onCenterOnNow, onCenterOnTrack, onAddTrack }: TimelineCanvasProps) {
+function TimelineCanvas({ onCenterOnNow, onCenterOnSpace, onAddSpace }: TimelineCanvasProps) {
   const { containerRef, referenceTime } = useTimelineViewport();
   const { backgroundVariant } = useSnapshot(timelineStore);
 
@@ -53,14 +53,14 @@ function TimelineCanvas({ onCenterOnNow, onCenterOnTrack, onAddTrack }: Timeline
 
   const nodes = useTimelineNodes(referenceTime, trackLabelOffset);
 
-  const { centerOnNow, centerOnTrack, changeZoomLevelAndCenter } = useViewportControls({ containerRef, referenceTime });
+  const { centerOnNow, centerOnSpace, changeZoomLevelAndCenter } = useViewportControls({ containerRef, referenceTime });
 
   // Expose methods to parent
   if (onCenterOnNow) {
     onCenterOnNow(centerOnNow);
   }
-  if (onCenterOnTrack) {
-    onCenterOnTrack(centerOnTrack);
+  if (onCenterOnSpace) {
+    onCenterOnSpace(centerOnSpace);
   }
 
   return (
@@ -95,7 +95,7 @@ function TimelineCanvas({ onCenterOnNow, onCenterOnTrack, onAddTrack }: Timeline
           size={backgroundVariant === 'dots' ? 2 : undefined}
           className={backgroundVariant === 'dots' ? 'opacity-30' : 'opacity-10'}
         />
-        <TimelineControls onBackToNow={centerOnNow} onAddTrack={onAddTrack} onZoomChange={changeZoomLevelAndCenter} />
+        <TimelineControls onBackToNow={centerOnNow} onAddSpace={onAddSpace} onZoomChange={changeZoomLevelAndCenter} />
       </ReactFlow>
       <TimeRuler referenceTime={referenceTime} />
       <NowLine referenceTime={referenceTime} />
@@ -105,10 +105,10 @@ function TimelineCanvas({ onCenterOnNow, onCenterOnTrack, onAddTrack }: Timeline
 }
 
 interface TimelineProps {
-  onAddTrack?: () => void;
+  onAddSpace?: () => void;
 }
 
-export const Timeline = forwardRef<TimelineHandle, TimelineProps>(({ onAddTrack }, ref) => {
+export const Timeline = forwardRef<TimelineHandle, TimelineProps>(({ onAddSpace }, ref) => {
   let centerOnNowFn: (() => void) | null = null;
   let centerOnTrackFn: ((trackPosition: number) => void) | null = null;
 
@@ -118,7 +118,7 @@ export const Timeline = forwardRef<TimelineHandle, TimelineProps>(({ onAddTrack 
         centerOnNowFn();
       }
     },
-    centerOnTrack: (trackPosition: number) => {
+    centerOnSpace: (trackPosition: number) => {
       if (centerOnTrackFn) {
         centerOnTrackFn(trackPosition);
       }
@@ -131,10 +131,10 @@ export const Timeline = forwardRef<TimelineHandle, TimelineProps>(({ onAddTrack 
         onCenterOnNow={(fn) => {
           centerOnNowFn = fn;
         }}
-        onCenterOnTrack={(fn) => {
+        onCenterOnSpace={(fn) => {
           centerOnTrackFn = fn;
         }}
-        onAddTrack={onAddTrack}
+        onAddSpace={onAddSpace}
       />
     </ReactFlowProvider>
   );

@@ -10,7 +10,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export function FloatingControls() {
-  const { viewMode, activeTrackId } = useSnapshot(workspaceStore);
+  const { viewMode, activeSpaceId } = useSnapshot(workspaceStore);
 
   return (
     <div className="absolute top-4 right-4 z-[100] flex gap-2">
@@ -21,11 +21,11 @@ export function FloatingControls() {
             <TooltipTrigger asChild>
               <button
                 onClick={() => {
-                  if (activeTrackId) {
-                    workspaceActions.openTab(activeTrackId, 'terminal', 'New Terminal');
+                  if (activeSpaceId) {
+                    workspaceActions.openTab(activeSpaceId, 'terminal', 'New Terminal');
                   }
                 }}
-                disabled={!activeTrackId}
+                disabled={!activeSpaceId}
                 className="p-2 rounded-md hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Terminal className="w-4 h-4" />
@@ -38,11 +38,11 @@ export function FloatingControls() {
             <TooltipTrigger asChild>
               <button
                 onClick={() => {
-                  if (activeTrackId) {
-                    workspaceActions.openTab(activeTrackId, 'browser', 'New Browser');
+                  if (activeSpaceId) {
+                    workspaceActions.openTab(activeSpaceId, 'browser', 'New Browser');
                   }
                 }}
-                disabled={!activeTrackId}
+                disabled={!activeSpaceId}
                 className="p-2 rounded-md hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Globe className="w-4 h-4" />
@@ -55,11 +55,11 @@ export function FloatingControls() {
             <TooltipTrigger asChild>
               <button
                 onClick={() => {
-                  if (activeTrackId) {
-                    workspaceActions.openTab(activeTrackId, 'note', 'New Note');
+                  if (activeSpaceId) {
+                    workspaceActions.openTab(activeSpaceId, 'note', 'New Note');
                   }
                 }}
-                disabled={!activeTrackId}
+                disabled={!activeSpaceId}
                 className="p-2 rounded-md hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <FileText className="w-4 h-4" />

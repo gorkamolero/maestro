@@ -2,35 +2,35 @@ import { useMemo } from 'react';
 import { useSnapshot } from 'valtio';
 import type { Node } from '@xyflow/react';
 import { timelineStore } from '@/stores/timeline.store';
-import { tracksStore } from '@/stores/tracks.store';
+import { spacesStore } from "@/stores/spaces.store";
 import { timeToPixels, getSegmentWidth, TRACK_HEIGHT } from '@/lib/timeline-utils';
 
 /**
- * Hook to convert tracks and segments into React Flow nodes
+ * Hook to convert spaces and segments into React Flow nodes
  */
 export function useTimelineNodes(referenceTime: Date, trackLabelOffset: number): Node[] {
   const { now, zoomLevel } = useSnapshot(timelineStore);
-  const { tracks } = useSnapshot(tracksStore);
+  const { spaces } = useSnapshot(spacesStore);
 
   return useMemo(() => {
-    const trackLabelNodes = tracks.map((track) => ({
-      id: `track-label-${track.id}`,
+    const trackLabelNodes = spaces.map((space) => ({
+      id: `space-label-${space.id}`,
       type: 'trackLabel',
       position: {
         x: trackLabelOffset + 20, // Stick to left edge with padding
-        y: track.position * TRACK_HEIGHT,
+        y: space.position * TRACK_HEIGHT,
       },
       data: {
-        trackId: track.id,
-        name: track.name,
-        color: track.color,
-        segmentCount: track.segments.length,
+        spaceId: space.id,
+        name: space.name,
+        color: space.color,
+        segmentCount: space.segments.length,
       },
       draggable: false,
     }));
 
-    const segmentNodes = tracks.flatMap((track) =>
-      track.segments.map((segment) => {
+    const segmentNodes = spaces.flatMap((space) =>
+      space.segments.map((segment) => {
         const xPos = timeToPixels(segment.startTime, zoomLevel, referenceTime);
         const width = getSegmentWidth(
           segment.startTime,
@@ -45,11 +45,11 @@ export function useTimelineNodes(referenceTime: Date, trackLabelOffset: number):
           type: 'segment',
           position: {
             x: xPos,
-            y: track.position * TRACK_HEIGHT,
+            y: space.position * TRACK_HEIGHT,
           },
           data: {
             segmentId: segment.id,
-            trackId: track.id,
+            spaceId: space.id,
             title: segment.title,
             type: segment.type,
             status: segment.status,
@@ -63,5 +63,5 @@ export function useTimelineNodes(referenceTime: Date, trackLabelOffset: number):
     );
 
     return [...trackLabelNodes, ...segmentNodes];
-  }, [tracks, zoomLevel, referenceTime, now, trackLabelOffset]);
+  }, [spaces, zoomLevel, referenceTime, now, trackLabelOffset]);
 }

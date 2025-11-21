@@ -6,7 +6,7 @@ import { Dock } from "@/components/Workspace/Dock";
 import { Sidebar } from "@/components/Workspace/Sidebar";
 import { WorkspacePanel } from "@/components/Workspace/WorkspacePanel";
 import { FloatingControls } from "@/components/Workspace/FloatingControls";
-import { tracksActions } from "@/stores/tracks.store";
+import { spacesActions } from "@/stores/spaces.store";
 import { workspaceStore, workspaceActions } from "@/stores/workspace.store";
 import { usePersistence } from "@/hooks/usePersistence";
 import { LayoutGrid, LayoutList, Columns2, ChevronDown, Terminal, Globe, FileText, Plus } from "lucide-react";
@@ -37,11 +37,11 @@ function App() {
     }
   }, [darkMode]);
 
-  const handleAddTrack = () => {
-    const trackNumber = Math.floor(Math.random() * 1000);
-    const newTrack = tracksActions.addTrack(`Track ${trackNumber}`);
-    // Center viewport on new track with default zoom
-    timelineRef.current?.centerOnTrack(newTrack.position);
+  const handleAddSpace = () => {
+    const spaceNumber = Math.floor(Math.random() * 1000);
+    const newSpace = spacesActions.addSpace(`Space ${spaceNumber}`);
+    // Center viewport on new space with default zoom
+    timelineRef.current?.centerOnSpace(newSpace.position);
   };
 
   return (
@@ -53,7 +53,7 @@ function App() {
           <Sidebar />
         </div>
 
-        {/* Track switcher at bottom-left (Arc Spaces) */}
+        {/* Space switcher at bottom-left (Arc Spaces) */}
         <div className="p-2 border-t border-border/50">
           <Dock />
         </div>
@@ -67,7 +67,7 @@ function App() {
         {/* Timeline area with rounded corners and inset */}
         <div className="flex-1 rounded-xl overflow-hidden bg-background border border-border/50 shadow-lg">
           {viewMode === 'timeline' && (
-            <Timeline ref={timelineRef} onAddTrack={handleAddTrack} />
+            <Timeline ref={timelineRef} onAddSpace={handleAddSpace} />
           )}
 
           {viewMode === 'workspace' && (
@@ -78,7 +78,7 @@ function App() {
             <PanelGroup direction="vertical">
               {/* Timeline at top */}
               <Panel defaultSize={35} minSize={20} maxSize={50}>
-                <Timeline ref={timelineRef} onAddTrack={handleAddTrack} />
+                <Timeline ref={timelineRef} onAddSpace={handleAddSpace} />
               </Panel>
 
               {/* Resize handle */}

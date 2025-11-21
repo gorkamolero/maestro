@@ -5,7 +5,7 @@ export type TabStatus = 'active' | 'idle' | 'running';
 
 export interface Tab {
   id: string;
-  trackId: string;
+  spaceId: string;
   type: TabType;
   title: string;
   status: TabStatus;
@@ -22,7 +22,7 @@ export interface WorkspaceLayout {
 }
 
 interface WorkspaceState {
-  activeTrackId: string | null;
+  activeSpaceId: string | null;
   activeTabId: string | null;
   tabs: Tab[];
   layout: WorkspaceLayout;
@@ -30,7 +30,7 @@ interface WorkspaceState {
 }
 
 export const workspaceStore = proxy<WorkspaceState>({
-  activeTrackId: null,
+  activeSpaceId: null,
   activeTabId: null,
   tabs: [],
   layout: {
@@ -42,10 +42,10 @@ export const workspaceStore = proxy<WorkspaceState>({
 });
 
 export const workspaceActions = {
-  switchTrack: (trackId: string) => {
-    workspaceStore.activeTrackId = trackId;
-    // Switch to first tab of this track, if any
-    const firstTab = workspaceStore.tabs.find((t) => t.trackId === trackId);
+  switchSpace: (spaceId: string) => {
+    workspaceStore.activeSpaceId = spaceId;
+    // Switch to first tab of this space, if any
+    const firstTab = workspaceStore.tabs.find((t) => t.spaceId === spaceId);
     if (firstTab) {
       workspaceStore.activeTabId = firstTab.id;
     } else {
@@ -53,10 +53,10 @@ export const workspaceActions = {
     }
   },
 
-  openTab: (trackId: string, type: TabType, title: string, segmentId?: string) => {
+  openTab: (spaceId: string, type: TabType, title: string, segmentId?: string) => {
     const newTab: Tab = {
       id: crypto.randomUUID(),
-      trackId,
+      spaceId,
       type,
       title,
       status: 'active',
@@ -64,7 +64,7 @@ export const workspaceActions = {
     };
 
     workspaceStore.tabs.push(newTab);
-    workspaceStore.activeTrackId = trackId;
+    workspaceStore.activeSpaceId = spaceId;
     workspaceStore.activeTabId = newTab.id;
 
     return newTab;
@@ -77,9 +77,9 @@ export const workspaceActions = {
     const tab = workspaceStore.tabs[tabIndex];
     workspaceStore.tabs.splice(tabIndex, 1);
 
-    // If closing active tab, switch to another in same track
+    // If closing active tab, switch to another in same space
     if (workspaceStore.activeTabId === tabId) {
-      const nextTab = workspaceStore.tabs.find((t) => t.trackId === tab.trackId);
+      const nextTab = workspaceStore.tabs.find((t) => t.spaceId === tab.spaceId);
       workspaceStore.activeTabId = nextTab?.id || null;
     }
   },
@@ -88,7 +88,7 @@ export const workspaceActions = {
     const tab = workspaceStore.tabs.find((t) => t.id === tabId);
     if (tab) {
       workspaceStore.activeTabId = tabId;
-      workspaceStore.activeTrackId = tab.trackId;
+      workspaceStore.activeSpaceId = tab.spaceId;
     }
   },
 

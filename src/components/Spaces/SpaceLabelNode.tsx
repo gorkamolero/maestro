@@ -2,13 +2,13 @@ import { memo } from 'react';
 import { useReactFlow } from '@xyflow/react';
 import { BaseNode } from '@/components/base-node';
 import { Button } from '@/components/ui/button';
-import { tracksActions } from '@/stores/tracks.store';
+import { spacesActions } from "@/stores/spaces.store";
 import { segmentsActions } from '@/stores/segments.store';
 import { Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface TrackLabelNodeData {
-  trackId: string;
+  spaceId: string;
   name: string;
   color: string;
   segmentCount: number;
@@ -29,12 +29,12 @@ function TrackLabelNodeComponent({ data }: TrackLabelNodeProps) {
     const randomType = types[Math.floor(Math.random() * types.length)];
 
     const segment = segmentsActions.createSegment(
-      data.trackId,
+      data.spaceId,
       `${randomType} work`,
       randomType
     );
 
-    tracksActions.addSegment(data.trackId, segment);
+    spacesActions.addSegment(data.spaceId, segment);
   };
 
   return (

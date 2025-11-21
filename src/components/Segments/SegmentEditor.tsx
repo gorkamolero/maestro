@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { tracksActions } from '@/stores/tracks.store';
+import { spacesActions } from "@/stores/spaces.store";
 import type { Segment, SegmentType, SegmentStatus } from '@/types';
 import { Terminal, Globe, Bot, FileText, ExternalLink, Clock, Trash2 } from 'lucide-react';
 
@@ -59,7 +59,7 @@ export function SegmentEditor({ segment, onClose }: SegmentEditorProps) {
   const handleSave = () => {
     if (!segment) return;
 
-    tracksActions.updateSegment(segment.trackId, segment.id, {
+    spacesActions.updateSegment(segment.spaceId, segment.id, {
       title,
       type,
       status,
@@ -71,7 +71,7 @@ export function SegmentEditor({ segment, onClose }: SegmentEditorProps) {
   const handleDelete = () => {
     if (!segment) return;
 
-    tracksActions.removeSegment(segment.trackId, segment.id);
+    spacesActions.removeSegment(segment.spaceId, segment.id);
     onClose();
   };
 

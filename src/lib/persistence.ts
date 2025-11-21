@@ -7,7 +7,7 @@ const STORE_NAME = 'workspace';
 interface WorkspaceData {
   id: string;
   timeline: any;
-  tracks: any[];
+  spaces: any[];
   segments: any[];
   lastSaved: Date;
 }
@@ -35,7 +35,7 @@ export async function initDB(): Promise<void> {
  */
 export async function saveWorkspace(data: {
   timeline: any;
-  tracks: any[];
+  spaces: any[];
   segments: any[];
 }): Promise<void> {
   if (!db) await initDB();
@@ -43,7 +43,7 @@ export async function saveWorkspace(data: {
   const workspaceData: WorkspaceData = {
     id: 'default', // Single workspace for now
     timeline: data.timeline,
-    tracks: data.tracks,
+    spaces: data.spaces,
     segments: data.segments,
     lastSaved: new Date(),
   };
@@ -91,7 +91,7 @@ export async function importWorkspace(jsonData: string): Promise<void> {
   const data = JSON.parse(jsonData);
   await saveWorkspace({
     timeline: data.timeline,
-    tracks: data.tracks,
+    spaces: data.spaces,
     segments: data.segments,
   });
 }

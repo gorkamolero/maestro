@@ -1,9 +1,9 @@
 import { useSnapshot } from 'valtio';
 import { useReactFlow } from '@xyflow/react';
 import { timelineStore } from '@/stores/timeline.store';
-import { tracksStore } from '@/stores/tracks.store';
+import { spacesStore } from "@/stores/spaces.store";
 import { segmentsActions } from '@/stores/segments.store';
-import { tracksActions } from '@/stores/tracks.store';
+import { spacesActions } from "@/stores/spaces.store";
 import { timeToPixels } from '@/lib/timeline-utils';
 import { CreateSegmentMenu } from './CreateSegmentMenu';
 import type { SegmentType } from '@/types';
@@ -18,7 +18,7 @@ interface NowLineProps {
  */
 export function NowLine({ referenceTime }: NowLineProps) {
   const { now, zoomLevel } = useSnapshot(timelineStore);
-  const { tracks } = useSnapshot(tracksStore);
+  const { spaces } = useSnapshot(spacesStore);
   const { getViewport } = useReactFlow();
   const viewport = getViewport();
 
@@ -29,21 +29,21 @@ export function NowLine({ referenceTime }: NowLineProps) {
   const viewportX = canvasX * viewport.zoom + viewport.x;
 
   const handleCreateSegment = (type: SegmentType) => {
-    // If no tracks exist, create one first
-    if (tracks.length === 0) {
-      tracksActions.addTrack('Main Track');
+    // If no spaces exist, create one first
+    if (spaces.length === 0) {
+      spacesActions.addSpace('Main Space');
     }
 
     // Create segment on the first track
-    const track = tracks[0];
+    const space = spaces[0];
     const segment = segmentsActions.createSegment(
-      track.id,
+      space.id,
       `New ${type}`,
       type
     );
 
     // Add segment to track
-    tracksActions.addSegment(track.id, segment);
+    spacesActions.addSegment(space.id, segment);
   };
 
   return (

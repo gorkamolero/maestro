@@ -21,24 +21,24 @@ const TAB_LABELS: Record<TabType, string> = {
 };
 
 export function Sidebar() {
-  const { tabs, activeTabId, activeTrackId } = useSnapshot(workspaceStore);
+  const { tabs, activeTabId, activeSpaceId } = useSnapshot(workspaceStore);
 
-  // Group tabs by type for current track
-  const trackTabs = tabs.filter((t) => t.trackId === activeTrackId);
+  // Group tabs by type for current space
+  const spaceTabs = tabs.filter((t) => t.spaceId === activeSpaceId);
   const groupedTabs = {
-    terminal: trackTabs.filter((t) => t.type === 'terminal'),
-    browser: trackTabs.filter((t) => t.type === 'browser'),
-    note: trackTabs.filter((t) => t.type === 'note'),
-    agent: trackTabs.filter((t) => t.type === 'agent'),
+    terminal: spaceTabs.filter((t) => t.type === 'terminal'),
+    browser: spaceTabs.filter((t) => t.type === 'browser'),
+    note: spaceTabs.filter((t) => t.type === 'note'),
+    agent: spaceTabs.filter((t) => t.type === 'agent'),
   };
 
   const handleNewTab = (type: TabType) => {
-    if (!activeTrackId) return;
+    if (!activeSpaceId) return;
     const title = `New ${TAB_LABELS[type]}`;
-    workspaceActions.openTab(activeTrackId, type, title);
+    workspaceActions.openTab(activeSpaceId, type, title);
   };
 
-  if (!activeTrackId) {
+  if (!activeSpaceId) {
     return (
       <div className="w-full h-full flex items-center justify-center p-4">
         <p className="text-xs text-muted-foreground text-center">
@@ -116,7 +116,7 @@ export function Sidebar() {
       {/* Tabs section - Arc style */}
       <div className="flex-1 overflow-y-auto px-2 py-2">
         <AnimatePresence mode="popLayout">
-          {trackTabs.map((tab) => {
+          {spaceTabs.map((tab) => {
             const Icon = TAB_ICONS[tab.type];
             const isActive = tab.id === activeTabId;
 

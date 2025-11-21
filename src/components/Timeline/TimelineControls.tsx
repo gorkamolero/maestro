@@ -25,11 +25,11 @@ const ZOOM_LEVELS: { value: ZoomLevel; label: string }[] = [
 
 interface TimelineControlsProps {
   onBackToNow?: () => void;
-  onAddTrack?: () => void;
+  onAddSpace?: () => void;
   onZoomChange?: (level: ZoomLevel) => void;
 }
 
-export function TimelineControls({ onBackToNow, onAddTrack, onZoomChange }: TimelineControlsProps) {
+export function TimelineControls({ onBackToNow, onAddSpace, onZoomChange }: TimelineControlsProps) {
   const { zoomLevel, backgroundVariant } = useSnapshot(timelineStore);
 
   const handleZoomChange = (value: string) => {
@@ -46,15 +46,15 @@ export function TimelineControls({ onBackToNow, onAddTrack, onZoomChange }: Time
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
-                  onClick={onAddTrack}
+                  onClick={onAddSpace}
                   className="flex items-center justify-center w-full h-full"
-                  aria-label="Add Track"
+                  aria-label="Add Space"
                 >
                   <Plus className="w-5 h-5" />
                 </button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Add Track</p>
+                <p>Add Space</p>
               </TooltipContent>
             </Tooltip>
           </DockIcon>

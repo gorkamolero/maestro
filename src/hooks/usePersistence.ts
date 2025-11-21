@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useSnapshot } from 'valtio';
 import { subscribe } from 'valtio';
 import { timelineStore, timelineActions } from '@/stores/timeline.store';
-import { tracksStore, tracksActions } from '@/stores/tracks.store';
+import { spacesStore, spacesActions } from "@/stores/spaces.store";
 import { segmentsStore } from '@/stores/segments.store';
 import {
   initDB,
@@ -39,10 +39,10 @@ export function usePersistence() {
         timelineActions.setBackgroundVariant(savedData.timeline.backgroundVariant);
 
         // Restore tracks
-        tracksStore.tracks = savedData.tracks.map((track: any) => ({
-          ...track,
+        spacesStore.spaces = savedData.spaces.map((space: any) => ({
+          ...space,
           // Convert date strings back to Date objects in segments
-          segments: track.segments.map((seg: any) => ({
+          segments: space.segments.map((seg: any) => ({
             ...seg,
             startTime: new Date(seg.startTime),
             endTime: seg.endTime ? new Date(seg.endTime) : undefined,
@@ -57,7 +57,7 @@ export function usePersistence() {
         }));
 
         console.log('[Persistence] Workspace restored', {
-          tracks: tracksStore.tracks.length,
+          spaces: spacesStore.spaces.length,
           segments: segmentsStore.activeSegments.length,
         });
       } else {
@@ -87,7 +87,7 @@ export function usePersistence() {
         scrollPosition: timelineStore.scrollPosition,
         backgroundVariant: timelineStore.backgroundVariant,
       },
-      tracks: tracksStore.tracks,
+      spaces: spacesStore.spaces,
       segments: segmentsStore.activeSegments,
     };
 
@@ -97,7 +97,7 @@ export function usePersistence() {
   // Subscribe to store changes
   useEffect(() => {
     const unsubscribeTimeline = subscribe(timelineStore, scheduleSave);
-    const unsubscribeTracks = subscribe(tracksStore, scheduleSave);
+    const unsubscribeTracks = subscribe(spacesStore, scheduleSave);
     const unsubscribeSegments = subscribe(segmentsStore, scheduleSave);
 
     return () => {
@@ -130,7 +130,7 @@ export function usePersistence() {
           scrollPosition: timelineStore.scrollPosition,
           backgroundVariant: timelineStore.backgroundVariant,
         },
-        tracks: tracksStore.tracks,
+        spaces: spacesStore.spaces,
         segments: segmentsStore.activeSegments,
       };
       localStorage.setItem('maestro-backup', JSON.stringify(data));

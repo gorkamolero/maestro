@@ -3,12 +3,12 @@
 export interface Workspace {
   id: string;
   name: string;
-  tracks: Track[];
+  spaces: Space[];
   createdAt: Date;
   updatedAt: Date;
 }
 
-export interface Track {
+export interface Space {
   id: string;
   name: string;
   position: number;
@@ -25,7 +25,7 @@ export interface Track {
 
 export interface Segment {
   id: string;
-  trackId: string;
+  spaceId: string;
   title: string;
   startTime: Date;
   endTime?: Date;
@@ -89,7 +89,7 @@ export interface TriggerConfig {
 
 export interface Marker {
   id: string;
-  trackId: string;
+  spaceId: string;
   time: Date;
   type: 'deadline' | 'milestone' | 'note';
   title: string;

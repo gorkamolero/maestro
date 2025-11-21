@@ -2,7 +2,7 @@ import { useEffect, useCallback, type RefObject } from 'react';
 import { useReactFlow } from '@xyflow/react';
 import { useSnapshot } from 'valtio';
 import { timelineStore, timelineActions } from '@/stores/timeline.store';
-import { tracksStore } from '@/stores/tracks.store';
+import { spacesStore } from "@/stores/spaces.store";
 import { timeToPixels, TRACK_HEIGHT } from '@/lib/timeline-utils';
 import type { ZoomLevel } from '@/types';
 
@@ -17,7 +17,7 @@ interface ViewportControlsOptions {
 export function useViewportControls({ containerRef, referenceTime }: ViewportControlsOptions) {
   const reactFlowInstance = useReactFlow();
   const { now, zoomLevel } = useSnapshot(timelineStore);
-  const { tracks } = useSnapshot(tracksStore);
+  const { spaces } = useSnapshot(spacesStore);
 
   const centerOnNow = useCallback(() => {
     // Set zoom to default (day)
@@ -26,8 +26,8 @@ export function useViewportControls({ containerRef, referenceTime }: ViewportCon
     const nowX = timeToPixels(now, 'day', referenceTime);
     const { width, height } = containerRef.current?.getBoundingClientRect() || { width: 1000, height: 800 };
 
-    // Center on middle of all tracks vertically
-    const totalTracksHeight = tracks.length * TRACK_HEIGHT;
+    // Center on middle of all spaces vertically
+    const totalTracksHeight = spaces.length * TRACK_HEIGHT;
     const middleY = totalTracksHeight / 2;
 
     reactFlowInstance.setViewport({
@@ -35,17 +35,17 @@ export function useViewportControls({ containerRef, referenceTime }: ViewportCon
       y: -middleY + height / 2,
       zoom: 1,
     }, { duration: 300 });
-  }, [now, referenceTime, reactFlowInstance, containerRef, tracks.length]);
+  }, [now, referenceTime, reactFlowInstance, containerRef, spaces.length]);
 
-  const centerOnTrack = useCallback((trackPosition: number) => {
+  const centerOnSpace = useCallback((trackPosition: number) => {
     // Set zoom to default (day)
     timelineActions.setZoomLevel('day');
 
-    // Calculate track Y position
+    // Calculate space Y position
     const trackY = trackPosition * TRACK_HEIGHT;
     const { width, height } = containerRef.current?.getBoundingClientRect() || { width: 1000, height: 800 };
 
-    // Center on NOW horizontally and on track vertically
+    // Center on NOW horizontally and on space vertically
     const nowX = timeToPixels(now, 'day', referenceTime);
 
     reactFlowInstance.setViewport({
@@ -71,7 +71,7 @@ export function useViewportControls({ containerRef, referenceTime }: ViewportCon
     // Calculate where NOW will be at the new zoom level
     const nowX = timeToPixels(now, targetZoomLevel, referenceTime);
     const { width, height } = containerRef.current?.getBoundingClientRect() || { width: 1000, height: 800 };
-    const totalTracksHeight = tracks.length * TRACK_HEIGHT;
+    const totalTracksHeight = spaces.length * TRACK_HEIGHT;
     const middleY = totalTracksHeight / 2;
 
     // Update zoom level and viewport position together
@@ -81,7 +81,7 @@ export function useViewportControls({ containerRef, referenceTime }: ViewportCon
       y: -middleY + height / 2,
       zoom: 1,
     });
-  }, [now, referenceTime, reactFlowInstance, containerRef, tracks.length]);
+  }, [now, referenceTime, reactFlowInstance, containerRef, spaces.length]);
 
-  return { centerOnNow, centerOnTrack, changeZoomLevelAndCenter };
+  return { centerOnNow, centerOnSpace, changeZoomLevelAndCenter };
 }

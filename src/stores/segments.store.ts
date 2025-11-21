@@ -13,14 +13,14 @@ export const segmentsStore = proxy<SegmentsState>({
 
 export const segmentsActions = {
   createSegment: (
-    trackId: string,
+    spaceId: string,
     title: string,
     type: SegmentType,
     config: SegmentConfig = {}
   ): Segment => {
     const segment: Segment = {
       id: crypto.randomUUID(),
-      trackId,
+      spaceId,
       title,
       startTime: new Date(),
       type,

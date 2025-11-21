@@ -7,7 +7,7 @@ import { BaseNode } from '@/components/base-node';
 import { BaseHandle } from '@/components/base-handle';
 import { cn } from '@/lib/utils';
 import { segmentsActions } from '@/stores/segments.store';
-import { tracksActions } from '@/stores/tracks.store';
+import { spacesActions } from "@/stores/spaces.store";
 import { timelineStore } from '@/stores/timeline.store';
 import { getSegmentWidth } from '@/lib/timeline-utils';
 import { GlowEffect } from '@/components/motion-primitives/glow-effect';
@@ -22,7 +22,7 @@ import {
 
 interface SegmentNodeData {
   segmentId: string;
-  trackId: string;
+  spaceId: string;
   title: string;
   type: SegmentType;
   status: SegmentStatus;
@@ -60,7 +60,7 @@ function SegmentNodeComponent({ data }: SegmentNodeProps) {
   const handleEndSegment = (e: React.MouseEvent) => {
     e.stopPropagation();
     segmentsActions.endSegment(data.segmentId);
-    tracksActions.updateSegment(data.trackId, data.segmentId, {
+    spacesActions.updateSegment(data.spaceId, data.segmentId, {
       endTime: new Date(),
       status: 'completed',
     });

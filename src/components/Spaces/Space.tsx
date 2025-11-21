@@ -1,26 +1,26 @@
-import type { Track as TrackType } from '@/types';
+import type { Space as TrackType } from '@/types';
 import { Button } from '@/components/ui/button';
-import { tracksActions } from '@/stores/tracks.store';
+import { spacesActions } from "@/stores/spaces.store";
 import { segmentsActions } from '@/stores/segments.store';
 import { Plus } from 'lucide-react';
 
 interface TrackProps {
-  track: TrackType;
+  space: TrackType;
 }
 
-export function Track({ track }: TrackProps) {
+export function Space({ space }: TrackProps) {
   const handleAddSegment = () => {
     const types = ['browser', 'terminal', 'agent', 'note'] as const;
     const randomType = types[Math.floor(Math.random() * types.length)];
 
     const segment = segmentsActions.createSegment(
-      track.id,
+      space.id,
       `${randomType} work`,
       randomType
     );
 
     // Add to track
-    tracksActions.addSegment(track.id, segment);
+    spacesActions.addSegment(space.id, segment);
   };
 
   return (
@@ -28,12 +28,12 @@ export function Track({ track }: TrackProps) {
       <div className="flex items-center gap-3">
         <div
           className="w-1 h-12 rounded"
-          style={{ backgroundColor: track.color }}
+          style={{ backgroundColor: space.color }}
         />
         <div>
-          <h3 className="text-sm font-medium">{track.name}</h3>
+          <h3 className="text-sm font-medium">{space.name}</h3>
           <p className="text-xs text-muted-foreground">
-            {track.segments.length} segments
+            {space.segments.length} segments
           </p>
         </div>
       </div>
