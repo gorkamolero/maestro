@@ -14,6 +14,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - If the user wants to see changes first, show them and wait for approval
 - Exception: Only commit automatically if the user has previously established a clear pattern of wanting automatic commits in the current session
 
+### Testing & Development Policy
+
+**NEVER run `pnpm build` or `pnpm tauri build` to test changes.**
+
+- Use `pnpm dev` or `pnpm tauri dev` for testing during development
+- Building is slow and unnecessary for validation
+- The dev server with hot reload is sufficient for testing
+- Only build when explicitly requested by the user for production
+
+### Code Style Rules
+
+**React imports:**
+- ALWAYS use named imports for React hooks: `import { useState, useEffect, useCallback } from 'react'`
+- NEVER use `React.useState`, `React.useEffect`, etc. - this is bad style
+- Import what you need directly from 'react'
+
 ## Project Overview
 
 Maestro is a Tauri v2 desktop application combining a Rust backend with a React + TypeScript + Vite frontend. The application uses pnpm as its package manager.
