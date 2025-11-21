@@ -1,4 +1,5 @@
-import { proxy } from 'valtio';
+import { persist } from 'valtio-persist';
+import { IndexedDBStrategy } from 'valtio-persist/indexed-db';
 import type { ZoomLevel } from '@/types';
 
 type BackgroundVariant = 'lines' | 'dots';
@@ -12,14 +13,23 @@ interface TimelineState {
   backgroundVariant: BackgroundVariant;
 }
 
-export const timelineStore = proxy<TimelineState>({
-  now: new Date(),
-  scrollPosition: 0,
-  zoomLevel: 'day',
-  viewportWidth: 0,
-  viewportHeight: 0,
-  backgroundVariant: 'lines',
-});
+const { store } = await persist<TimelineState>(
+  {
+    now: new Date(),
+    scrollPosition: 0,
+    zoomLevel: 'day',
+    viewportWidth: 0,
+    viewportHeight: 0,
+    backgroundVariant: 'lines',
+  },
+  'maestro-timeline',
+  {
+    storageStrategy: IndexedDBStrategy,
+    debounceTime: 1000,
+  }
+);
+
+export const timelineStore = store;
 
 export const timelineActions = {
   updateNow: () => {

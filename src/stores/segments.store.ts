@@ -1,4 +1,5 @@
-import { proxy } from 'valtio';
+import { persist } from 'valtio-persist';
+import { IndexedDBStrategy } from 'valtio-persist/indexed-db';
 import type { Segment, SegmentType, SegmentConfig } from '@/types';
 
 interface SegmentsState {
@@ -6,10 +7,19 @@ interface SegmentsState {
   selectedSegmentId: string | null;
 }
 
-export const segmentsStore = proxy<SegmentsState>({
-  activeSegments: [],
-  selectedSegmentId: null,
-});
+const { store } = await persist<SegmentsState>(
+  {
+    activeSegments: [],
+    selectedSegmentId: null,
+  },
+  'maestro-segments',
+  {
+    storageStrategy: IndexedDBStrategy,
+    debounceTime: 1000,
+  }
+);
+
+export const segmentsStore = store;
 
 export const segmentsActions = {
   createSegment: (

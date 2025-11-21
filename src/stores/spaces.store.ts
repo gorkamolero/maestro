@@ -1,13 +1,23 @@
-import { proxy } from 'valtio';
+import { persist } from 'valtio-persist';
+import { IndexedDBStrategy } from 'valtio-persist/indexed-db';
 import type { Space, Segment } from '@/types';
 
 interface SpacesState {
   spaces: Space[];
 }
 
-export const spacesStore = proxy<SpacesState>({
-  spaces: [],
-});
+const { store } = await persist<SpacesState>(
+  {
+    spaces: [],
+  },
+  'maestro-spaces',
+  {
+    storageStrategy: IndexedDBStrategy,
+    debounceTime: 1000,
+  }
+);
+
+export const spacesStore = store;
 
 export const spacesActions = {
   addSpace: (name: string): Space => {

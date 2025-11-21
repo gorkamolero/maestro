@@ -1,4 +1,5 @@
-import { proxy } from 'valtio';
+import { persist } from 'valtio-persist';
+import { IndexedDBStrategy } from 'valtio-persist/indexed-db';
 
 export type TabType = 'terminal' | 'browser' | 'note' | 'agent';
 export type TabStatus = 'active' | 'idle' | 'running';
@@ -29,17 +30,26 @@ interface WorkspaceState {
   viewMode: ViewMode;
 }
 
-export const workspaceStore = proxy<WorkspaceState>({
-  activeSpaceId: null,
-  activeTabId: null,
-  tabs: [],
-  layout: {
-    timelineHeight: 30, // 30% of screen
-    sidebarWidth: 200,
-    dockHeight: 48,
+const { store } = await persist<WorkspaceState>(
+  {
+    activeSpaceId: null,
+    activeTabId: null,
+    tabs: [],
+    layout: {
+      timelineHeight: 30,
+      sidebarWidth: 200,
+      dockHeight: 48,
+    },
+    viewMode: 'split',
   },
-  viewMode: 'split',
-});
+  'maestro-workspace',
+  {
+    storageStrategy: IndexedDBStrategy,
+    debounceTime: 1000,
+  }
+);
+
+export const workspaceStore = store;
 
 export const workspaceActions = {
   switchSpace: (spaceId: string) => {

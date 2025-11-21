@@ -8,7 +8,6 @@ import { WorkspacePanel } from '@/components/Workspace/WorkspacePanel';
 import { FloatingControls } from '@/components/Workspace/FloatingControls';
 import { spacesActions } from '@/stores/spaces.store';
 import { workspaceStore, workspaceActions } from '@/stores/workspace.store';
-import { usePersistence } from '@/hooks/usePersistence';
 import {
   LayoutGrid,
   LayoutList,
@@ -35,8 +34,7 @@ function App() {
   const timelineRef = useRef<TimelineHandle>(null);
   const { viewMode } = useSnapshot(workspaceStore);
 
-  // Initialize state persistence
-  usePersistence();
+  // State persistence is now handled by valtio-persist in each store
 
   useEffect(() => {
     if (darkMode) {
