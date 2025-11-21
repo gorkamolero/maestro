@@ -41,6 +41,7 @@
     "radix-ui": "^1.4.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-resizable-panels": "^3.0.6",
     "react-use-measure": "^2.1.7",
     "reactflow": "^11.11.4",
     "tailwind-merge": "^3.4.0",

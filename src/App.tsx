@@ -1,5 +1,9 @@
 import { useState, useEffect, useRef } from "react";
+import { PanelGroup, Panel, PanelResizeHandle } from "react-resizable-panels";
 import { Timeline, TimelineHandle } from "@/components/Timeline/Timeline";
+import { Dock } from "@/components/Workspace/Dock";
+import { Sidebar } from "@/components/Workspace/Sidebar";
+import { WorkspacePanel } from "@/components/Workspace/WorkspacePanel";
 import { tracksActions } from "@/stores/tracks.store";
 import { usePersistence } from "@/hooks/usePersistence";
 
@@ -26,8 +30,38 @@ function App() {
   };
 
   return (
-    <div className="h-screen bg-background text-foreground">
-      <Timeline ref={timelineRef} onAddTrack={handleAddTrack} />
+    <div className="h-screen bg-background text-foreground flex flex-col">
+      {/* Main layout with resizable panels */}
+      <PanelGroup direction="vertical" className="flex-1">
+        {/* Timeline at top (resizable 20-50%) */}
+        <Panel defaultSize={30} minSize={20} maxSize={50}>
+          <Timeline ref={timelineRef} onAddTrack={handleAddTrack} />
+        </Panel>
+
+        {/* Resize handle */}
+        <PanelResizeHandle className="h-1 bg-border hover:bg-primary/50 transition-colors cursor-row-resize" />
+
+        {/* Workspace area at bottom */}
+        <Panel defaultSize={70}>
+          <PanelGroup direction="horizontal">
+            {/* Sidebar on left (fixed width via min/max) */}
+            <Panel defaultSize={15} minSize={10} maxSize={20}>
+              <Sidebar />
+            </Panel>
+
+            {/* Resize handle */}
+            <PanelResizeHandle className="w-1 bg-border hover:bg-primary/50 transition-colors cursor-col-resize" />
+
+            {/* Main workspace content */}
+            <Panel defaultSize={85}>
+              <WorkspacePanel />
+            </Panel>
+          </PanelGroup>
+        </Panel>
+      </PanelGroup>
+
+      {/* Dock at bottom (fixed height) */}
+      <Dock />
     </div>
   );
 }
