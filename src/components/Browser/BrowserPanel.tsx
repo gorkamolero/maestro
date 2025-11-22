@@ -25,13 +25,7 @@ export function BrowserPanel({ tab }: BrowserPanelProps) {
   });
 
   const handleNavigate = async (url: string) => {
-    if (!webviewLabelRef.current || !containerRef.current) {
-      console.error('Cannot navigate: missing webview label or container ref');
-      return;
-    }
-
-    const rect = containerRef.current.getBoundingClientRect();
-    console.log('Navigating to:', url, 'with rect:', rect);
+    if (!webviewLabelRef.current) return;
 
     try {
       setIsLoading(true);
@@ -39,14 +33,9 @@ export function BrowserPanel({ tab }: BrowserPanelProps) {
         window: getCurrentWindow(),
         label: webviewLabelRef.current,
         url,
-        x: rect.x,
-        y: rect.y,
-        width: rect.width,
-        height: rect.height,
       });
       currentUrlRef.current = url;
       setError(null);
-      console.log('Navigation successful');
     } catch (err) {
       console.error('Navigation error:', err);
       setError(err instanceof Error ? err.message : String(err));
