@@ -470,15 +470,27 @@ const workspaceActions = {
 ```
 
 ### Success Criteria for Phase 1.5
-- [ ] Dock renders with track switcher
-- [ ] Sidebar shows tabs for active track
-- [ ] Workspace panel displays active tab
-- [ ] Can switch between tracks
-- [ ] Can open/close tabs
-- [ ] Note editor works in workspace
-- [ ] Timeline stays in sync
-- [ ] Resizable panes work
-- [ ] State persists to IndexedDB
+- [x] Dock renders with track switcher
+- [x] Sidebar shows tabs for active track
+- [x] Workspace panel displays active tab
+- [x] Can switch between tracks
+- [x] Can open/close tabs
+- [x] Note editor works in workspace
+- [x] Timeline stays in sync
+- [x] Resizable panes work
+- [x] State persists to IndexedDB
+
+**STATUS: ✅ PHASE 1.5 COMPLETE** (Completed 2025-11-21)
+
+#### Implementation Details:
+- **Dock**: `src/components/Workspace/Dock.tsx` - Arc-style space switcher with icons, tooltips, and create/edit functionality
+- **Sidebar**: `src/components/Workspace/Sidebar.tsx` - Vertical tabs with favorites section, swipeable carousel between spaces
+- **Workspace Panel**: `src/components/Workspace/WorkspacePanel.tsx` - Tab content renderer with note editor and placeholders
+- **State Management**:
+  - `src/stores/workspace.store.ts` - Tabs, active states, layout (with valtio-persist)
+  - `src/stores/spaces.store.ts` - Spaces/tracks management (with valtio-persist)
+- **Layout**: `src/App.tsx` - Resizable panels using react-resizable-panels
+- **Timeline Integration**: `src/components/Timeline/Timeline.tsx` - Synced with workspace state
 
 ### What This Enables
 - Timeline becomes useful (shows work history)
@@ -492,13 +504,19 @@ const workspaceActions = {
 
 ---
 
-## PHASE 2: Parallel Agent Development (Day 1 Afternoon - Day 2)
-*5-6 agents working simultaneously*
+## PHASE 2: Core Tool Integration
+*After Phase 1.5 workspace is complete*
+
+### Context
+Now that we have the workspace view with tracks/tabs and the timeline visualization, we need to make the tabs actually functional. Each agent builds a specific tab type that integrates with the workspace.
 
 ### Agent 1: Terminal Integration ✅ COMPLETED
 **Owner**: Terminal specialist agent
-**Dependencies**: Phase 1 complete
+**Dependencies**: Phase 1.5 workspace complete
 **Status**: Fully implemented and tested
+
+#### Context
+Terminals open as tabs within tracks in the workspace. When a terminal tab is created, a corresponding segment appears on the timeline showing its duration.
 
 #### Completed Deliverables:
 - ✅ Integrated XTerm.js with WebGL renderer
