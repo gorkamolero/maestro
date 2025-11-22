@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { motion } from 'motion/react';
+import { invoke } from '@tauri-apps/api/core';
 import { useWebview } from './useWebview';
 import { BrowserToolbar } from './BrowserToolbar';
 
@@ -22,12 +23,39 @@ export function BrowserPanel({ tab }: BrowserPanelProps) {
     setError,
   });
 
-  // TODO: Re-implement navigation
-  const handleNavigate = () => console.log('Navigate not yet implemented');
-  const handleRefresh = () => console.log('Refresh not yet implemented');
-  const handleGoBack = () => console.log('Back not yet implemented');
-  const handleGoForward = () => console.log('Forward not yet implemented');
-  const handleHome = () => console.log('Home not yet implemented');
+  const handleNavigate = async (url: string) => {
+    if (!webviewLabelRef.current) return;
+
+    try {
+      setIsLoading(true);
+      await invoke('navigate_webview', {
+        label: webviewLabelRef.current,
+        url,
+      });
+      currentUrlRef.current = url;
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRefresh = () => {
+    handleNavigate(currentUrlRef.current || initialUrl);
+  };
+
+  const handleGoBack = () => {
+    console.warn('Back navigation not yet implemented - requires history tracking');
+  };
+
+  const handleGoForward = () => {
+    console.warn('Forward navigation not yet implemented - requires history tracking');
+  };
+
+  const handleHome = () => {
+    handleNavigate('https://www.google.com');
+  };
 
   const handleRetry = () => {
     handleNavigate(currentUrlRef.current || initialUrl);

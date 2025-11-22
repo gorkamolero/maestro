@@ -163,6 +163,32 @@ fn update_webview_size(
     Ok(())
 }
 
+#[tauri::command]
+async fn navigate_webview(
+    label: String,
+    url: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let webviews = state.webviews.lock().map_err(|e| e.to_string())?;
+
+    if let Some(webview) = webviews.get(&label) {
+        let webview_url = if url.starts_with("http://") || url.starts_with("https://") {
+            url
+        } else if url == "about:blank" {
+            url
+        } else {
+            // Assume it's a search query and use Google
+            format!("https://www.google.com/search?q={}", urlencoding::encode(&url))
+        };
+
+        webview
+            .eval(&format!("window.location.href = '{}'", webview_url))
+            .map_err(|e| format!("Failed to navigate: {}", e))?;
+    }
+
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let monitor = Arc::new(std::sync::Mutex::new(ResourceMonitor::new()));
@@ -187,7 +213,8 @@ pub fn run() {
             create_browser_webview,
             close_browser_webview,
             update_webview_position,
-            update_webview_size
+            update_webview_size,
+            navigate_webview
         ])
         .setup(move |app| {
             // Start metrics emission thread
