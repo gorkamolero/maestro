@@ -19,7 +19,7 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
     let mounted = true;
 
     const createWebview = async () => {
-      console.log('createWebview called for tabId:', tabId);
+      // console.log('createWebview called for tabId:', tabId);
       if (!containerRef.current || !mounted) return;
 
       // Wait for the container to have proper dimensions (flex-1 containers need layout time)
@@ -43,32 +43,32 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
 
       const label = `browser-${tabId}`;
 
-      // Log container element details for debugging positioning
-      const computedStyle = window.getComputedStyle(containerRef.current);
+      // // Log container element details for debugging positioning
+      // const computedStyle = window.getComputedStyle(containerRef.current);
 
-      // Check if there are any parent elements with padding/margin that might affect positioning
-      let parent = containerRef.current.parentElement;
-      const parentOffsets = [];
-      while (parent && parent.tagName !== 'BODY') {
-        const parentStyle = window.getComputedStyle(parent);
-        parentOffsets.push({
-          tag: parent.tagName,
-          class: parent.className,
-          padding: parentStyle.padding,
-          margin: parentStyle.margin,
-          border: parentStyle.border
-        });
-        parent = parent.parentElement;
-        if (parentOffsets.length > 10) break; // Increase limit to see more parents
-      }
+      // // Check if there are any parent elements with padding/margin that might affect positioning
+      // let parent = containerRef.current.parentElement;
+      // const parentOffsets = [];
+      // while (parent && parent.tagName !== 'BODY') {
+      //   const parentStyle = window.getComputedStyle(parent);
+      //   parentOffsets.push({
+      //     tag: parent.tagName,
+      //     class: parent.className,
+      //     padding: parentStyle.padding,
+      //     margin: parentStyle.margin,
+      //     border: parentStyle.border
+      //   });
+      //   parent = parent.parentElement;
+      //   if (parentOffsets.length > 10) break; // Increase limit to see more parents
+      // }
 
-      console.log('Container element:', JSON.stringify({
-        rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
-        display: computedStyle.display,
-        position: computedStyle.position,
-        devicePixelRatio: window.devicePixelRatio,
-        parentOffsets
-      }, null, 2));
+      // console.log('Container element:', JSON.stringify({
+      //   rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+      //   display: computedStyle.display,
+      //   position: computedStyle.position,
+      //   devicePixelRatio: window.devicePixelRatio,
+      //   parentOffsets
+      // }, null, 2));
 
       try {
         setError(null);

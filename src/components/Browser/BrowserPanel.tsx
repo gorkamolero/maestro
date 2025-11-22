@@ -38,7 +38,7 @@ export function BrowserPanel({ tab }: BrowserPanelProps) {
         rect = containerRef.current.getBoundingClientRect();
       }
 
-      console.log('Container rect:', { x: rect.x, y: rect.y, width: rect.width, height: rect.height });
+      // console.log('Container rect:', { x: rect.x, y: rect.y, width: rect.width, height: rect.height });
 
       // FIX: Invert Y coordinate for macOS bottom-left origin
       const window = getCurrentWindow();
@@ -78,10 +78,6 @@ export function BrowserPanel({ tab }: BrowserPanelProps) {
 
   const handleHome = () => {
     handleNavigate('https://www.google.com');
-  };
-
-  const handleRetry = () => {
-    handleNavigate(currentUrlRef.current || initialUrl);
   };
 
   return (
