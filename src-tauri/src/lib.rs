@@ -165,26 +165,61 @@ fn update_webview_size(
 
 #[tauri::command]
 async fn navigate_webview(
+    window: Window,
     label: String,
     url: String,
     state: State<'_, AppState>,
 ) -> Result<(), String> {
-    let webviews = state.webviews.lock().map_err(|e| e.to_string())?;
+    println!("Navigate webview {} to {}", label, url);
 
-    if let Some(webview) = webviews.get(&label) {
-        let webview_url = if url.starts_with("http://") || url.starts_with("https://") {
-            url
-        } else if url == "about:blank" {
-            url
-        } else {
-            // Assume it's a search query and use Google
-            format!("https://www.google.com/search?q={}", urlencoding::encode(&url))
-        };
+    let webview_url = if url.starts_with("http://") || url.starts_with("https://") {
+        url.clone()
+    } else if url == "about:blank" {
+        url.clone()
+    } else {
+        // Assume it's a search query and use Google
+        format!("https://www.google.com/search?q={}", urlencoding::encode(&url))
+    };
 
-        webview
-            .eval(&format!("window.location.href = '{}'", webview_url))
-            .map_err(|e| format!("Failed to navigate: {}", e))?;
+    println!("Resolved URL: {}", webview_url);
+
+    // We need to recreate the webview with the new URL
+    // First, close the existing one
+    {
+        let mut webviews = state.webviews.lock().map_err(|e| e.to_string())?;
+        if let Some(webview) = webviews.remove(&label) {
+            println!("Closing existing webview");
+            webview.close().map_err(|e| format!("Failed to close webview: {}", e))?;
+        }
     }
+
+    // Get container position/size (we'll use the same as before)
+    // For now, just use default positioning - in production you'd track this
+    println!("Creating new webview with URL: {}", webview_url);
+
+    let parsed_url = if webview_url.starts_with("http://") || webview_url.starts_with("https://") {
+        WebviewUrl::External(webview_url.parse().map_err(|e| format!("Invalid URL: {}", e))?)
+    } else {
+        WebviewUrl::App(webview_url.into())
+    };
+
+    let webview_builder = WebviewBuilder::new(&label, parsed_url)
+        .auto_resize();
+
+    // Use reasonable default size - this should be tracked from the container
+    let webview = window
+        .add_child(
+            webview_builder,
+            LogicalPosition::new(200.0, 100.0),
+            LogicalSize::new(800.0, 600.0),
+        )
+        .map_err(|e| format!("Failed to create webview: {}", e))?;
+
+    println!("Webview created successfully");
+
+    // Store the new webview
+    let mut webviews = state.webviews.lock().map_err(|e| e.to_string())?;
+    webviews.insert(label, webview);
 
     Ok(())
 }
