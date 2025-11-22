@@ -1,101 +1,41 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { BrowserTab as BrowserTabType } from '@/types';
-import { TabBar } from './TabBar';
-import { BrowserTab } from './BrowserTab';
-import { generateTabId } from './browser.utils';
+import { useState, useRef } from 'react';
+import { motion } from 'motion/react';
+import { NavigationBar } from './NavigationBar';
+import { BrowserContent } from './BrowserContent';
+import { useWebview } from './useWebview';
+import { useNavigation } from './useNavigation';
 
 interface BrowserPanelProps {
-  tab: any; // Workspace tab (contains segment reference)
-  onUpdate?: (tabs: BrowserTabType[]) => void;
+  tab: any; // Workspace tab
 }
 
-export function BrowserPanel({ tab, onUpdate }: BrowserPanelProps) {
-  // Initialize with tabs from segment config or create a default tab
-  const [browserTabs, setBrowserTabs] = useState<BrowserTabType[]>(() => {
-    const existingTabs = tab.segment?.config?.tabs;
-    if (existingTabs && existingTabs.length > 0) {
-      return existingTabs;
-    }
+export function BrowserPanel({ tab }: BrowserPanelProps) {
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-    // Create initial tab
-    return [
-      {
-        id: generateTabId(),
-        url: 'about:blank',
-        title: 'New Tab',
-        favicon: undefined,
-      },
-    ];
+  const initialUrl = tab.url || 'about:blank';
+
+  const { webviewRef, currentUrlRef } = useWebview({
+    tabId: tab.id,
+    initialUrl,
+    containerRef,
+    setIsLoading,
+    setError,
   });
 
-  const [activeTabId, setActiveTabId] = useState<string>(browserTabs[0]?.id || '');
+  const { handleNavigate, handleRefresh, handleGoBack, handleGoForward, handleHome } = useNavigation({
+    webviewRef,
+    currentUrlRef,
+    containerRef,
+    tabId: tab.id,
+    setIsLoading,
+    setError,
+  });
 
-  // Sync tabs to parent when they change
-  useEffect(() => {
-    if (onUpdate) {
-      onUpdate(browserTabs);
-    }
-  }, [browserTabs, onUpdate]);
-
-  const handleTabAdd = () => {
-    const newTab: BrowserTabType = {
-      id: generateTabId(),
-      url: 'about:blank',
-      title: 'New Tab',
-      favicon: undefined,
-    };
-
-    setBrowserTabs((prev) => [...prev, newTab]);
-    setActiveTabId(newTab.id);
+  const handleRetry = () => {
+    handleNavigate(currentUrlRef.current || initialUrl);
   };
-
-  const handleTabClose = (tabId: string) => {
-    setBrowserTabs((prev) => {
-      const filtered = prev.filter((t) => t.id !== tabId);
-
-      // If we closed the active tab, switch to another
-      if (activeTabId === tabId && filtered.length > 0) {
-        setActiveTabId(filtered[filtered.length - 1].id);
-      }
-
-      // Always keep at least one tab
-      if (filtered.length === 0) {
-        const newTab: BrowserTabType = {
-          id: generateTabId(),
-          url: 'about:blank',
-          title: 'New Tab',
-          favicon: undefined,
-        };
-        setActiveTabId(newTab.id);
-        return [newTab];
-      }
-
-      return filtered;
-    });
-  };
-
-  const handleTabSelect = (tabId: string) => {
-    setActiveTabId(tabId);
-  };
-
-  const handleUrlChange = (tabId: string, url: string) => {
-    setBrowserTabs((prev) =>
-      prev.map((t) =>
-        t.id === tabId ? { ...t, url } : t
-      )
-    );
-  };
-
-  const handleTitleChange = (tabId: string, title: string) => {
-    setBrowserTabs((prev) =>
-      prev.map((t) =>
-        t.id === tabId ? { ...t, title } : t
-      )
-    );
-  };
-
-  const activeTab = browserTabs.find((t) => t.id === activeTabId);
 
   return (
     <motion.div
@@ -103,26 +43,36 @@ export function BrowserPanel({ tab, onUpdate }: BrowserPanelProps) {
       animate={{ opacity: 1 }}
       className="flex-1 flex flex-col bg-background"
     >
-      {/* Tab bar */}
-      <TabBar
-        tabs={browserTabs}
-        activeTabId={activeTabId}
-        onTabSelect={handleTabSelect}
-        onTabClose={handleTabClose}
-        onTabAdd={handleTabAdd}
+      {/* Navigation bar */}
+      <NavigationBar
+        url={currentUrlRef.current || initialUrl}
+        isLoading={isLoading}
+        canGoBack={false} // TODO: Track history
+        canGoForward={false} // TODO: Track history
+        onNavigate={handleNavigate}
+        onRefresh={handleRefresh}
+        onGoBack={handleGoBack}
+        onGoForward={handleGoForward}
+        onHome={handleHome}
       />
 
-      {/* Active tab content */}
-      <AnimatePresence mode="wait">
-        {activeTab && (
-          <BrowserTab
-            key={activeTab.id}
-            tab={activeTab}
-            onUrlChange={(url) => handleUrlChange(activeTab.id, url)}
-            onTitleChange={(title) => handleTitleChange(activeTab.id, title)}
-          />
+      {/* Browser content area */}
+      <BrowserContent
+        ref={containerRef}
+        currentUrl={currentUrlRef.current}
+        isLoading={isLoading}
+        error={error}
+        onNavigate={handleNavigate}
+        onRetry={handleRetry}
+      />
+
+      {/* Status bar */}
+      <div className="px-3 py-1.5 text-[10px] text-muted-foreground/70 border-t border-border/50 flex items-center justify-between">
+        <span>Native Tauri webview</span>
+        {currentUrlRef.current && (
+          <span className="font-mono truncate max-w-[200px]">{currentUrlRef.current}</span>
         )}
-      </AnimatePresence>
+      </div>
     </motion.div>
   );
 }

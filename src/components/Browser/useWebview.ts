@@ -7,11 +7,11 @@ interface UseWebviewOptions {
   tabId: string;
   initialUrl: string;
   containerRef: React.RefObject<HTMLDivElement | null>;
+  setIsLoading: (loading: boolean) => void;
+  setError: (error: string | null) => void;
 }
 
-export function useWebview({ tabId, initialUrl, containerRef }: UseWebviewOptions) {
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setError }: UseWebviewOptions) {
   const webviewRef = useRef<Webview | null>(null);
   const currentUrlRef = useRef<string>(initialUrl);
 
@@ -144,9 +144,5 @@ export function useWebview({ tabId, initialUrl, containerRef }: UseWebviewOption
   return {
     webviewRef,
     currentUrlRef,
-    isLoading,
-    setIsLoading,
-    error,
-    setError,
   };
 }
