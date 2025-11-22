@@ -19,22 +19,70 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
     let mounted = true;
 
     const createWebview = async () => {
+      console.log('createWebview called for tabId:', tabId);
       if (!containerRef.current || !mounted) return;
 
-      const rect = containerRef.current.getBoundingClientRect();
+      // Wait for the container to have proper dimensions (flex-1 containers need layout time)
+      let rect = containerRef.current.getBoundingClientRect();
+      let attempts = 0;
+      while (rect.height === 0 && attempts < 50 && mounted) {
+        await new Promise(resolve => setTimeout(resolve, 10));
+        if (!containerRef.current) return;
+        rect = containerRef.current.getBoundingClientRect();
+        attempts++;
+      }
+
+      if (rect.height === 0) {
+        console.error('Container still has 0 height after waiting');
+        if (mounted) {
+          setIsLoading(false);
+          setError('Container has no height - layout issue');
+        }
+        return;
+      }
+
       const label = `browser-${tabId}`;
+
+      // Log container element details for debugging positioning
+      const computedStyle = window.getComputedStyle(containerRef.current);
+
+      // Check if there are any parent elements with padding/margin that might affect positioning
+      let parent = containerRef.current.parentElement;
+      const parentOffsets = [];
+      while (parent && parent.tagName !== 'BODY') {
+        const parentStyle = window.getComputedStyle(parent);
+        parentOffsets.push({
+          tag: parent.tagName,
+          class: parent.className,
+          padding: parentStyle.padding,
+          margin: parentStyle.margin,
+          border: parentStyle.border
+        });
+        parent = parent.parentElement;
+        if (parentOffsets.length > 10) break; // Increase limit to see more parents
+      }
+
+      console.log('Container element:', JSON.stringify({
+        rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+        display: computedStyle.display,
+        position: computedStyle.position,
+        devicePixelRatio: window.devicePixelRatio,
+        parentOffsets
+      }, null, 2));
 
       try {
         setError(null);
         setIsLoading(true);
 
         // Create native Tauri child webview via Rust command
+        // Note: Using LogicalPosition/LogicalSize in Rust, so we pass logical pixels (not physical)
+        // Adjust y coordinate - multiply by 1.5 (60 -> 90)
         await invoke('create_browser_webview', {
           window: getCurrentWindow(),
           label,
           url: initialUrl || 'about:blank',
           x: rect.x,
-          y: rect.y,
+          y: rect.y * 1.5,
           width: rect.width,
           height: rect.height,
         });
@@ -92,7 +140,7 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
       invoke('update_webview_position', {
         label: webviewLabelRef.current,
         x: rect.x,
-        y: rect.y,
+        y: rect.y * 1.5,
       }).catch(console.error);
 
       invoke('update_webview_size', {

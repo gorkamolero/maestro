@@ -13,6 +13,16 @@ import type { TerminalState } from '@/components/Terminal/terminal.utils';
 export function WorkspacePanel() {
   const { tabs, activeTabId } = useSnapshot(workspaceStore);
 
+  // Hooks must be called before any early returns
+  const [mountedTabs, setMountedTabs] = React.useState(new Set<string>());
+
+  // Track which tabs have been mounted
+  React.useEffect(() => {
+    if (activeTabId) {
+      setMountedTabs((prev) => new Set(prev).add(activeTabId));
+    }
+  }, [activeTabId]);
+
   const activeTab = tabs.find((t) => t.id === activeTabId);
 
   if (!activeTab) {
@@ -45,16 +55,6 @@ export function WorkspacePanel() {
       </motion.div>
     );
   }
-
-  // Render active tab normally, previously active tabs use Activity to stay alive
-  const [mountedTabs, setMountedTabs] = React.useState(new Set<string>());
-
-  // Track which tabs have been mounted
-  React.useEffect(() => {
-    if (activeTabId) {
-      setMountedTabs((prev) => new Set(prev).add(activeTabId));
-    }
-  }, [activeTabId]);
 
   return (
     <div className="flex-1 relative">
@@ -146,7 +146,7 @@ function BrowserView({ tab }: { tab: any }) {
       )}
 
       {/* Browser panel */}
-      <div className="flex-1">
+      <div className="flex-1 flex flex-col">
         <BrowserPanel tab={tab} />
       </div>
     </motion.div>

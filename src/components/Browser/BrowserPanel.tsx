@@ -25,14 +25,29 @@ export function BrowserPanel({ tab }: BrowserPanelProps) {
   });
 
   const handleNavigate = async (url: string) => {
-    if (!webviewLabelRef.current) return;
+    if (!webviewLabelRef.current || !containerRef.current) return;
 
     try {
       setIsLoading(true);
+
+      // Ensure we have valid dimensions
+      let rect = containerRef.current.getBoundingClientRect();
+      if (rect.height === 0) {
+        console.warn('Container has 0 height, waiting for layout...');
+        await new Promise(resolve => setTimeout(resolve, 50));
+        rect = containerRef.current.getBoundingClientRect();
+      }
+
+      console.log('Container rect:', { x: rect.x, y: rect.y, width: rect.width, height: rect.height });
+
       await invoke('navigate_webview', {
         window: getCurrentWindow(),
         label: webviewLabelRef.current,
         url,
+        x: rect.x,
+        y: rect.y * 1.5,
+        width: rect.width,
+        height: rect.height,
       });
       currentUrlRef.current = url;
       setError(null);
@@ -82,7 +97,7 @@ export function BrowserPanel({ tab }: BrowserPanelProps) {
       />
 
       {/* Browser webview container */}
-      <div ref={containerRef} className="flex-1 relative bg-background">
+      <div ref={containerRef} className="flex-1 relative bg-background border-4 border-red-500">
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/50">
             <div className="text-sm text-muted-foreground">Loading webview...</div>

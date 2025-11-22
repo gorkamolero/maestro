@@ -101,6 +101,9 @@ fn create_browser_webview(
     let webview_builder = WebviewBuilder::new(&label, webview_url)
         .auto_resize();
 
+    // Log the coordinates we're using
+    println!("Creating webview at position: ({}, {}), size: ({}x{})", x, y, width, height);
+
     let webview = window
         .add_child(
             webview_builder,
@@ -168,6 +171,10 @@ async fn navigate_webview(
     window: Window,
     label: String,
     url: String,
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
     state: State<'_, AppState>,
 ) -> Result<(), String> {
     println!("Navigate webview {} to {}", label, url);
@@ -193,8 +200,6 @@ async fn navigate_webview(
         }
     }
 
-    // Get container position/size (we'll use the same as before)
-    // For now, just use default positioning - in production you'd track this
     println!("Creating new webview with URL: {}", webview_url);
 
     let parsed_url = if webview_url.starts_with("http://") || webview_url.starts_with("https://") {
@@ -206,12 +211,12 @@ async fn navigate_webview(
     let webview_builder = WebviewBuilder::new(&label, parsed_url)
         .auto_resize();
 
-    // Use reasonable default size - this should be tracked from the container
+    // Use the container position/size passed from frontend
     let webview = window
         .add_child(
             webview_builder,
-            LogicalPosition::new(200.0, 100.0),
-            LogicalSize::new(800.0, 600.0),
+            LogicalPosition::new(x, y),
+            LogicalSize::new(width, height),
         )
         .map_err(|e| format!("Failed to create webview: {}", e))?;
 
