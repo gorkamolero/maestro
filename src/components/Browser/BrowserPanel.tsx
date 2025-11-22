@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { motion } from 'motion/react';
 import { invoke } from '@tauri-apps/api/core';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import { useWebview } from './useWebview';
 import { BrowserToolbar } from './BrowserToolbar';
 
@@ -29,12 +30,14 @@ export function BrowserPanel({ tab }: BrowserPanelProps) {
     try {
       setIsLoading(true);
       await invoke('navigate_webview', {
+        window: getCurrentWindow(),
         label: webviewLabelRef.current,
         url,
       });
       currentUrlRef.current = url;
       setError(null);
     } catch (err) {
+      console.error('Navigation error:', err);
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setIsLoading(false);
