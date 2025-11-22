@@ -8,7 +8,7 @@ interface EmojiPickerComponentProps {
   children: React.ReactNode;
 }
 
-export function EmojiPickerComponent({ value, onChange, children }: EmojiPickerComponentProps) {
+export function EmojiPickerComponent({ onChange, children }: EmojiPickerComponentProps) {
   const [open, setOpen] = useState(false);
   const [theme, setTheme] = useState<Theme>(Theme.DARK);
 

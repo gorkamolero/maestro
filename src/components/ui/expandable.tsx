@@ -189,13 +189,6 @@ const ANIMATION_PRESETS: Record<string, AnimationPreset> = {
   },
 };
 
-// Update type definitions
-type AnimationConfig = {
-  initial: { [key: string]: number | string };
-  animate: { [key: string]: number | string };
-  exit: { [key: string]: number | string };
-};
-
 // Props for defining custom animations
 interface AnimationProps {
   initial?: TargetAndTransition;
@@ -207,7 +200,7 @@ interface AnimationProps {
 // Inside ExpandableContent component
 const getAnimationProps = (
   preset: keyof typeof ANIMATION_PRESETS | undefined,
-  animateIn?: AnimationProps,
+  _animateIn?: AnimationProps,
   animateOut?: AnimationProps
 ) => {
   const defaultAnimation = {

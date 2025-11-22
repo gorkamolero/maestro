@@ -8,7 +8,7 @@ import { timeToPixels } from '@/lib/timeline-utils';
  * Hook to manage timeline viewport sizing and initial centering on NOW
  */
 export function useTimelineViewport() {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null!);
   const reactFlowInstance = useReactFlow();
   const { now, zoomLevel } = useSnapshot(timelineStore);
 

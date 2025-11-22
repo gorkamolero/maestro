@@ -1,16 +1,15 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import { SearchAddon } from '@xterm/addon-search';
 import { WebglAddon } from '@xterm/addon-webgl';
 import '@xterm/xterm/css/xterm.css';
-import { invoke } from '@tauri-apps/api/core';
-import { listen } from '@tauri-apps/api/event';
+import { spawn } from 'tauri-pty';
 
 import { termiusDark, dracula, nord } from './themes';
 import type { TerminalState } from './terminal.utils';
-import { restoreTerminalState, saveTerminalState } from './terminal.utils';
+import { saveTerminalState } from './terminal.utils';
 
 export type TerminalTheme = 'termius-dark' | 'dracula' | 'nord';
 
@@ -31,7 +30,6 @@ const THEMES = {
 
 export function XTermWrapper({
   segmentId,
-  initialState,
   theme = 'termius-dark',
   onData,
   onStateChange,
@@ -42,14 +40,14 @@ export function XTermWrapper({
   const fitAddonRef = useRef<FitAddon | null>(null);
   const isInitializedRef = useRef(false);
 
-  // Initialize terminal
+  // Initialize terminal - Activity component keeps this alive, so it only runs once!
   useEffect(() => {
     if (!containerRef.current || isInitializedRef.current) return;
 
     // Create terminal instance
     const terminal = new Terminal({
       theme: THEMES[theme],
-      fontFamily: 'JetBrains Mono, Fira Code, Cascadia Code, monospace',
+      fontFamily: '"JetBrains Mono Variable", "JetBrains Mono", monospace',
       fontSize: 14,
       lineHeight: 1.2,
       cursorBlink: true,
@@ -79,87 +77,55 @@ export function XTermWrapper({
 
     // Open terminal in container
     terminal.open(containerRef.current);
-
-    // Fit terminal to container
     fitAddon.fit();
+
+    // Spawn shell using tauri-pty
+    const shell = navigator.platform.toLowerCase().includes('win')
+      ? 'powershell.exe'
+      : navigator.platform.toLowerCase().includes('mac')
+        ? '/bin/zsh'
+        : (typeof process !== 'undefined' && process.env.SHELL) || '/bin/bash';
+
+    try {
+      const pty = spawn(shell, [], {
+        cols: terminal.cols,
+        rows: terminal.rows,
+      });
+
+      // Transport data from PTY to terminal
+      pty.onData((data: string) => {
+        terminal.write(data);
+      });
+
+      // Handle terminal input - send to PTY
+      terminal.onData((data) => {
+        pty.write(data);
+        if (onData) {
+          onData(data);
+        }
+      });
+
+      // Handle terminal resize - sync with PTY
+      terminal.onResize((e) => {
+        pty.resize(e.cols, e.rows);
+      });
+
+      // Handle PTY exit
+      pty.onExit(({ exitCode }: { exitCode: number }) => {
+        terminal.write(`\n\nProcess exited with code: ${exitCode}\n`);
+      });
+
+      // Store PTY reference
+      (terminal as any)._pty = pty;
+    } catch (err) {
+      console.error('Failed to spawn shell:', err);
+      terminal.writeln('\x1b[1;31mFailed to spawn shell\x1b[0m');
+    }
 
     // Store refs
     terminalRef.current = terminal;
     fitAddonRef.current = fitAddon;
     isInitializedRef.current = true;
-
-    // Restore saved state if available
-    if (initialState) {
-      restoreTerminalState(terminal, initialState);
-    } else {
-      // Welcome message for new terminals
-      terminal.writeln('\x1b[1;36m╭──────────────────────────────────────────╮\x1b[0m');
-      terminal.writeln(
-        '\x1b[1;36m│\x1b[0m  \x1b[1mMaestro Terminal\x1b[0m                      \x1b[1;36m│\x1b[0m'
-      );
-      terminal.writeln('\x1b[1;36m╰──────────────────────────────────────────╯\x1b[0m');
-      terminal.writeln('');
-    }
-
-    // Create PTY terminal session
-    invoke('create_terminal', { segmentId })
-      .then(() => {
-        console.log('Terminal PTY session created for segment:', segmentId);
-        // Now spawn the shell
-        return invoke('create_shell', { segmentId });
-      })
-      .then(() => {
-        console.log('Shell spawned successfully');
-      })
-      .catch((err) => {
-        console.error('Failed to create terminal session:', err);
-        terminal.writeln('\x1b[1;31mFailed to create terminal session\x1b[0m');
-      });
-
-    // Poll for terminal output using requestAnimationFrame
-    let isReading = true;
-
-    const readFromPty = async () => {
-      if (!isReading) return;
-
-      try {
-        const data = await invoke<string | null>('terminal_read', { segmentId });
-        if (data) {
-          terminal.write(data);
-        }
-      } catch (err) {
-        console.error('Failed to read from terminal:', err);
-      }
-
-      if (isReading) {
-        window.requestAnimationFrame(readFromPty);
-      }
-    };
-
-    // Start polling
-    window.requestAnimationFrame(readFromPty);
-
-    // Stop polling on cleanup
-    const stopReading = () => {
-      isReading = false;
-    };
-
-    // Store cleanup function
-    (terminal as any)._stopReading = stopReading;
-
-    // Handle terminal input - send to PTY
-    const disposable = terminal.onData((data) => {
-      console.log('Terminal input:', data);
-
-      invoke('terminal_write', { segmentId, data })
-        .catch((err) => {
-          console.error('Failed to write to terminal:', err);
-        });
-
-      if (onData) {
-        onData(data);
-      }
-    });
 
     // Auto-save state periodically
     const saveInterval = setInterval(() => {
@@ -169,15 +135,11 @@ export function XTermWrapper({
       }
     }, 5000); // Save every 5 seconds
 
-    // Handle resize
+    // Handle container resize - fit terminal to container
     const resizeObserver = new ResizeObserver(() => {
-      if (fitAddonRef.current && terminalRef.current) {
+      if (fitAddonRef.current) {
         try {
           fitAddonRef.current.fit();
-          // Notify PTY of size change
-          const rows = terminalRef.current.rows;
-          const cols = terminalRef.current.cols;
-          invoke('terminal_resize', { segmentId, rows, cols }).catch(console.error);
         } catch (e) {
           // Ignore fit errors during rapid resizing
         }
@@ -188,24 +150,23 @@ export function XTermWrapper({
       resizeObserver.observe(containerRef.current);
     }
 
-    // Cleanup
+    // Cleanup - runs when Activity hides this component
     return () => {
-      disposable.dispose();
+      // Save state one final time
+      if (onStateChange && terminalRef.current) {
+        const state = saveTerminalState(terminalRef.current, theme);
+        onStateChange(state);
+      }
+
       clearInterval(saveInterval);
       resizeObserver.disconnect();
 
-      // Stop polling
-      if ((terminal as any)._stopReading) {
-        (terminal as any)._stopReading();
-      }
-
-      // Close PTY session
-      invoke('close_terminal', { segmentId }).catch(console.error);
-
-      terminal.dispose();
-      isInitializedRef.current = false;
+      // DON'T reset isInitializedRef or dispose terminal/PTY!
+      // Activity will re-run this effect when tab becomes visible again,
+      // but we want to skip re-initialization since everything is still alive
     };
-  }, [segmentId]); // Only re-initialize if segmentId changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [segmentId]); // Only re-run if segmentId changes
 
   // Update theme when it changes
   useEffect(() => {

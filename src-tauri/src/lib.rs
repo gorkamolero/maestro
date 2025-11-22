@@ -1,19 +1,13 @@
 mod monitor;
-mod terminal;
 
 use monitor::{ProcessMetrics, ResourceMonitor, SegmentResourceMetrics, SystemMetrics};
-use terminal::TerminalManager;
 use std::sync::Arc;
 use tauri::{Emitter, State};
-use tauri::async_runtime::Mutex as AsyncMutex;
 
 // Global state for the application
 struct AppState {
     monitor: Arc<std::sync::Mutex<ResourceMonitor>>,
 }
-
-// Terminal state (separate from AppState for cleaner separation)
-use terminal::TerminalState;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -76,16 +70,13 @@ fn get_all_processes(state: State<AppState>) -> Result<Vec<ProcessMetrics>, Stri
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let monitor = Arc::new(std::sync::Mutex::new(ResourceMonitor::new()));
-    let terminal_manager = Arc::new(AsyncMutex::new(TerminalManager::new()));
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_pty::init())
         .manage(AppState {
             monitor: monitor.clone(),
-        })
-        .manage(TerminalState {
-            terminal_manager,
         })
         .invoke_handler(tauri::generate_handler![
             greet,
@@ -95,13 +86,7 @@ pub fn run() {
             untrack_segment,
             get_segment_metrics,
             kill_process,
-            get_all_processes,
-            terminal::create_terminal,
-            terminal::create_shell,
-            terminal::terminal_write,
-            terminal::terminal_read,
-            terminal::terminal_resize,
-            terminal::close_terminal
+            get_all_processes
         ])
         .setup(move |app| {
             // Start metrics emission thread

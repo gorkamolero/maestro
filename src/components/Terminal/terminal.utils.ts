@@ -104,7 +104,20 @@ export function saveTerminalState(terminal: Terminal, theme: TerminalState['them
  */
 export function restoreTerminalState(terminal: Terminal, state: TerminalState): void {
   if (state.buffer) {
-    restoreTerminalBuffer(terminal, state.buffer);
+    // Remove the last line (prompt) to avoid duplication when new shell starts
+    const lines = state.buffer.split('\n');
+    // Remove trailing empty lines and the last prompt line
+    while (lines.length > 0 && lines[lines.length - 1].trim() === '') {
+      lines.pop();
+    }
+    if (lines.length > 0) {
+      lines.pop(); // Remove the last prompt line
+    }
+
+    const bufferWithoutPrompt = lines.join('\n');
+    if (bufferWithoutPrompt) {
+      restoreTerminalBuffer(terminal, bufferWithoutPrompt);
+    }
   }
 
   // Restore scroll position after buffer is loaded

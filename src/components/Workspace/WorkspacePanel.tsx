@@ -1,7 +1,9 @@
+import React from 'react';
 import { useSnapshot } from 'valtio';
-import { workspaceStore } from '@/stores/workspace.store';
+import { workspaceStore, workspaceActions } from '@/stores/workspace.store';
 import { Terminal, Globe, Bot } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
+import { Activity } from 'react';
 import { SegmentMetrics } from '@/components/Monitor/SegmentMetrics';
 import { segmentsStore } from '@/stores/segments.store';
 import { TerminalPanel } from '@/components/Terminal/TerminalPanel';
@@ -43,23 +45,34 @@ export function WorkspacePanel() {
     );
   }
 
-  // Render based on tab type with animations
+  // Render active tab normally, previously active tabs use Activity to stay alive
+  const [mountedTabs, setMountedTabs] = React.useState(new Set<string>());
+
+  // Track which tabs have been mounted
+  React.useEffect(() => {
+    if (activeTabId) {
+      setMountedTabs((prev) => new Set(prev).add(activeTabId));
+    }
+  }, [activeTabId]);
+
   return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={activeTab.id}
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: -20 }}
-        transition={{ duration: 0.2 }}
-        className="flex-1"
-      >
-        {activeTab.type === 'note' && <NoteEditor tab={activeTab} />}
-        {activeTab.type === 'terminal' && <TerminalView tab={activeTab} />}
-        {activeTab.type === 'browser' && <BrowserPlaceholder tab={activeTab} />}
-        {activeTab.type === 'agent' && <AgentPlaceholder tab={activeTab} />}
-      </motion.div>
-    </AnimatePresence>
+    <div className="flex-1 relative">
+      {tabs.map((tab) => {
+        // Only render if this tab is currently active OR has been mounted before
+        if (!mountedTabs.has(tab.id)) return null;
+
+        return (
+          <Activity key={tab.id} mode={tab.id === activeTabId ? 'visible' : 'hidden'}>
+            <div className="absolute inset-0">
+              {tab.type === 'note' && <NoteEditor tab={tab} />}
+              {tab.type === 'terminal' && <TerminalView tab={tab} />}
+              {tab.type === 'browser' && <BrowserPlaceholder tab={tab} />}
+              {tab.type === 'agent' && <AgentPlaceholder tab={tab} />}
+            </div>
+          </Activity>
+        );
+      })}
+    </div>
   );
 }
 
@@ -101,7 +114,7 @@ function TerminalView({ tab }: { tab: any }) {
           }
           onStateChange={(state: TerminalState) => {
             // Save terminal state to tab
-            // workspaceActions.updateTabTerminalState(tab.id, state);
+            workspaceActions.updateTabTerminalState(tab.id, state);
           }}
         />
       </div>

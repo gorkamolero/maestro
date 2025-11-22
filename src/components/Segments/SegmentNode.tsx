@@ -115,7 +115,7 @@ function SegmentNodeComponent({ data }: SegmentNodeProps) {
                     </div>
 
                     {/* Resource metrics in compact mode when collapsed */}
-                    {!isExpanded && isActive && (
+                    {isActive && (
                       <div className="relative z-10">
                         <SegmentMetrics segmentId={data.segmentId} compact />
                       </div>
