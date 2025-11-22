@@ -29,18 +29,10 @@ function SidebarContent() {
   const { setTargetZone } = useDragContext();
 
   const handleDragUpdate = (result: any) => {
-    console.log('handleDragUpdate called:', {
-      hasDestination: !!result.destination,
-      destinationId: result.destination?.droppableId,
-      sourceId: result.source.droppableId,
-    });
-
     if (result.destination) {
       const targetZone = result.destination.droppableId.split('-')[0] as 'favorites' | 'tabs';
-      console.log('Setting targetZone to:', targetZone);
       setTargetZone(targetZone);
     } else {
-      console.log('No destination, setting targetZone to null');
       setTargetZone(null);
     }
   };
