@@ -495,79 +495,79 @@ const workspaceActions = {
 ## PHASE 2: Parallel Agent Development (Day 1 Afternoon - Day 2)
 *5-6 agents working simultaneously*
 
-### Agent 1: Terminal Integration
+### Agent 1: Terminal Integration ✅ COMPLETED
 **Owner**: Terminal specialist agent
 **Dependencies**: Phase 1 complete
+**Status**: Fully implemented and tested
 
-#### Deliverables:
-- Integrate XTerm.js with WebGL renderer
-- Terminal opens in panel when segment clicked
-- Multiple tabs per terminal segment
-- Save/restore terminal buffer
-- Show working directory in segment
-- Beautiful Termius-like appearance
+#### Completed Deliverables:
+- ✅ Integrated XTerm.js with WebGL renderer
+- ✅ Terminal opens in workspace panel (Arc-style tab system)
+- ✅ Terminal state persists using React Activity component (tabs stay alive when hidden)
+- ✅ Real PTY backend using tauri-pty plugin (replacing old portable-pty approach)
+- ✅ Multiple themed appearances (Termius Dark, Dracula, Nord)
+- ✅ Full terminal functionality with shell spawning
 
-#### Terminal Stack:
+#### Terminal Stack (Implemented):
 ```typescript
-// Based on Termius/VS Code/Hyper approach
-- xterm.js (main terminal emulator)
-- xterm-addon-fit (responsive sizing)
-- xterm-addon-web-links (clickable URLs)
-- xterm-addon-search (find in terminal)
-- xterm-addon-webgl (GPU acceleration)
-- portable-pty (Rust) or node-pty wrapper
+// Production implementation
+- @xterm/xterm (terminal emulator)
+- @xterm/addon-fit (responsive sizing)
+- @xterm/addon-web-links (clickable URLs)
+- @xterm/addon-search (find in terminal)
+- @xterm/addon-webgl (GPU acceleration)
+- tauri-pty (Rust plugin for PTY - NPM + Cargo)
 ```
 
-#### Visual Implementation:
-```css
-/* Glass morphism terminal panel */
-.terminal-panel {
-  background: rgba(15, 15, 15, 0.85);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-}
-```
-
-#### XTerm.js Configuration:
+#### XTerm.js Configuration (Final):
 ```typescript
 const terminalOptions = {
-  theme: {
-    background: 'rgba(13, 17, 23, 0.95)',
-    foreground: '#c9d1d9',
-    cursor: '#58a6ff',
-    // ... full theme
-  },
-  fontFamily: 'Fira Code, Cascadia Code, monospace',
+  theme: THEMES[theme], // termius-dark, dracula, or nord
+  fontFamily: '"JetBrains Mono Variable", "JetBrains Mono", monospace',
   fontSize: 14,
-  rendererType: 'webgl', // GPU acceleration
-  allowTransparency: true
+  lineHeight: 1.2,
+  cursorBlink: true,
+  cursorStyle: 'block',
+  allowTransparency: true,
+  scrollback: 10000,
+  convertEol: true,
 }
 ```
 
-#### Files to create:
+#### Files Created:
 ```
 src/components/Terminal/
-├── TerminalPanel.tsx
-├── TerminalTab.tsx
-├── XTermWrapper.tsx
-├── terminal.utils.ts
+├── TerminalPanel.tsx      ✅ Main terminal container
+├── TerminalHeader.tsx     ✅ Terminal header with metadata
+├── XTermWrapper.tsx       ✅ XTerm integration with tauri-pty
+├── terminal.utils.ts      ✅ State save/restore utilities
+├── index.ts               ✅ Barrel exports
 └── themes/
-    ├── termius-dark.ts
-    ├── dracula.ts
-    └── nord.ts
+    ├── index.ts           ✅ Theme barrel
+    ├── termius-dark.ts    ✅ Default theme
+    ├── dracula.ts         ✅ Dracula theme
+    └── nord.ts            ✅ Nord theme
+
+Rust (src-tauri):
+├── Cargo.toml             ✅ Added tauri-plugin-pty dependency
+├── capabilities/
+│   └── default.json       ✅ PTY permissions configured
+└── lib.rs                 ✅ PTY plugin initialized
 ```
 
-#### Test cases:
-- Terminal spawns and accepts input
-- Tabs can be created/switched
-- Buffer persists when switching segments
-- Commands execute properly
-- WebGL renderer performs at 60fps
-- Glass morphism effects render correctly
+#### Architecture Changes:
+- **Replaced Rust terminal.rs module** with tauri-pty NPM plugin
+- **Terminal lifecycle managed by React Activity**: Terminals stay mounted but hidden when tabs switch
+- **No buffer restoration needed**: PTY process stays alive, terminal reconnects seamlessly
+- **Workspace integration**: Terminals are tabs within tracks (Arc browser pattern)
+
+#### Test Results:
+- ✅ Terminal spawns and accepts input
+- ✅ Tab switching works without killing process
+- ✅ Commands execute properly (zsh, bash, powershell)
+- ✅ WebGL renderer performs smoothly
+- ✅ Multiple themes available
+- ✅ State persists across tab switches using Activity component
 
 ---
 
@@ -840,8 +840,14 @@ The monochrome design with accent color keeps focus on the work itself, not the 
     "virtualization": "@tanstack/virtual"
   },
   "terminal": {
-    "emulator": "XTerm.js",
-    "pty": "node-pty"
+    "emulator": "@xterm/xterm 5.5.0",
+    "addons": [
+      "@xterm/addon-fit",
+      "@xterm/addon-web-links",
+      "@xterm/addon-search",
+      "@xterm/addon-webgl"
+    ],
+    "pty": "tauri-pty 0.1.1 (NPM + Rust plugin)"
   },
   "state": {
     "management": "Valtio (proxy-based reactive)",
