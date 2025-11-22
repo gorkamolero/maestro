@@ -2,11 +2,14 @@ mod monitor;
 
 use monitor::{ProcessMetrics, ResourceMonitor, SegmentResourceMetrics, SystemMetrics};
 use std::sync::Arc;
-use tauri::{Emitter, State};
+use std::sync::Mutex;
+use std::collections::HashMap;
+use tauri::{Emitter, State, Manager, WebviewUrl, WebviewBuilder, LogicalPosition, LogicalSize, Webview, Window};
 
 // Global state for the application
 struct AppState {
-    monitor: Arc<std::sync::Mutex<ResourceMonitor>>,
+    monitor: Arc<Mutex<ResourceMonitor>>,
+    webviews: Arc<Mutex<HashMap<String, Webview>>>,
 }
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
@@ -67,6 +70,91 @@ fn get_all_processes(state: State<AppState>) -> Result<Vec<ProcessMetrics>, Stri
     Ok(monitor.get_all_processes())
 }
 
+// Browser Webview Commands
+#[tauri::command]
+fn create_browser_webview(
+    window: Window,
+    label: String,
+    url: String,
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+    state: State<AppState>,
+) -> Result<String, String> {
+    let webview_url = if url.starts_with("http://") || url.starts_with("https://") {
+        WebviewUrl::External(url.parse().map_err(|e| format!("Invalid URL: {}", e))?)
+    } else if url == "about:blank" {
+        WebviewUrl::App("about:blank".into())
+    } else {
+        return Err("Invalid URL scheme".to_string());
+    };
+
+    let webview_builder = WebviewBuilder::new(&label, webview_url)
+        .auto_resize();
+
+    let webview = window
+        .add_child(
+            webview_builder,
+            LogicalPosition::new(x, y),
+            LogicalSize::new(width, height),
+        )
+        .map_err(|e| format!("Failed to create webview: {}", e))?;
+
+    // Store the webview
+    let mut webviews = state.webviews.lock().map_err(|e| e.to_string())?;
+    webviews.insert(label.clone(), webview);
+
+    Ok(label)
+}
+
+#[tauri::command]
+fn close_browser_webview(label: String, state: State<AppState>) -> Result<(), String> {
+    let mut webviews = state.webviews.lock().map_err(|e| e.to_string())?;
+
+    if let Some(webview) = webviews.remove(&label) {
+        webview.close().map_err(|e| format!("Failed to close webview: {}", e))?;
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+fn update_webview_position(
+    label: String,
+    x: f64,
+    y: f64,
+    state: State<AppState>,
+) -> Result<(), String> {
+    let webviews = state.webviews.lock().map_err(|e| e.to_string())?;
+
+    if let Some(webview) = webviews.get(&label) {
+        webview
+            .set_position(LogicalPosition::new(x, y))
+            .map_err(|e| format!("Failed to set position: {}", e))?;
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+fn update_webview_size(
+    label: String,
+    width: f64,
+    height: f64,
+    state: State<AppState>,
+) -> Result<(), String> {
+    let webviews = state.webviews.lock().map_err(|e| e.to_string())?;
+
+    if let Some(webview) = webviews.get(&label) {
+        webview
+            .set_size(LogicalSize::new(width, height))
+            .map_err(|e| format!("Failed to set size: {}", e))?;
+    }
+
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let monitor = Arc::new(std::sync::Mutex::new(ResourceMonitor::new()));
@@ -77,6 +165,7 @@ pub fn run() {
         .plugin(tauri_plugin_pty::init())
         .manage(AppState {
             monitor: monitor.clone(),
+            webviews: Arc::new(Mutex::new(HashMap::new())),
         })
         .invoke_handler(tauri::generate_handler![
             greet,
@@ -86,7 +175,11 @@ pub fn run() {
             untrack_segment,
             get_segment_metrics,
             kill_process,
-            get_all_processes
+            get_all_processes,
+            create_browser_webview,
+            close_browser_webview,
+            update_webview_position,
+            update_webview_size
         ])
         .setup(move |app| {
             // Start metrics emission thread

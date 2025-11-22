@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
-import { Webview } from '@tauri-apps/api/webview';
+import { useEffect, useRef } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { LogicalPosition, LogicalSize } from '@tauri-apps/api/dpi';
 
 interface UseWebviewOptions {
   tabId: string;
@@ -12,79 +11,48 @@ interface UseWebviewOptions {
 }
 
 export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setError }: UseWebviewOptions) {
-  const webviewRef = useRef<Webview | null>(null);
+  const webviewLabelRef = useRef<string | null>(null);
   const currentUrlRef = useRef<string>(initialUrl);
 
   // Create webview ONCE per tab.id
   useEffect(() => {
-    let webview: Webview | null = null;
     let mounted = true;
-    let unlistenCreated: (() => void) | null = null;
-    let unlistenError: (() => void) | null = null;
 
     const createWebview = async () => {
       if (!containerRef.current || !mounted) return;
 
       const rect = containerRef.current.getBoundingClientRect();
-      const window = getCurrentWindow();
+      const label = `browser-${tabId}`;
 
       try {
         setError(null);
         setIsLoading(true);
 
-        // Create native Tauri webview
-        const label = `browser-${tabId}`;
-        webview = new Webview(window, label, {
+        // Create native Tauri child webview via Rust command
+        await invoke('create_browser_webview', {
+          window: getCurrentWindow(),
+          label,
           url: initialUrl || 'about:blank',
-          x: Math.round(rect.x),
-          y: Math.round(rect.y),
-          width: Math.round(rect.width),
-          height: Math.round(rect.height),
-          transparent: false,
-          devtools: true,
+          x: rect.x,
+          y: rect.y,
+          width: rect.width,
+          height: rect.height,
         });
 
-        // Wait for webview to be created
-        await new Promise<void>((resolve, reject) => {
-          if (!webview) {
-            reject(new Error('Webview is null'));
-            return;
-          }
-
-          webview.once('tauri://created', () => {
-            if (mounted) {
-              webviewRef.current = webview;
-              currentUrlRef.current = initialUrl;
-              setIsLoading(false);
-              setError(null);
-              resolve();
-            }
-          }).then((unlisten) => {
-            unlistenCreated = unlisten;
-          });
-
-          webview.once('tauri://error', (event) => {
-            console.error('Failed to create webview:', event);
-            console.error('Error details:', JSON.stringify(event, null, 2));
-            if (mounted) {
-              setIsLoading(false);
-              setError(`Failed to create browser view: ${event?.payload || 'Unknown error'}`);
-            }
-            reject(event);
-          }).then((unlisten) => {
-            unlistenError = unlisten;
-          });
-        });
+        if (mounted) {
+          webviewLabelRef.current = label;
+          currentUrlRef.current = initialUrl;
+          setIsLoading(false);
+          setError(null);
+        }
       } catch (error) {
         console.error('Failed to create webview:', error);
-        console.error('Error type:', typeof error);
-        console.error('Error stringified:', JSON.stringify(error, null, 2));
         if (mounted) {
           setIsLoading(false);
           const errorMsg = error instanceof Error
             ? error.message
-            : (error as any)?.payload || 'Failed to create browser view';
-          setError(errorMsg);
+            : String(error);
+          setError(`Failed to create browser view: ${errorMsg}`);
         }
       }
     };
@@ -94,10 +62,8 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
     // Cleanup webview on unmount
     return () => {
       mounted = false;
-      if (unlistenCreated) unlistenCreated();
-      if (unlistenError) unlistenError();
-      if (webview) {
-        webview.close().catch((err) => {
+      if (webviewLabelRef.current) {
+        invoke('close_browser_webview', { label: webviewLabelRef.current }).catch((err) => {
           console.error('Error closing webview:', err);
         });
       }
@@ -106,7 +72,7 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
 
   // Update webview position when container resizes
   useEffect(() => {
-    if (!containerRef.current || !webviewRef.current) return;
+    if (!containerRef.current || !webviewLabelRef.current) return;
 
     let rafId: number | null = null;
     let lastUpdate = 0;
@@ -120,15 +86,20 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
       }
       lastUpdate = now;
 
-      if (!containerRef.current || !webviewRef.current) return;
+      if (!containerRef.current || !webviewLabelRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
 
-      webviewRef.current
-        .setPosition(new LogicalPosition(Math.round(rect.x), Math.round(rect.y)))
-        .catch(console.error);
-      webviewRef.current
-        .setSize(new LogicalSize(Math.round(rect.width), Math.round(rect.height)))
-        .catch(console.error);
+      invoke('update_webview_position', {
+        label: webviewLabelRef.current,
+        x: rect.x,
+        y: rect.y,
+      }).catch(console.error);
+
+      invoke('update_webview_size', {
+        label: webviewLabelRef.current,
+        width: rect.width,
+        height: rect.height,
+      }).catch(console.error);
     };
 
     const debouncedUpdate = () => {
@@ -148,7 +119,7 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
   }, []);
 
   return {
-    webviewRef,
+    webviewLabelRef,
     currentUrlRef,
   };
 }
