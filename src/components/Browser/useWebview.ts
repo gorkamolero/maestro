@@ -65,9 +65,10 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
 
           webview.once('tauri://error', (event) => {
             console.error('Failed to create webview:', event);
+            console.error('Error details:', JSON.stringify(event, null, 2));
             if (mounted) {
               setIsLoading(false);
-              setError('Failed to create browser view. Please try again.');
+              setError(`Failed to create browser view: ${event?.payload || 'Unknown error'}`);
             }
             reject(event);
           }).then((unlisten) => {
@@ -76,9 +77,14 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
         });
       } catch (error) {
         console.error('Failed to create webview:', error);
+        console.error('Error type:', typeof error);
+        console.error('Error stringified:', JSON.stringify(error, null, 2));
         if (mounted) {
           setIsLoading(false);
-          setError(error instanceof Error ? error.message : 'Failed to create browser view');
+          const errorMsg = error instanceof Error
+            ? error.message
+            : (error as any)?.payload || 'Failed to create browser view';
+          setError(errorMsg);
         }
       }
     };
