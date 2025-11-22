@@ -329,7 +329,10 @@ src/
 │   │   ├── Dock.tsx
 │   │   ├── Sidebar.tsx
 │   │   ├── WorkspacePanel.tsx
-│   │   └── SpaceEditor.tsx
+│   │   ├── SpaceEditor.tsx
+│   │   ├── DraggableTab.tsx
+│   │   ├── TabDropZone.tsx
+│   │   └── DragContext.tsx
 │   ├── Terminal/                (✅ Phase 2 Agent 1 complete)
 │   │   ├── TerminalPanel.tsx
 │   │   ├── TerminalHeader.tsx

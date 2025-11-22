@@ -234,6 +234,12 @@ src/stores/
 - ✅ Refactored large components to stay under 250 lines
 - ✅ Simplified TerminalPanel (removed redundant internal tabs)
 - ✅ Added comprehensive documentation to spec
+- ✅ Migrated drag-and-drop from Pragmatic Drag and Drop to @hello-pangea/dnd
+  - Fixed positioning issues with renderClone API
+  - Implemented Arc-style favorites (icon-only, 3-column grid)
+  - Added dynamic drag preview morphing between favorite and tab styles
+  - Created DragContext for real-time target zone tracking
+  - Resolved carousel interference with tab dragging
 
 ---
 

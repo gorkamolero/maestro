@@ -226,3 +226,26 @@
   border: 1px solid hsl(var(--border));
   border-radius: 0.5rem;
 }
+
+/* Drag and drop support */
+[data-draggable="true"] {
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Prevent selection during drag */
+.dragging,
+.dragging * {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Smooth drag cursor */
+[draggable="true"] {
+  cursor: grab;
+}
+
+[draggable="true"]:active {
+  cursor: grabbing;
+}

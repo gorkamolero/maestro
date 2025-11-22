@@ -19,7 +19,7 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
     let mounted = true;
 
     const createWebview = async () => {
-      console.log('createWebview called for tabId:', tabId);
+      // console.log('createWebview called for tabId:', tabId);
       if (!containerRef.current || !mounted) return;
 
       // Wait for the container to have proper dimensions (flex-1 containers need layout time)
@@ -43,46 +43,50 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
 
       const label = `browser-${tabId}`;
 
-      // Log container element details for debugging positioning
-      const computedStyle = window.getComputedStyle(containerRef.current);
+      // // Log container element details for debugging positioning
+      // const computedStyle = window.getComputedStyle(containerRef.current);
 
-      // Check if there are any parent elements with padding/margin that might affect positioning
-      let parent = containerRef.current.parentElement;
-      const parentOffsets = [];
-      while (parent && parent.tagName !== 'BODY') {
-        const parentStyle = window.getComputedStyle(parent);
-        parentOffsets.push({
-          tag: parent.tagName,
-          class: parent.className,
-          padding: parentStyle.padding,
-          margin: parentStyle.margin,
-          border: parentStyle.border
-        });
-        parent = parent.parentElement;
-        if (parentOffsets.length > 10) break; // Increase limit to see more parents
-      }
+      // // Check if there are any parent elements with padding/margin that might affect positioning
+      // let parent = containerRef.current.parentElement;
+      // const parentOffsets = [];
+      // while (parent && parent.tagName !== 'BODY') {
+      //   const parentStyle = window.getComputedStyle(parent);
+      //   parentOffsets.push({
+      //     tag: parent.tagName,
+      //     class: parent.className,
+      //     padding: parentStyle.padding,
+      //     margin: parentStyle.margin,
+      //     border: parentStyle.border
+      //   });
+      //   parent = parent.parentElement;
+      //   if (parentOffsets.length > 10) break; // Increase limit to see more parents
+      // }
 
-      console.log('Container element:', JSON.stringify({
-        rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
-        display: computedStyle.display,
-        position: computedStyle.position,
-        devicePixelRatio: window.devicePixelRatio,
-        parentOffsets
-      }, null, 2));
+      // console.log('Container element:', JSON.stringify({
+      //   rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+      //   display: computedStyle.display,
+      //   position: computedStyle.position,
+      //   devicePixelRatio: window.devicePixelRatio,
+      //   parentOffsets
+      // }, null, 2));
 
       try {
         setError(null);
         setIsLoading(true);
 
         // Create native Tauri child webview via Rust command
-        // Note: Using LogicalPosition/LogicalSize in Rust, so we pass logical pixels (not physical)
-        // Adjust y coordinate - multiply by 1.5 (60 -> 90)
+        // FIX: macOS uses bottom-left origin, browsers use top-left origin
+        // Invert Y coordinate: correctedY = windowHeight - browserY - elementHeight
+        const window = getCurrentWindow();
+        const windowSize = await window.innerSize();
+        const correctedY = windowSize.height - rect.y - rect.height;
+
         await invoke('create_browser_webview', {
-          window: getCurrentWindow(),
+          window,
           label,
           url: initialUrl || 'about:blank',
           x: rect.x,
-          y: rect.y * 1.5,
+          y: correctedY,
           width: rect.width,
           height: rect.height,
         });
@@ -137,11 +141,15 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
       if (!containerRef.current || !webviewLabelRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
 
-      invoke('update_webview_position', {
-        label: webviewLabelRef.current,
-        x: rect.x,
-        y: rect.y * 1.5,
-      }).catch(console.error);
+      // FIX: Invert Y coordinate for macOS bottom-left origin
+      getCurrentWindow().innerSize().then((windowSize) => {
+        const correctedY = windowSize.height - rect.y - rect.height;
+        invoke('update_webview_position', {
+          label: webviewLabelRef.current,
+          x: rect.x,
+          y: correctedY,
+        }).catch(console.error);
+      });
 
       invoke('update_webview_size', {
         label: webviewLabelRef.current,
