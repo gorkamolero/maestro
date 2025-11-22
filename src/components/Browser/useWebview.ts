@@ -75,14 +75,18 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
         setIsLoading(true);
 
         // Create native Tauri child webview via Rust command
-        // Note: Using LogicalPosition/LogicalSize in Rust, so we pass logical pixels (not physical)
-        // Adjust y coordinate - multiply by 1.5 (60 -> 90)
+        // FIX: macOS uses bottom-left origin, browsers use top-left origin
+        // Invert Y coordinate: correctedY = windowHeight - browserY - elementHeight
+        const window = getCurrentWindow();
+        const windowSize = await window.innerSize();
+        const correctedY = windowSize.height - rect.y - rect.height;
+
         await invoke('create_browser_webview', {
-          window: getCurrentWindow(),
+          window,
           label,
           url: initialUrl || 'about:blank',
           x: rect.x,
-          y: rect.y * 1.5,
+          y: correctedY,
           width: rect.width,
           height: rect.height,
         });
@@ -137,11 +141,15 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
       if (!containerRef.current || !webviewLabelRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
 
-      invoke('update_webview_position', {
-        label: webviewLabelRef.current,
-        x: rect.x,
-        y: rect.y * 1.5,
-      }).catch(console.error);
+      // FIX: Invert Y coordinate for macOS bottom-left origin
+      getCurrentWindow().innerSize().then((windowSize) => {
+        const correctedY = windowSize.height - rect.y - rect.height;
+        invoke('update_webview_position', {
+          label: webviewLabelRef.current,
+          x: rect.x,
+          y: correctedY,
+        }).catch(console.error);
+      });
 
       invoke('update_webview_size', {
         label: webviewLabelRef.current,

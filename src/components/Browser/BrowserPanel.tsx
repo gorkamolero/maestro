@@ -40,12 +40,17 @@ export function BrowserPanel({ tab }: BrowserPanelProps) {
 
       console.log('Container rect:', { x: rect.x, y: rect.y, width: rect.width, height: rect.height });
 
+      // FIX: Invert Y coordinate for macOS bottom-left origin
+      const window = getCurrentWindow();
+      const windowSize = await window.innerSize();
+      const correctedY = windowSize.height - rect.y - rect.height;
+
       await invoke('navigate_webview', {
-        window: getCurrentWindow(),
+        window,
         label: webviewLabelRef.current,
         url,
         x: rect.x,
-        y: rect.y * 1.5,
+        y: correctedY,
         width: rect.width,
         height: rect.height,
       });
