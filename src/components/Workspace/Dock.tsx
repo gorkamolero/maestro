@@ -16,8 +16,8 @@ const SPACE_ICONS: Record<string, any> = {
 };
 
 export function Dock() {
-  const { spaces } = useSnapshot(spacesStore);
-  const { activeSpaceId } = useSnapshot(workspaceStore);
+  const spacesSnap = useSnapshot(spacesStore);
+  const workspaceSnap = useSnapshot(workspaceStore);
   const [editingSpaceId, setEditingSpaceId] = useState<string | null>(null);
   const [newSpacePopoverOpen, setNewSpacePopoverOpen] = useState(false);
 
@@ -37,7 +37,7 @@ export function Dock() {
 
   const handleDeleteSpace = (spaceId: string) => {
     // Find another space to switch to
-    const otherSpace = spaces.find((s) => s.id !== spaceId);
+    const otherSpace = spacesSnap.spaces.find((s) => s.id !== spaceId);
     if (otherSpace) {
       workspaceActions.switchSpace(otherSpace.id);
     }
@@ -49,9 +49,9 @@ export function Dock() {
     <div className="flex items-center gap-2">
       <TooltipProvider delayDuration={0}>
         {/* Space dots/icons - Arc Spaces style */}
-        {spaces.map((space) => {
+        {spacesSnap.spaces.map((space) => {
           const Icon = SPACE_ICONS[space.icon || 'home'] || Home;
-          const isActive = activeSpaceId === space.id;
+          const isActive = workspaceSnap.activeSpaceId === space.id;
           const hasActiveSegments = space.segments.filter((s) => s.status === 'active').length > 0;
           const isEditing = editingSpaceId === space.id;
 
