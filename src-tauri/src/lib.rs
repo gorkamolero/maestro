@@ -4,7 +4,7 @@ use monitor::{ProcessMetrics, ResourceMonitor, SegmentResourceMetrics, SystemMet
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::collections::HashMap;
-use tauri::{Emitter, State, Manager, WebviewUrl, WebviewBuilder, LogicalPosition, LogicalSize, Webview, Window};
+use tauri::{Emitter, State, WebviewUrl, WebviewBuilder, LogicalPosition, LogicalSize, Webview, Window};
 
 // Global state for the application
 struct AppState {
