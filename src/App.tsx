@@ -52,7 +52,7 @@ function App() {
         <FloatingControls />
 
         {/* Timeline area with rounded corners and inset */}
-        <div className="flex-1 rounded-xl overflow-hidden bg-background border border-border/50 shadow-lg">
+        <div className="flex-1 flex flex-col rounded-xl overflow-hidden bg-background border border-border/50 shadow-lg">
           {viewMode === 'timeline' && <Timeline ref={timelineRef} onAddSpace={handleAddSpace} />}
 
           {viewMode === 'workspace' && <WorkspacePanel />}

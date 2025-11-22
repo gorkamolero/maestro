@@ -241,11 +241,65 @@ src/stores/
 
 ### Phase 2: Remaining Agents
 
-#### Agent 2: Browser Integration (Not Started)
-- Embedded webview using Tauri
-- Browser tab management
-- URL bar and navigation
-- Isolated profile per track/space
+#### Agent 2: Browser Integration (In Progress - Blocked)
+
+**Implementation Stack:**
+- ✅ Tauri v2 child webview using `window.add_child()` API
+- ✅ React component wrapper (BrowserPanel)
+- ✅ BrowserToolbar with URL bar and navigation controls
+- ✅ Dynamic webview creation/destruction via Rust commands
+- ✅ Navigation via webview recreation (close + create with new URL)
+
+**Features Implemented:**
+- ✅ Browser opens in workspace panel as Arc-style tab
+- ✅ URL bar with search functionality (auto-Google search for non-URLs)
+- ✅ Navigation buttons (back/forward/reload/home)
+- ✅ Loading states
+- ✅ Multiple browser tabs (each workspace tab is a browser instance)
+- ✅ React Activity component for lifecycle management
+- ✅ ResizeObserver for dynamic positioning updates
+
+**Rust Commands Created:**
+```rust
+create_browser_webview   // Create child webview at position
+close_browser_webview    // Destroy webview
+update_webview_position  // Move webview
+update_webview_size      // Resize webview
+navigate_webview         // Navigate to new URL (recreate approach)
+```
+
+**Files Created:**
+```
+src/components/Browser/
+├── BrowserPanel.tsx       # Main container
+├── BrowserToolbar.tsx     # URL bar and controls
+├── useWebview.ts          # Webview lifecycle hook
+└── index.ts               # Barrel exports
+
+Rust (src-tauri):
+├── lib.rs                 # Browser webview commands
+└── capabilities/default.json  # Window permissions
+```
+
+**Current Blocker:**
+🚨 **Child webview positioning issue on macOS with Retina display (2x DPI)**
+- X coordinate works correctly
+- Y coordinate consistently offset (appears ~30-50px too high)
+- Temporary workaround: multiply Y by 1.5 (not reliable)
+- Root cause unknown - possible DPI scaling bug in Tauri v2 beta
+- Issue appears related to GitHub Issue #10053 (resolved in wry, but behavior persists)
+- `LogicalPosition` vs `PhysicalPosition` coordinate system unclear
+- `getBoundingClientRect()` viewport coords vs Tauri window coords mismatch
+
+**Investigation Needed:**
+- Relationship between `getBoundingClientRect()` and Tauri's coordinate system
+- Whether LogicalPosition accounts for DPI automatically
+- Platform-specific positioning differences (macOS vs Windows)
+- Impact of `.auto_resize()` on manual positioning (Issue #9611)
+
+**Status:** Implementation complete but blocked on coordinate system issue. Browser is functional with positioning workaround.
+
+**Last Updated:** 2025-11-22
 
 #### Agent 4: Segment Content Visualizations (Not Started)
 - Type-specific internal visualizations
