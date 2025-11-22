@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { motion } from 'motion/react';
 import { useWebview } from './useWebview';
+import { BrowserToolbar } from './BrowserToolbar';
 
 interface BrowserPanelProps {
   tab: any; // Workspace tab
@@ -38,6 +39,17 @@ export function BrowserPanel({ tab }: BrowserPanelProps) {
       animate={{ opacity: 1 }}
       className="flex-1 flex flex-col bg-background"
     >
+      {/* Toolbar with URL bar */}
+      <BrowserToolbar
+        url={currentUrlRef.current || initialUrl}
+        onNavigate={handleNavigate}
+        onBack={handleGoBack}
+        onForward={handleGoForward}
+        onReload={handleRefresh}
+        onHome={handleHome}
+        isLoading={isLoading}
+      />
+
       {/* Browser webview container */}
       <div ref={containerRef} className="flex-1 relative bg-background">
         {isLoading && (
