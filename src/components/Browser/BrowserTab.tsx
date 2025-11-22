@@ -32,9 +32,7 @@ export function BrowserTab({ tab, onUrlChange, onTitleChange }: BrowserTabProps)
     onUrlChange,
   });
 
-  useEffect(() => {
-    onUrlChange(tab.url);
-  }, [tab.url, onUrlChange]);
+  // Removed: This was causing infinite loop by calling onUrlChange on every render
 
   const handleRetry = () => {
     handleNavigate(currentUrlRef.current || tab.url);
