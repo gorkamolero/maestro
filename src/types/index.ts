@@ -48,6 +48,9 @@ export interface SegmentConfig {
   commands?: string[];
   workingDir?: string;
   env?: Record<string, string>;
+  terminalBuffer?: string;
+  terminalTheme?: 'termius-dark' | 'dracula' | 'nord';
+  terminalScrollPosition?: number;
 
   // Agent
   agentType?: 'claude-code' | 'codex' | 'cursor';
@@ -60,6 +63,9 @@ export interface SegmentConfig {
 
   // Planted
   trigger?: TriggerConfig;
+
+  // Note
+  content?: string;
 }
 
 export interface BrowserTab {

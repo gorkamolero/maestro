@@ -13,6 +13,12 @@ export interface Tab {
   segmentId?: string; // Link to timeline segment
   content?: any; // Type-specific content
   isFavorite?: boolean; // Whether this tab is favorited
+  terminalState?: {
+    buffer: string;
+    workingDir: string | null;
+    scrollPosition: number;
+    theme: 'termius-dark' | 'dracula' | 'nord';
+  };
 }
 
 export type ViewMode = 'timeline' | 'workspace' | 'split';
@@ -129,6 +135,13 @@ export const workspaceActions = {
     const tab = workspaceStore.tabs.find((t) => t.id === tabId);
     if (tab) {
       tab.isFavorite = !tab.isFavorite;
+    }
+  },
+
+  updateTabTerminalState: (tabId: string, state: Tab['terminalState']) => {
+    const tab = workspaceStore.tabs.find((t) => t.id === tabId);
+    if (tab && tab.type === 'terminal') {
+      tab.terminalState = state;
     }
   },
 };

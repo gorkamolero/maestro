@@ -75,4 +75,25 @@ export const segmentsActions = {
       segment.config = { ...segment.config, ...config };
     }
   },
+
+  updateTerminalState: (
+    segmentId: string,
+    state: {
+      buffer?: string;
+      workingDir?: string | null;
+      scrollPosition?: number;
+      theme?: 'termius-dark' | 'dracula' | 'nord';
+    }
+  ) => {
+    const segment = segmentsStore.activeSegments.find((s) => s.id === segmentId);
+    if (segment && segment.type === 'terminal') {
+      segment.config = {
+        ...segment.config,
+        terminalBuffer: state.buffer,
+        workingDir: state.workingDir || undefined,
+        terminalScrollPosition: state.scrollPosition,
+        terminalTheme: state.theme,
+      };
+    }
+  },
 };

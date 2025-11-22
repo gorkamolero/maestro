@@ -20,6 +20,8 @@ import {
   ExpandableContent,
   ExpandableTrigger,
 } from '@/components/ui/expandable';
+import { TerminalPanel } from '@/components/Terminal/TerminalPanel';
+import type { TerminalState } from '@/components/Terminal/terminal.utils';
 
 interface SegmentNodeData {
   segmentId: string;
@@ -30,6 +32,7 @@ interface SegmentNodeData {
   width: number;
   startTime: Date;
   endTime?: Date;
+  config?: any;
 }
 
 interface SegmentNodeProps {
@@ -112,7 +115,7 @@ function SegmentNodeComponent({ data }: SegmentNodeProps) {
                     </div>
 
                     {/* Resource metrics in compact mode when collapsed */}
-                    {!isExpanded && isActive && (
+                    {isActive && (
                       <div className="relative z-10">
                         <SegmentMetrics segmentId={data.segmentId} compact />
                       </div>
@@ -144,12 +147,23 @@ function SegmentNodeComponent({ data }: SegmentNodeProps) {
                       )}
 
                       {data.type === 'terminal' && (
-                        <div className="bg-black/90 rounded p-3 font-mono text-xs text-green-400">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="text-muted-foreground">$</span>
-                            <span>Terminal output will appear here</span>
-                          </div>
-                          <div className="opacity-50">...</div>
+                        <div className="h-56 rounded overflow-hidden">
+                          <TerminalPanel
+                            segmentId={data.segmentId}
+                            initialState={
+                              data.config
+                                ? {
+                                    buffer: data.config.terminalBuffer || '',
+                                    workingDir: data.config.workingDir || null,
+                                    scrollPosition: data.config.terminalScrollPosition || 0,
+                                    theme: data.config.terminalTheme || 'termius-dark',
+                                  }
+                                : undefined
+                            }
+                            onStateChange={(state: TerminalState) => {
+                              segmentsActions.updateTerminalState(data.segmentId, state);
+                            }}
+                          />
                         </div>
                       )}
 

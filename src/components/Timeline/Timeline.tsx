@@ -1,5 +1,5 @@
 import { forwardRef, useImperativeHandle } from 'react';
-import { ReactFlow, Background, ReactFlowProvider } from '@xyflow/react';
+import { ReactFlow, Background, BackgroundVariant, ReactFlowProvider } from '@xyflow/react';
 import { useSnapshot } from 'valtio';
 
 import { SegmentNode } from '@/components/Segments/SegmentNode';
@@ -85,7 +85,7 @@ function TimelineCanvas({ onCenterOnNow, onCenterOnSpace, onAddSpace }: Timeline
         elementsSelectable={true}
       >
         <Background
-          variant={backgroundVariant}
+          variant={backgroundVariant === 'dots' ? BackgroundVariant.Dots : BackgroundVariant.Lines}
           gap={backgroundVariant === 'dots' ? 20 : TRACK_HEIGHT}
           size={backgroundVariant === 'dots' ? 2 : undefined}
           className={backgroundVariant === 'dots' ? 'opacity-30' : 'opacity-10'}

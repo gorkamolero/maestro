@@ -1,12 +1,12 @@
 mod monitor;
 
 use monitor::{ProcessMetrics, ResourceMonitor, SegmentResourceMetrics, SystemMetrics};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use tauri::{Emitter, State};
 
-// Global state for the resource monitor
+// Global state for the application
 struct AppState {
-    monitor: Arc<Mutex<ResourceMonitor>>,
+    monitor: Arc<std::sync::Mutex<ResourceMonitor>>,
 }
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
@@ -15,6 +15,7 @@ fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
 
+// Resource Monitor Commands
 #[tauri::command]
 fn get_system_metrics(state: State<AppState>) -> Result<SystemMetrics, String> {
     let monitor = state.monitor.lock().map_err(|e| e.to_string())?;
@@ -68,10 +69,12 @@ fn get_all_processes(state: State<AppState>) -> Result<Vec<ProcessMetrics>, Stri
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let monitor = Arc::new(Mutex::new(ResourceMonitor::new()));
+    let monitor = Arc::new(std::sync::Mutex::new(ResourceMonitor::new()));
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_pty::init())
         .manage(AppState {
             monitor: monitor.clone(),
         })
@@ -83,7 +86,7 @@ pub fn run() {
             untrack_segment,
             get_segment_metrics,
             kill_process,
-            get_all_processes,
+            get_all_processes
         ])
         .setup(move |app| {
             // Start metrics emission thread

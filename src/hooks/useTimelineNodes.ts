@@ -56,6 +56,7 @@ export function useTimelineNodes(referenceTime: Date, trackLabelOffset: number):
             width,
             startTime: segment.startTime,
             endTime: segment.endTime,
+            config: segment.config,
           },
           draggable: false,
         };

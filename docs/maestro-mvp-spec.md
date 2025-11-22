@@ -486,7 +486,7 @@ const workspaceActions = {
 - **Dock**: `src/components/Workspace/Dock.tsx` - Arc-style space switcher with icons, tooltips, and create/edit functionality
 - **Sidebar**: `src/components/Workspace/Sidebar.tsx` - Vertical tabs with favorites section, swipeable carousel between spaces
 - **Workspace Panel**: `src/components/Workspace/WorkspacePanel.tsx` - Tab content renderer with note editor and placeholders
-- **State Management**: 
+- **State Management**:
   - `src/stores/workspace.store.ts` - Tabs, active states, layout (with valtio-persist)
   - `src/stores/spaces.store.ts` - Spaces/tracks management (with valtio-persist)
 - **Layout**: `src/App.tsx` - Resizable panels using react-resizable-panels
@@ -510,111 +510,95 @@ const workspaceActions = {
 ### Context
 Now that we have the workspace view with tracks/tabs and the timeline visualization, we need to make the tabs actually functional. Each agent builds a specific tab type that integrates with the workspace.
 
-### Agent 1: Terminal Integration
+### Agent 1: Terminal Integration ✅ COMPLETED
 **Owner**: Terminal specialist agent
 **Dependencies**: Phase 1.5 workspace complete
+**Status**: Fully implemented and tested
 
 #### Context
 Terminals open as tabs within tracks in the workspace. When a terminal tab is created, a corresponding segment appears on the timeline showing its duration.
 
-#### Deliverables:
-- Integrate XTerm.js with WebGL renderer
-- Terminal opens as tab in workspace sidebar
-- Multiple terminal tabs per track
-- Save/restore terminal buffer on tab switch
-- Connect to timeline (segment auto-extends while terminal active)
-- Beautiful Termius-like appearance
+#### Completed Deliverables:
+- ✅ Integrated XTerm.js with WebGL renderer
+- ✅ Terminal opens in workspace panel (Arc-style tab system)
+- ✅ Terminal state persists using React Activity component (tabs stay alive when hidden)
+- ✅ Real PTY backend using tauri-pty plugin (replacing old portable-pty approach)
+- ✅ Multiple themed appearances (Termius Dark, Dracula, Nord)
+- ✅ Full terminal functionality with shell spawning
 
-#### Integration Points:
-- **Workspace**: Terminal renders in WorkspacePanel when tab active
-- **Sidebar**: Shows terminal tabs with status indicators
-- **Timeline**: Creates/updates segment when terminal opens/closes
-- **Dock**: Track shows resource usage from running terminals
-
-#### Terminal Stack:
+#### Terminal Stack (Implemented):
 ```typescript
-// Based on Termius/VS Code/Hyper approach
-- xterm.js (main terminal emulator)
-- xterm-addon-fit (responsive sizing)
-- xterm-addon-web-links (clickable URLs)
-- xterm-addon-search (find in terminal)
-- xterm-addon-webgl (GPU acceleration)
-- portable-pty (Rust) or node-pty wrapper
+// Production implementation
+- @xterm/xterm (terminal emulator)
+- @xterm/addon-fit (responsive sizing)
+- @xterm/addon-web-links (clickable URLs)
+- @xterm/addon-search (find in terminal)
+- @xterm/addon-webgl (GPU acceleration)
+- tauri-pty (Rust plugin for PTY - NPM + Cargo)
 ```
 
-#### Visual Implementation:
-```css
-/* Glass morphism terminal panel */
-.terminal-panel {
-  background: rgba(15, 15, 15, 0.85);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-}
-```
-
-#### XTerm.js Configuration:
+#### XTerm.js Configuration (Final):
 ```typescript
 const terminalOptions = {
-  theme: {
-    background: 'rgba(13, 17, 23, 0.95)',
-    foreground: '#c9d1d9',
-    cursor: '#58a6ff',
-    // ... full theme
-  },
-  fontFamily: 'Fira Code, Cascadia Code, monospace',
+  theme: THEMES[theme], // termius-dark, dracula, or nord
+  fontFamily: '"JetBrains Mono Variable", "JetBrains Mono", monospace',
   fontSize: 14,
-  rendererType: 'webgl', // GPU acceleration
-  allowTransparency: true
+  lineHeight: 1.2,
+  cursorBlink: true,
+  cursorStyle: 'block',
+  allowTransparency: true,
+  scrollback: 10000,
+  convertEol: true,
 }
 ```
 
-#### Files to create:
+#### Files Created:
 ```
 src/components/Terminal/
-├── TerminalPanel.tsx
-├── TerminalTab.tsx
-├── XTermWrapper.tsx
-├── terminal.utils.ts
+├── TerminalPanel.tsx      ✅ Main terminal container
+├── TerminalHeader.tsx     ✅ Terminal header with metadata
+├── XTermWrapper.tsx       ✅ XTerm integration with tauri-pty
+├── terminal.utils.ts      ✅ State save/restore utilities
+├── index.ts               ✅ Barrel exports
 └── themes/
-    ├── termius-dark.ts
-    ├── dracula.ts
-    └── nord.ts
+    ├── index.ts           ✅ Theme barrel
+    ├── termius-dark.ts    ✅ Default theme
+    ├── dracula.ts         ✅ Dracula theme
+    └── nord.ts            ✅ Nord theme
+
+Rust (src-tauri):
+├── Cargo.toml             ✅ Added tauri-plugin-pty dependency
+├── capabilities/
+│   └── default.json       ✅ PTY permissions configured
+└── lib.rs                 ✅ PTY plugin initialized
 ```
 
-#### Test cases:
-- Terminal spawns and accepts input
-- Tabs can be created/switched
-- Buffer persists when switching segments
-- Commands execute properly
-- WebGL renderer performs at 60fps
-- Glass morphism effects render correctly
+#### Architecture Changes:
+- **Replaced Rust terminal.rs module** with tauri-pty NPM plugin
+- **Terminal lifecycle managed by React Activity**: Terminals stay mounted but hidden when tabs switch
+- **No buffer restoration needed**: PTY process stays alive, terminal reconnects seamlessly
+- **Workspace integration**: Terminals are tabs within tracks (Arc browser pattern)
+
+#### Test Results:
+- ✅ Terminal spawns and accepts input
+- ✅ Tab switching works without killing process
+- ✅ Commands execute properly (zsh, bash, powershell)
+- ✅ WebGL renderer performs smoothly
+- ✅ Multiple themes available
+- ✅ State persists across tab switches using Activity component
 
 ---
 
 ### Agent 2: Browser Integration
 **Owner**: Browser specialist agent
-**Dependencies**: Phase 1.5 workspace complete
-
-#### Context
-Browser tabs open within tracks, with each track having its own isolated browser profile (like Arc Spaces).
+**Dependencies**: Phase 1 complete
 
 #### Deliverables:
 - Embedded webview using Tauri
-- Browser opens as tab in workspace sidebar
-- Tab management within each track
-- URL bar and navigation in workspace
-- Isolated profile per track (cookies, storage, sessions)
-- Connect to timeline segments
-
-#### Integration Points:
-- **Workspace**: Browser renders in WorkspacePanel when tab active
-- **Sidebar**: Shows browser tabs with favicons
-- **Timeline**: Creates/updates segment for browsing sessions
-- **Track**: Each track maintains separate browser profile
+- Browser opens when browser segment clicked
+- Tab management (multiple tabs per segment)
+- URL bar and navigation
+- Isolated profile per track
 
 #### Files to create:
 ```
@@ -634,25 +618,15 @@ src/components/Browser/
 ---
 
 ### Agent 3: Resource Monitor
-**Owner**: Performance specialist agent  
-**Dependencies**: Phase 1.5 workspace complete
-
-#### Context
-Resource monitoring appears in the dock (global) and per-track metrics show which tracks are consuming resources.
+**Owner**: Performance specialist agent
+**Dependencies**: Phase 1 complete
 
 #### Deliverables:
 - Rust side: System monitoring with `sysinfo`
 - IPC events for metrics
-- Resource display in dock (right side)
-- Per-track RAM/CPU monitoring
-- Auto-suspend inactive tracks
-- Visual indicators when tracks consume too much
-
-#### Integration Points:
-- **Dock**: Shows global RAM/CPU in right corner
-- **Track buttons**: Show mini resource meters
-- **Workspace**: Can show detailed metrics panel
-- **Timeline**: Can color-code segments by resource usage
+- Resource panel UI (top right)
+- RAM/CPU meters per segment
+- Kill/suspend buttons
 
 #### Files to create:
 ```
@@ -674,28 +648,29 @@ src/components/Monitor/
 
 ---
 
-### Agent 4: Timeline Polish & Segment Visualizations
-**Owner**: Timeline specialist agent
-**Dependencies**: Phase 1.5 workspace complete
-
-#### Context  
-Segments on the timeline are now just visual indicators of work happening in the workspace. They need to clearly show what's running and for how long.
+### Agent 4: Segment Content Visualizations
+**Owner**: Visualization specialist agent
+**Dependencies**: Phase 1 complete
 
 #### Deliverables:
-- Segment auto-extension (grow in real-time as NOW advances)
-- Segment closing functionality (right-click menu)
-- Visual indicators inside segments:
-  - Terminal: Command preview or working directory
-  - Browser: Favicon(s) of open tabs
-  - Agent: Progress animation
-  - Note: Text preview
-- Segment hover shows details
-- Click segment to jump to its tab in workspace
+- All segments use same "chorizo" container (like Ableton clips)
+- Different internal visualizations per type:
+  - **Terminal**: Scrolling text/command preview
+  - **Browser**: Mini tab bar with favicons
+  - **Agent**: Animated waveform/processing visualization
+  - **Note**: Text preview with markdown
+  - **External App**: App icon + file preview
+  - **Planted**: Countdown timer or growth animation
+- Smooth internal animations (think music visualizer)
+- Status indicated by border color/glow
 
-#### Integration Points:
-- **Timeline**: Segments update as tabs work
-- **Workspace**: Clicking segment activates corresponding tab
-- **Tabs**: Tab lifecycle controls segment lifecycle
+#### Visual Examples:
+```
+[═══ Terminal ════════] → Shows last command output scrolling
+[═══ Browser ═════════] → Shows favicon parade of open tabs
+[═══ Agent ═══════════] → Shows thinking animation/waveform
+[═══ Note ════════════] → Shows text preview fading in/out
+```
 
 #### Files to create:
 ```
@@ -719,120 +694,118 @@ src/components/Segments/
 
 ---
 
-### Agent 5: Agent Integration
-**Owner**: Agent specialist
-**Dependencies**: Phase 1.5 workspace complete
-
-#### Context
-AI agents (Claude Code, Codex, etc.) run as special tabs that show their thinking/output in the workspace.
+### Agent 5: Timeline Enhancements
+**Owner**: Timeline specialist agent
+**Dependencies**: Phase 1 complete
 
 #### Deliverables:
-- Agent tabs with special UI showing status
-- Real-time output streaming
-- Token usage tracking
-- Connect to timeline with special agent segments
-- Visual indicators for thinking/executing/complete
+- Zoom levels (hour/day/week)
+- Time labels on axis
+- Grid lines for time
+- Smooth scrolling animations
+- Keyboard navigation
+- Mini-map overview
 
-#### Integration Points:
-- **Workspace**: Agent output panel with syntax highlighting
-- **Sidebar**: Agent tabs show status (thinking/done)
-- **Timeline**: Agent segments show progress
-- **Dock**: Resource usage from agent API calls
+#### Files to create:
+```
+src/components/Timeline/
+├── TimeAxis.tsx
+├── TimeGrid.tsx
+├── MiniMap.tsx
+├── ZoomControls.tsx
+└── timeline.utils.ts
+```
+
+#### Test cases:
+- Zoom changes scale correctly
+- Time labels update on scroll
+- Keyboard nav works
+- Mini-map shows correct position
 
 ---
 
-### Agent 6: Planted Segments & Recipes
-**Owner**: Automation specialist
-**Dependencies**: Phase 1.5 workspace complete
-
-#### Context
-Planted segments appear on the timeline for future work. When triggered, they automatically create tabs in the workspace and start work.
+### Agent 6: Planted Segments
+**Owner**: Future work specialist agent
+**Dependencies**: Phase 1 complete
 
 #### Deliverables:
-- Create future segments on timeline (dotted outline)
-- Time-based triggers that create tabs
-- Recipe system to define what opens
+- Create future segments (dotted outline)
+- Time-based triggers
 - Visual countdown to activation
-- Calendar integration prep (basic structure)
-- Auto-activate creates tabs in workspace
+- Drag to reschedule
+- Auto-activate at trigger time
 
-#### Integration Points:
-- **Timeline**: Shows future planted segments
-- **Workspace**: Auto-opens tabs when triggered
-- **Track**: Recipes defined per track
-- **Dock**: Shows upcoming planted work
+#### Files to create:
+```
+src/components/Segments/
+├── PlantedSegment.tsx
+├── TriggerConfig.tsx
+├── Scheduler.tsx
+└── planted.utils.ts
+```
 
 #### Test cases:
 - Can create future segments
-- Triggers activate on time and create tabs
+- Triggers activate on time
 - Can reschedule by dragging
 - Visual feedback as time approaches
 
 ---
 
-## PHASE 3: Advanced Features & Polish
-*After core tool integration*
-
-### Context  
-With the workspace handling active work and timeline showing history, we can add advanced features that make Maestro truly powerful.
-
-### Integration Agent 1: External Apps
-**Dependencies**: Workspace and basic tabs working
+### Agent 7: Panes & Window Management  
+**Owner**: Window management specialist
+**Dependencies**: Phase 1 complete
 
 #### Deliverables:
-- Launch external apps (VSCode, Ableton, etc.) from tabs
-- Track window state
-- Create timeline segments for external app usage
-- Restore app state when reopening
+- Obsidian-style pane splitting system
+- VSCode-style tab management at top
+- Each pane can hold browser/terminal/notes
+- Drag to resize panes
+- Tab bar with close/close others/close all
+- Clicking any segment opens it in a tab
 
-### Integration Agent 2: Track Profiles & Persistence
-**Dependencies**: All tab types working
+#### Files to create:
+```
+src/components/Panes/
+├── PaneManager.tsx
+├── Pane.tsx  
+├── TabBar.tsx
+├── Tab.tsx
+└── pane.utils.ts
+```
 
-#### Deliverables:
-- Browser profile isolation per track
-- Save complete track state (all tabs, positions)
-- Import/export tracks
-- Backup to cloud
-- Undo/redo system
-
-### Integration Agent 3: Calendar & Automation
-**Dependencies**: Planted segments working
-
-#### Deliverables:
-- Calendar integration (read events)
-- Auto-create planted segments from calendar
-- Recipe templates library
-- Standup/meeting workspace presets
-- Time-based workspace switching
-
-### Integration Agent 4: UI Polish & Performance
-**Dependencies**: All core features working
-
-#### Deliverables:
-- Smooth animations throughout (Framer Motion)
-- Sound effects for actions
-- Keyboard shortcuts for everything
-- Performance optimization
-- Onboarding flow
-- Export/share timeline visualizations
+#### Test cases:
+- Can split panes horizontally/vertically
+- Tabs can be reordered by dragging
+- Close actions work correctly
+- Pane focus follows click
+- Layout persists to IndexedDB
 
 ---
 
-## Success Metrics
+## PHASE 3: Integration & Polish (Day 2-3)
+*2-3 agents for integration*
 
-### Core Functionality
-- [ ] Can switch between tracks instantly
-- [ ] Tabs open in workspace and appear on timeline
-- [ ] Timeline shows accurate work history
-- [ ] State persists across restarts
-- [ ] Resource usage stays under control
+### Integration Agent 1: External Apps
+- Launch external apps (VSCode, Ableton, etc.)
+- App state preservation
+- Window position memory
+- File association
 
-### User Experience  
-- [ ] Feels as smooth as Arc browser
-- [ ] Timeline provides useful work visualization
-- [ ] Can manage 10+ parallel work contexts
-- [ ] Workspace switching is instant
-- [ ] Everything is keyboard accessible
+### Integration Agent 2: Data & Persistence
+- SQLite integration
+- Backup/restore
+- Export timeline data
+- Undo/redo system
+
+### Integration Agent 3: UI Polish
+- Light mode
+- Smooth animations (Framer Motion)
+- Sound effects (optional)
+- Onboarding flow
+- Keyboard shortcuts panel
+
+---
 
 ## Visual Design Philosophy
 
@@ -885,8 +858,14 @@ The monochrome design with accent color keeps focus on the work itself, not the 
     "virtualization": "@tanstack/virtual"
   },
   "terminal": {
-    "emulator": "XTerm.js",
-    "pty": "node-pty"
+    "emulator": "@xterm/xterm 5.5.0",
+    "addons": [
+      "@xterm/addon-fit",
+      "@xterm/addon-web-links",
+      "@xterm/addon-search",
+      "@xterm/addon-webgl"
+    ],
+    "pty": "tauri-pty 0.1.1 (NPM + Rust plugin)"
   },
   "state": {
     "management": "Valtio (proxy-based reactive)",
