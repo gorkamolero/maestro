@@ -25,7 +25,9 @@ export function BrowserPanel({ tab }: BrowserPanelProps) {
   });
 
   const handleNavigate = async (url: string) => {
-    if (!webviewLabelRef.current) return;
+    if (!webviewLabelRef.current || !containerRef.current) return;
+
+    const rect = containerRef.current.getBoundingClientRect();
 
     try {
       setIsLoading(true);
@@ -33,6 +35,10 @@ export function BrowserPanel({ tab }: BrowserPanelProps) {
         window: getCurrentWindow(),
         label: webviewLabelRef.current,
         url,
+        x: rect.x,
+        y: rect.y,
+        width: rect.width,
+        height: rect.height,
       });
       currentUrlRef.current = url;
       setError(null);
