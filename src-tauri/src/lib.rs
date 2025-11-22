@@ -6,20 +6,10 @@ use std::sync::Mutex;
 use std::collections::HashMap;
 use tauri::{Emitter, State, WebviewUrl, WebviewBuilder, LogicalPosition, LogicalSize, Webview, Window};
 
-// Track webview dimensions
-#[derive(Clone)]
-struct WebviewDimensions {
-    x: f64,
-    y: f64,
-    width: f64,
-    height: f64,
-}
-
 // Global state for the application
 struct AppState {
     monitor: Arc<Mutex<ResourceMonitor>>,
     webviews: Arc<Mutex<HashMap<String, Webview>>>,
-    webview_dimensions: Arc<Mutex<HashMap<String, WebviewDimensions>>>,
 }
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
@@ -123,10 +113,6 @@ fn create_browser_webview(
     let mut webviews = state.webviews.lock().map_err(|e| e.to_string())?;
     webviews.insert(label.clone(), webview);
 
-    // Store dimensions
-    let mut dimensions = state.webview_dimensions.lock().map_err(|e| e.to_string())?;
-    dimensions.insert(label.clone(), WebviewDimensions { x, y, width, height });
-
     Ok(label)
 }
 
@@ -156,13 +142,6 @@ fn update_webview_position(
             .map_err(|e| format!("Failed to set position: {}", e))?;
     }
 
-    // Update stored dimensions
-    let mut dimensions = state.webview_dimensions.lock().map_err(|e| e.to_string())?;
-    if let Some(dim) = dimensions.get_mut(&label) {
-        dim.x = x;
-        dim.y = y;
-    }
-
     Ok(())
 }
 
@@ -179,13 +158,6 @@ fn update_webview_size(
         webview
             .set_size(LogicalSize::new(width, height))
             .map_err(|e| format!("Failed to set size: {}", e))?;
-    }
-
-    // Update stored dimensions
-    let mut dimensions = state.webview_dimensions.lock().map_err(|e| e.to_string())?;
-    if let Some(dim) = dimensions.get_mut(&label) {
-        dim.width = width;
-        dim.height = height;
     }
 
     Ok(())
@@ -231,27 +203,15 @@ async fn navigate_webview(
         WebviewUrl::App(webview_url.into())
     };
 
-    // Get stored dimensions or use defaults
-    let dimensions = {
-        let dims = state.webview_dimensions.lock().map_err(|e| e.to_string())?;
-        dims.get(&label).cloned().unwrap_or(WebviewDimensions {
-            x: 200.0,
-            y: 100.0,
-            width: 800.0,
-            height: 600.0,
-        })
-    };
-
-    println!("Using dimensions: x={}, y={}, w={}, h={}", dimensions.x, dimensions.y, dimensions.width, dimensions.height);
-
     let webview_builder = WebviewBuilder::new(&label, parsed_url)
         .auto_resize();
 
+    // Use reasonable default size - this should be tracked from the container
     let webview = window
         .add_child(
             webview_builder,
-            LogicalPosition::new(dimensions.x, dimensions.y),
-            LogicalSize::new(dimensions.width, dimensions.height),
+            LogicalPosition::new(200.0, 100.0),
+            LogicalSize::new(800.0, 600.0),
         )
         .map_err(|e| format!("Failed to create webview: {}", e))?;
 
@@ -275,7 +235,6 @@ pub fn run() {
         .manage(AppState {
             monitor: monitor.clone(),
             webviews: Arc::new(Mutex::new(HashMap::new())),
-            webview_dimensions: Arc::new(Mutex::new(HashMap::new())),
         })
         .invoke_handler(tauri::generate_handler![
             greet,
