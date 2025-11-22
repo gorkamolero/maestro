@@ -100,3 +100,19 @@ export interface ResourceMetrics {
 }
 
 export type ZoomLevel = 'hour' | 'day' | 'week' | 'month';
+
+// Drag and drop types
+export type TabDropZone = 'favorites' | 'tabs';
+
+export interface TabDragData {
+  type: 'tab';
+  tabId: string;
+  sourceZone: TabDropZone;
+  sourceIndex: number;
+  tab: any; // Full tab object for preview (using any to avoid circular dependency)
+}
+
+export interface DropZoneData {
+  zoneType: TabDropZone;
+  spaceId: string;
+}

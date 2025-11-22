@@ -133,8 +133,81 @@ export const workspaceActions = {
 
   toggleTabFavorite: (tabId: string) => {
     const tab = workspaceStore.tabs.find((t) => t.id === tabId);
-    if (tab) {
-      tab.isFavorite = !tab.isFavorite;
+    if (!tab) return;
+
+    const newIsFavorite = !tab.isFavorite;
+    const targetZone = newIsFavorite ? 'favorites' : 'tabs';
+
+    // Use moveTabToZone with index 0 (insert at beginning)
+    workspaceActions.moveTabToZone(tabId, targetZone, 0);
+  },
+
+  /**
+   * Move tab from one zone to another at specific index
+   */
+  moveTabToZone(
+    tabId: string,
+    targetZone: 'favorites' | 'tabs',
+    targetIndex: number
+  ) {
+    const tab = workspaceStore.tabs.find((t) => t.id === tabId);
+    if (!tab) return;
+
+    // Update favorite status
+    const shouldBeFavorite = targetZone === 'favorites';
+    tab.isFavorite = shouldBeFavorite;
+
+    // Remove tab from current position
+    const currentIndex = workspaceStore.tabs.findIndex((t) => t.id === tabId);
+    workspaceStore.tabs.splice(currentIndex, 1);
+
+    // Get tabs in target zone
+    const targetZoneTabs = workspaceStore.tabs.filter((t) =>
+      targetZone === 'favorites' ? t.isFavorite : !t.isFavorite
+    );
+
+    // Calculate safe insertion index
+    const safeIndex = Math.min(targetIndex, targetZoneTabs.length);
+
+    // Insert tab at target position
+    // Find global index for insertion
+    if (targetZone === 'favorites') {
+      // Insert at beginning of favorites
+      workspaceStore.tabs.splice(safeIndex, 0, tab);
+    } else {
+      // Insert after all favorites
+      const favCount = workspaceStore.tabs.filter((t) => t.isFavorite).length;
+      workspaceStore.tabs.splice(favCount + safeIndex, 0, tab);
+    }
+  },
+
+  /**
+   * Reorder tab within same zone
+   */
+  reorderTabInZone(
+    tabId: string,
+    zone: 'favorites' | 'tabs',
+    newIndex: number
+  ) {
+    const tab = workspaceStore.tabs.find((t) => t.id === tabId);
+    if (!tab) return;
+
+    // Remove from current position
+    const currentIndex = workspaceStore.tabs.findIndex((t) => t.id === tabId);
+    workspaceStore.tabs.splice(currentIndex, 1);
+
+    // Calculate new global index
+    if (zone === 'favorites') {
+      const safeIndex = Math.min(
+        newIndex,
+        workspaceStore.tabs.filter((t) => t.isFavorite).length
+      );
+      workspaceStore.tabs.splice(safeIndex, 0, tab);
+    } else {
+      const favCount = workspaceStore.tabs.filter((t) => t.isFavorite).length;
+      const zoneTabs = workspaceStore.tabs.filter((t) => !t.isFavorite);
+      const safeIndex = Math.min(newIndex, zoneTabs.length);
+      workspaceStore.tabs.splice(favCount + safeIndex, 0, tab);
     }
   },
 
