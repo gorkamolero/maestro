@@ -10,7 +10,7 @@ interface UseNavigationOptions {
   tabId: string;
   setIsLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
-  onUrlChange: (url: string) => void;
+  onUrlChange?: (url: string) => void;
 }
 
 export function useNavigation({
@@ -48,7 +48,9 @@ export function useNavigation({
 
     setIsLoading(true);
     setError(null);
-    onUrlChange(normalizedUrl);
+    if (onUrlChange) {
+      onUrlChange(normalizedUrl);
+    }
 
     // Close existing webview
     if (webviewRef.current) {
