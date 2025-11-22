@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { Droppable } from '@hello-pangea/dnd';
 import { Star } from 'lucide-react';
+import type { ReactElement } from 'react';
 import { Tab } from '@/stores/workspace.store';
 import { TabDropZone as ZoneType } from '@/types';
 import { DraggableTab } from './DraggableTab';
@@ -10,7 +11,7 @@ import { cn } from '@/lib/utils';
 interface DragCloneContentProps {
   provided: any;
   tab: Tab;
-  getTabIcon: (tab: Tab) => JSX.Element;
+  getTabIcon: (tab: Tab) => ReactElement;
   sourceZone: ZoneType;
 }
 
@@ -21,9 +22,6 @@ function DragCloneContent({ provided, tab, getTabIcon, sourceZone }: DragCloneCo
   // If no target zone, use source zone; otherwise use target zone
   const effectiveZone = targetZone || sourceZone;
   const renderAsFavorite = effectiveZone === 'favorites';
-  const sourceIsFavorite = sourceZone === 'favorites';
-
-  console.log('DragCloneContent render:', { sourceZone, targetZone, effectiveZone, renderAsFavorite });
 
   return (
     <div
@@ -88,7 +86,6 @@ export function TabDropZone({
   emptyMessage = 'No items yet',
 }: TabDropZoneProps) {
   const droppableId = `${zone}-${spaceId}`;
-  const { targetZone } = useDragContext();
 
   const getTabIcon = (tab: Tab) => {
     switch (tab.type) {
