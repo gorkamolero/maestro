@@ -90,6 +90,14 @@ fn create_browser_webview(
         return Err("Invalid URL scheme".to_string());
     };
 
+    // Check if webview already exists
+    {
+        let webviews = state.webviews.lock().map_err(|e| e.to_string())?;
+        if webviews.contains_key(&label) {
+            return Ok(label); // Already exists, just return the label
+        }
+    }
+
     let webview_builder = WebviewBuilder::new(&label, webview_url)
         .auto_resize();
 
