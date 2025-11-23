@@ -7,6 +7,8 @@ import { TabDropZone as ZoneType } from '@/types';
 import { DraggableTab } from './DraggableTab';
 import { useDragContext } from './DragContext';
 import { cn } from '@/lib/utils';
+import { AppFavoriteGridItem } from '@/components/Launcher';
+import type { Favorite, ConnectedApp } from '@/types/launcher';
 
 interface DragCloneContentProps {
   provided: DraggableProvided;
@@ -81,6 +83,8 @@ interface TabDropZoneProps {
   spaceId: string;
   title: string;
   emptyMessage?: string;
+  appFavorites?: Favorite[];
+  getConnectedApp?: (appId: string) => ConnectedApp | undefined;
 }
 
 export function TabDropZone({
@@ -89,6 +93,8 @@ export function TabDropZone({
   spaceId,
   title,
   emptyMessage = 'No items yet',
+  appFavorites = [],
+  getConnectedApp,
 }: TabDropZoneProps) {
   const droppableId = `${zone}-${spaceId}`;
 
@@ -148,7 +154,7 @@ export function TabDropZone({
             {/* Tabs List */}
             <div className={zone === 'favorites' ? 'grid grid-cols-3 gap-2' : 'space-y-1'}>
               <AnimatePresence mode="popLayout">
-                {tabs.length === 0 ? (
+                {tabs.length === 0 && appFavorites.length === 0 ? (
                   <motion.div
                     key="empty"
                     initial={{ opacity: 0, y: -10 }}
@@ -159,15 +165,28 @@ export function TabDropZone({
                     {emptyMessage}
                   </motion.div>
                 ) : (
-                  tabs.map((tab, index) => (
-                    <DraggableTab
-                      key={tab.id}
-                      tab={tab}
-                      zone={zone}
-                      index={index}
-                      spaceId={spaceId}
-                    />
-                  ))
+                  <div className="contents">
+                    {tabs.map((tab, index) => (
+                      <DraggableTab
+                        key={tab.id}
+                        tab={tab}
+                        zone={zone}
+                        index={index}
+                        spaceId={spaceId}
+                      />
+                    ))}
+                    {zone === 'favorites' && appFavorites.map((favorite) => {
+                      const app = getConnectedApp?.(favorite.connectedAppId);
+                      if (!app) return null;
+                      return (
+                        <AppFavoriteGridItem
+                          key={favorite.id}
+                          favorite={favorite}
+                          connectedApp={app}
+                        />
+                      );
+                    })}
+                  </div>
                 )}
               </AnimatePresence>
             </div>

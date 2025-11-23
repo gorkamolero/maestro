@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
+import { useSnapshot } from 'valtio';
 import { Dock } from '@/components/Workspace/Dock';
 import { Sidebar } from '@/components/Workspace/Sidebar';
 import { WorkspacePanel } from '@/components/Workspace/WorkspacePanel';
+import { AddFavoriteModal } from '@/components/Launcher';
+import { workspaceStore } from '@/stores/workspace.store';
 
 function App() {
   const [darkMode] = useState(true);
+  const { activeSpaceId } = useSnapshot(workspaceStore);
 
   useEffect(() => {
     if (darkMode) {
@@ -33,6 +37,9 @@ function App() {
       <div className="flex-1 flex flex-col">
         <WorkspacePanel />
       </div>
+
+      {/* Modals */}
+      {activeSpaceId && <AddFavoriteModal workspaceId={activeSpaceId} />}
     </div>
   );
 }

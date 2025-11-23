@@ -105,6 +105,16 @@ export interface IPlatformBridge {
    */
   browserCanGoForward(label: string): Promise<boolean>;
 
+  /**
+   * Show modal overlay (creates a top-level BrowserView for modal dialogs)
+   */
+  showModalOverlay(): Promise<void>;
+
+  /**
+   * Hide modal overlay
+   */
+  hideModalOverlay(): Promise<void>;
+
   // ============================================================================
   // Terminal: PTY Management
   // ============================================================================

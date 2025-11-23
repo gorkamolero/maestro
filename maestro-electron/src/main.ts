@@ -4,6 +4,7 @@ import started from 'electron-squirrel-startup';
 import { registerBrowserHandlers } from './ipc/browser';
 import { registerTerminalHandlers } from './ipc/terminal';
 import { registerLauncherHandlers } from './ipc/launcher';
+import { registerPortalHandler } from './ipc/portal';
 
 // Handle creating/removing shortcuts on Windows
 if (started) {
@@ -44,12 +45,16 @@ const createWindow = () => {
 
 // App lifecycle
 app.on('ready', () => {
-  // Register IPC handlers after app is ready
+  // Create window first
+  createWindow();
+
+  // Register portal handler to intercept window.open()
+  registerPortalHandler(getMainWindow);
+
+  // Then register IPC handlers
   registerBrowserHandlers(getMainWindow);
   registerTerminalHandlers(getMainWindow);
   registerLauncherHandlers();
-
-  createWindow();
 });
 
 app.on('window-all-closed', () => {

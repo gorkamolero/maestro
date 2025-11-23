@@ -96,6 +96,14 @@ export class TauriBridge implements IPlatformBridge {
     return tauriInvoke<boolean>('webview_can_go_forward', { label });
   }
 
+  async showModalOverlay(): Promise<void> {
+    // Not needed for Tauri - CSS z-index works fine with child webviews
+  }
+
+  async hideModalOverlay(): Promise<void> {
+    // Not needed for Tauri - CSS z-index works fine with child webviews
+  }
+
   // ============================================================================
   // Terminal: PTY Management
   // ============================================================================

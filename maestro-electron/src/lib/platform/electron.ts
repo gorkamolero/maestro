@@ -76,6 +76,14 @@ export class ElectronBridge implements IPlatformBridge {
     return this.invoke<boolean>('browser_can_go_forward', { label });
   }
 
+  async showModalOverlay(): Promise<void> {
+    await this.invoke('show_modal_overlay');
+  }
+
+  async hideModalOverlay(): Promise<void> {
+    await this.invoke('hide_modal_overlay');
+  }
+
   // ============================================================================
   // Terminal: PTY Management
   // ============================================================================

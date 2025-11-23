@@ -2,7 +2,7 @@ import { useSnapshot } from 'valtio';
 import { DragDropContext, DropResult, type DragUpdate } from '@hello-pangea/dnd';
 import { workspaceStore, workspaceActions, type TabType } from '@/stores/workspace.store';
 import { spacesStore } from '@/stores/spaces.store';
-import { Terminal, Globe, FileText } from 'lucide-react';
+import { Terminal, Globe, FileText, Plus } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
@@ -14,6 +14,7 @@ import {
 import { useEffect, useState } from 'react';
 import { TabDropZone } from './TabDropZone';
 import { DragProvider, useDragContext } from './DragContext';
+import { launcherStore, launcherActions } from '@/stores/launcher.store';
 
 const TAB_LABELS: Record<TabType, string> = {
   terminal: 'Terminal',
@@ -25,6 +26,7 @@ const TAB_LABELS: Record<TabType, string> = {
 function SidebarContent() {
   const { tabs, activeSpaceId } = useSnapshot(workspaceStore);
   const { spaces } = useSnapshot(spacesStore);
+  const launcherSnap = useSnapshot(launcherStore);
   const [api, setApi] = useState<CarouselApi>();
   const { setTargetZone } = useDragContext();
 
@@ -88,6 +90,10 @@ function SidebarContent() {
     workspaceActions.openTab(activeSpaceId, type, title);
   };
 
+  const handleAddApp = () => {
+    launcherStore.isAddModalOpen = true;
+  };
+
   if (!activeSpaceId) {
     return (
       <div className="w-full h-full flex items-center justify-center p-4">
@@ -145,6 +151,20 @@ function SidebarContent() {
               <p className="text-xs">New Note</p>
             </TooltipContent>
           </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={handleAddApp}
+                className="w-10 h-10 rounded-lg bg-background/50 hover:bg-background flex items-center justify-center transition-colors shadow-sm"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <p className="text-xs">Add App</p>
+            </TooltipContent>
+          </Tooltip>
         </TooltipProvider>
       </div>
 
@@ -170,6 +190,7 @@ function SidebarContent() {
             const spaceTabs = tabs.filter((t) => t.spaceId === space.id);
             const favoriteTabs = spaceTabs.filter((t) => t.isFavorite);
             const regularTabs = spaceTabs.filter((t) => !t.isFavorite);
+            const appFavorites = launcherSnap.favoritesByWorkspace[space.id] || [];
 
             return (
               <CarouselItem key={space.id} className="pl-0 h-full">
@@ -182,6 +203,8 @@ function SidebarContent() {
                       spaceId={space.id}
                       title="Favorites"
                       emptyMessage="No favorites yet"
+                      appFavorites={appFavorites}
+                      getConnectedApp={launcherActions.getConnectedApp}
                     />
                   </div>
 
