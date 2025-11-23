@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { updateBrowserUrl } from '@/stores/browser.store';
 
 // Calculate webview position from container
 export function getWebviewPosition(element: HTMLElement) {
@@ -35,7 +37,6 @@ interface UseWebviewOptions {
 
 export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setError }: UseWebviewOptions) {
   const webviewLabelRef = useRef<string | null>(null);
-  const currentUrlRef = useRef<string>(initialUrl);
 
   // Create webview ONCE per tab.id
   useEffect(() => {
@@ -80,7 +81,6 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
 
         if (mounted) {
           webviewLabelRef.current = label;
-          currentUrlRef.current = initialUrl;
           setIsLoading(false);
           setError(null);
         }
@@ -108,6 +108,34 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
       }
     };
   }, [tabId]); // Only recreate if tab.id changes
+
+  // Listen to navigation events from webview
+  useEffect(() => {
+    let unlistenPromise: Promise<() => void>;
+
+    const setupListener = async () => {
+      unlistenPromise = listen<{ label: string; url: string }>('webview-navigation', (event) => {
+        // Only handle events for this webview
+        if (event.payload.label !== webviewLabelRef.current) return;
+
+        const newUrl = event.payload.url;
+
+        // Ignore about:blank navigations
+        if (newUrl === 'about:blank') return;
+
+        // Update browser store
+        updateBrowserUrl(tabId, newUrl);
+      });
+    };
+
+    setupListener();
+
+    return () => {
+      if (unlistenPromise) {
+        unlistenPromise.then(unlisten => unlisten());
+      }
+    };
+  }, [tabId]);
 
   // Resize handling - call set_position/set_size on existing webviews
   useEffect(() => {
@@ -160,6 +188,5 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
 
   return {
     webviewLabelRef,
-    currentUrlRef,
   };
 }

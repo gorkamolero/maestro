@@ -94,7 +94,9 @@ pub fn run() {
             browser::create_browser_webview,
             browser::close_browser_webview,
             browser::update_webview_bounds,
-            browser::navigate_webview
+            browser::navigate_webview,
+            browser::webview_go_back,
+            browser::webview_go_forward
         ])
         .setup(move |app| {
             // Start metrics emission thread

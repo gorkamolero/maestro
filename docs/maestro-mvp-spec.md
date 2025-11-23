@@ -16,102 +16,92 @@ Maestro is a timeline-based work orchestrator that manages parallel work streams
 
 ---
 
-## PHASE 2: Core Tool Integration (Remaining)
+## PHASE 2: Workspace Completion (Current Focus)
 
-### Agent 2: Browser Integration ✅ COMPLETE
+### ✅ Completed Workspace Features
 
-**Status:** Fully implemented with positioning fix. See CHANGELOG.md for implementation details.
+**Core Infrastructure:**
+- [x] Dock with space navigation
+- [x] Sidebar with tab management
+- [x] Tab drag-and-drop reordering
+- [x] Workspace panel with activity-based tab switching
+- [x] State persistence across tab switches (React Activity)
 
-**Completed:**
-- [x] Embedded webview using Tauri `window.add_child()` API
-- [x] Browser opens in workspace panel as tab (Arc pattern)
-- [x] URL bar with navigation controls (back/forward/reload/home)
-- [x] Multiple browser instances (each workspace tab is a browser)
-- [x] Browser state persists across tab switches (using React Activity)
-- [x] Dynamic webview creation/destruction via Rust commands
-- [x] ResizeObserver for position/size updates with throttling
-- [x] Fixed macOS child webview positioning (discovered 28px title bar offset)
-- [x] Implemented workaround for Tauri add_child() positioning bug
-- [x] Centralized positioning logic in `getWebviewPosition()` helper
+**Tool Panels:**
+- [x] **Terminal Integration** - Full xterm.js with PTY support
+- [x] **Browser Integration** - Embedded webview with URL bar, navigation, multi-instance support
+- [x] **Resource Monitor** - Real-time RAM/CPU tracking
 
-**Remaining Features (Future Enhancements):**
-- [ ] Back/forward navigation (requires history tracking)
-- [ ] Browser profile isolation per space
-- [ ] Cookie/session isolation
+**Browser Navigation:**
+- [x] Back/forward navigation with history tracking
+- [x] URL bar updates from navigation events
+- [x] Automatic URL normalization
+- [x] Navigation event system
+- [x] Dedicated browser state store
+
+### 🎯 Remaining Workspace Features
+
+**Workspace Enhancements:**
+- [ ] Notes panel (markdown editor as workspace tool)
+- [ ] Command palette (Cmd+K) for workspace navigation
+- [ ] Keyboard shortcuts for tab switching (Cmd+1-9)
+- [ ] Tab context menu (rename, duplicate, close)
+- [ ] Workspace search (across all open tabs/tools)
+- [ ] Quick switcher between tools/tabs
+
+**Browser Enhancements:**
+- [ ] Bookmark manager in sidebar
 - [ ] Download handling
 - [ ] Context menu (copy/paste/inspect)
 - [ ] DevTools integration
+- [ ] Multiple tabs within browser panel
 
-**Files Implemented:**
-- `src/components/Browser/BrowserPanel.tsx`
-- `src/components/Browser/BrowserToolbar.tsx`
-- `src/components/Browser/useWebview.ts`
-- `src-tauri/src/lib.rs` (browser commands: create, close, navigate, update_webview_bounds)
+**Terminal Enhancements:**
+- [ ] Command history search
+- [ ] Terminal tab splitting (horizontal/vertical)
+- [ ] Custom color schemes
+- [ ] Search in terminal output
 
-### Agent 4: Segment Content Visualizations
-- [ ] All segments use consistent "chorizo" container (horizontal rounded rectangles)
-- [ ] Terminal visualization: scrolling command preview in segment
-- [ ] Browser visualization: favicon carousel showing open tabs
-- [ ] Agent visualization: animated waveform/processing indicator
-- [ ] Note visualization: text preview with markdown
-- [ ] External app visualization: app icon with activity pulse
-- [ ] Planted visualization: countdown timer or growth animation
-- [ ] 30fps animations for all visualizations
-- [ ] Real-time content updates in segment interiors
-
-### Agent 5: Timeline Enhancements
-- [ ] Zoom levels: hour/day/week/month views
-- [ ] Time labels on axis (enhancement over basic implementation)
-- [ ] Grid lines for time intervals (configurable density)
-- [ ] Smooth scrolling animations with easing
-- [ ] Keyboard navigation: arrow keys, Home/End, Page Up/Down
-- [ ] Mini-map overview showing full timeline extent
-- [ ] Zoom controls UI component
-
-### Agent 6: Planted Segments
-- [ ] Create future segments with dotted outline
-- [ ] Time-based trigger configuration UI
-- [ ] Visual countdown to activation time
-- [ ] Drag to reschedule planted segments
-- [ ] Auto-activate segment at trigger time
-- [ ] Recurring trigger support (daily/weekly)
-- [ ] Event-based triggers (not just time)
-
-### Agent 7: Panes & Window Management
-- [ ] Obsidian-style pane splitting system (horizontal/vertical)
-- [ ] Each pane can contain: Terminal, Browser, Notes, Timeline view (nestable!)
-- [ ] Drag handles to resize panes
-- [ ] Click to focus active pane
-- [ ] Close pane button in pane header
-- [ ] Maximize/restore pane functionality
-- [ ] Pane layout persists to IndexedDB
+**UI Polish:**
+- [ ] Smooth tab switch animations
+- [ ] Enhanced drag-and-drop visual feedback
+- [ ] Keyboard navigation improvements
+- [ ] Accessibility (ARIA labels, focus management)
 
 ---
 
-## PHASE 3: Integration & Polish
+## FUTURE PHASES: Timeline & Advanced Features
 
-### Integration Agent 1: External Apps
-- [ ] Launch external apps (VSCode, Ableton, etc.) via Tauri shell API
-- [ ] Track external app launch/close times in segments
-- [ ] Window position memory per app
-- [ ] File association (open files in preferred apps)
-- [ ] App state preservation strategy
+### Timeline Features (Deferred)
+- Segment content visualizations (chorizo UI with interior animations)
+- Timeline enhancements (zoom levels, grid, minimap)
+- Planted segments (future scheduling)
+- Track management
+- Time-based navigation
 
-### Integration Agent 2: Data & Persistence
-- [ ] SQLite integration (migrate from IndexedDB for complex queries)
-- [ ] Backup timeline data to file
-- [ ] Restore from backup file
-- [ ] Export timeline to JSON/CSV
-- [ ] Undo/redo system using event sourcing
-- [ ] Data migration strategy for schema changes
+### Panes & Window Management (Deferred)
+- Obsidian-style pane splitting
+- Nested layouts
+- Pane resize and focus
+- Layout persistence
 
-### Integration Agent 3: UI Polish
-- [ ] Light mode theme (in addition to dark mode)
-- [ ] Enhanced animations using Framer Motion
-- [ ] Sound effects for interactions (optional, user-configurable)
-- [ ] Onboarding flow for first-time users
-- [ ] Keyboard shortcuts panel (Cmd+K command palette)
-- [ ] Accessibility improvements (ARIA labels, keyboard nav)
+### External App Integration (Deferred)
+- Launch external apps (VSCode, Ableton, etc.)
+- App state tracking
+- Window position memory
+- File associations
+
+### Data & Persistence (Deferred)
+- SQLite migration
+- Backup/restore
+- Export to JSON/CSV
+- Undo/redo system
+
+### Additional Polish (Deferred)
+- Light mode theme
+- Enhanced animations (Framer Motion)
+- Sound effects
+- Onboarding flow
 
 ---
 
@@ -163,8 +153,14 @@ Maestro is a timeline-based work orchestrator that manages parallel work streams
   },
   "state": {
     "management": "Valtio (proxy-based reactive)",
-    "events": "EventEmitter3 or mitt",
-    "persistence": "IndexedDB (browser-native)"
+    "stores": "Separate stores: workspace, browser, timeline, segments",
+    "events": "Tauri event system + EventEmitter3",
+    "persistence": "IndexedDB via valtio-persist"
+  },
+  "browser": {
+    "engine": "Tauri v2 child webviews",
+    "navigation": "on_navigation event handler",
+    "state": "Dedicated browser.store.ts per tab"
   },
   "monitoring": {
     "rust": "sysinfo crate",
@@ -319,10 +315,12 @@ src/
 │   │   ├── TerminalPanel.tsx
 │   │   ├── TerminalHeader.tsx
 │   │   └── XTermWrapper.tsx
-│   ├── Browser/                 (✅ Phase 2 Agent 2 complete)
-│   │   ├── BrowserPanel.tsx
-│   │   ├── BrowserToolbar.tsx
-│   │   └── useWebview.ts
+│   ├── Browser/                 (✅ Phase 2 Agent 2 complete with navigation)
+│   │   ├── BrowserPanel.tsx    # UI component (reads from browser store)
+│   │   ├── BrowserToolbar.tsx  # URL bar with useEffect sync
+│   │   ├── useWebview.ts       # Webview lifecycle + navigation events
+│   │   ├── browser.utils.ts    # URL normalization
+│   │   └── index.ts            # Exports
 │   ├── Monitor/                 (✅ Phase 2 Agent 3 complete)
 │   │   ├── ResourcePanel.tsx
 │   │   ├── SegmentMetrics.tsx
@@ -334,11 +332,12 @@ src/
 │       ├── Tab.tsx
 │       └── pane.utils.ts
 ├── stores/                      (✅ implemented with valtio-persist)
-│   ├── timeline.store.ts
-│   ├── spaces.store.ts
-│   ├── segments.store.ts
-│   ├── workspace.store.ts
-│   └── metrics.store.ts
+│   ├── timeline.store.ts       # Timeline state
+│   ├── spaces.store.ts         # Spaces/tracks
+│   ├── segments.store.ts       # Segment data
+│   ├── workspace.store.ts      # Workspace layout & tabs
+│   ├── browser.store.ts        # Browser state per tab (NEW)
+│   └── metrics.store.ts        # Resource metrics
 ├── lib/
 │   ├── persistence.ts          # Save/load state (✅ basic via valtio-persist)
 │   ├── shortcuts.ts            # Keyboard handlers (TO BUILD)

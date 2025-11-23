@@ -158,6 +158,16 @@ const result = await invoke("your_command", { arg: "value" });
 2. Add corresponding npm package if it has frontend bindings
 3. Register in `lib.rs` builder: `.plugin(plugin_name::init())`
 
+## Documentation Policy
+
+**When the user considers a feature or fix ready:**
+
+Ask to update the project documentation:
+- `CHANGELOG.md` - Add completed work with implementation details
+- `docs/maestro-mvp-spec.md` - Move completed items from remaining work to completed section
+
+This ensures documentation stays current and tracks project progress accurately.
+
 ## Code Organization
 
 ### Component Structure

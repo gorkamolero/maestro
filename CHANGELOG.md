@@ -276,22 +276,29 @@ src/stores/
 
 **Rust Commands Created:**
 ```rust
-create_browser_webview     // Create child webview at position
+create_browser_webview     // Create child webview at position with on_navigation handler
 close_browser_webview      // Destroy webview
 update_webview_bounds      // Update position and size simultaneously
-navigate_webview           // Navigate to new URL (recreate approach)
+navigate_webview           // Navigate to new URL using webview.navigate()
+webview_go_back            // Navigate back in history, returns new URL
+webview_go_forward         // Navigate forward in history, returns new URL
 ```
 
 **Files Created:**
 ```
+src/stores/
+└── browser.store.ts       # Dedicated browser state store (NEW)
+
 src/components/Browser/
-├── BrowserPanel.tsx       # Main container
-├── BrowserToolbar.tsx     # URL bar and controls
-├── useWebview.ts          # Webview lifecycle hook with positioning logic
+├── BrowserPanel.tsx       # Main UI component
+├── BrowserToolbar.tsx     # URL bar with useEffect sync
+├── useWebview.ts          # Webview lifecycle + navigation events
+├── browser.utils.ts       # URL normalization
 └── index.ts               # Barrel exports
 
 Rust (src-tauri):
-├── lib.rs                 # Browser webview commands
+├── browser.rs             # Browser module with navigation commands
+├── lib.rs                 # Module registration
 └── capabilities/default.json  # Window permissions
 ```
 
@@ -301,11 +308,35 @@ Rust (src-tauri):
 - Position/size updated on window resize via ResizeObserver (100ms throttle)
 - All positioning logic centralized in `getWebviewPosition()` helper
 
+**Navigation System:**
+- ✅ Back/forward navigation with URL tracking
+- ✅ Navigation event system using `on_navigation` handler
+- ✅ Automatic URL bar updates from webview navigation events
+- ✅ Dedicated browser store (separated from workspace store)
+- ✅ Valtio-based state management with IndexedDB persistence
+- ✅ Complete navigation history tracking for each browser instance
+- ✅ Navigation logic centralized in useWebview hook
+- ✅ URL normalization (auto-adds https://, handles plain domains)
+
+**Architecture Improvements:**
+- ✅ Separated browser state into dedicated `browser.store.ts`
+- ✅ Browser state keyed by tab ID for clean isolation
+- ✅ Navigation event listener in `useWebview.ts` hook (separation of concerns)
+- ✅ Direct Valtio proxy mutations for automatic persistence
+
+**Files Updated:**
+```
+src/stores/browser.store.ts     # NEW - Dedicated browser state
+src/components/Browser/
+├── BrowserPanel.tsx             # Simplified - UI only
+├── BrowserToolbar.tsx           # URL bar with useEffect sync
+└── useWebview.ts                # Navigation event handling
+```
+
 **Known Limitations:**
-- Back/forward navigation not implemented (requires history tracking)
 - No browser profile isolation per space
 - No cookie/session isolation
-- Webview recreated on navigation (limitation of Tauri child webview API)
+- Webview uses `webview.navigate()` API (preserves state)
 
 **Completed**: 2025-11-23
 

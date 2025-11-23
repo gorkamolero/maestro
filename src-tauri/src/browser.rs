@@ -1,8 +1,15 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use tauri::{LogicalPosition, LogicalSize, Webview, WebviewBuilder, WebviewUrl, Window};
+use tauri::{AppHandle, Emitter, LogicalPosition, LogicalSize, Webview, WebviewBuilder, WebviewUrl, Window};
+use serde::Serialize;
 
 pub type WebviewMap = Arc<Mutex<HashMap<String, Webview>>>;
+
+#[derive(Clone, Serialize)]
+struct NavigationPayload {
+    label: String,
+    url: String,
+}
 
 #[tauri::command]
 pub fn create_browser_webview(
@@ -14,6 +21,7 @@ pub fn create_browser_webview(
     width: f64,
     height: f64,
     webviews: tauri::State<WebviewMap>,
+    app: AppHandle,
 ) -> Result<String, String> {
     let webview_url = if url.starts_with("http://") || url.starts_with("https://") {
         WebviewUrl::External(url.parse().map_err(|e| format!("Invalid URL: {}", e))?)
@@ -31,7 +39,17 @@ pub fn create_browser_webview(
         }
     }
 
-    let webview_builder = WebviewBuilder::new(&label, webview_url);
+    let label_clone = label.clone();
+    let app_clone = app.clone();
+
+    let webview_builder = WebviewBuilder::new(&label, webview_url)
+        .on_navigation(move |url| {
+            let _ = app_clone.emit("webview-navigation", NavigationPayload {
+                label: label_clone.clone(),
+                url: url.to_string(),
+            });
+            true // Allow navigation
+        });
 
     // CRITICAL: add_child with position doesn't work reliably
     // Add at origin first, then set position
@@ -120,3 +138,68 @@ pub async fn navigate_webview(
         Err(format!("Webview '{}' not found", label))
     }
 }
+
+#[tauri::command]
+pub fn webview_go_back(
+    label: String,
+    webviews: tauri::State<WebviewMap>,
+) -> Result<String, String> {
+    let webviews_guard = webviews.lock().map_err(|e| e.to_string())?;
+
+    if let Some(webview) = webviews_guard.get(&label) {
+        webview
+            .eval("window.history.back()")
+            .map_err(|e| format!("Failed to go back: {}", e))?;
+    } else {
+        return Err(format!("Webview '{}' not found", label));
+    }
+
+    drop(webviews_guard);
+
+    // Wait for navigation to complete
+    std::thread::sleep(std::time::Duration::from_millis(200));
+
+    // Get URL from webview
+    let webviews_guard = webviews.lock().map_err(|e| e.to_string())?;
+    if let Some(webview) = webviews_guard.get(&label) {
+        webview
+            .url()
+            .map(|url| url.to_string())
+            .map_err(|e| format!("Failed to get URL: {}", e))
+    } else {
+        Err(format!("Webview '{}' not found", label))
+    }
+}
+
+#[tauri::command]
+pub fn webview_go_forward(
+    label: String,
+    webviews: tauri::State<WebviewMap>,
+) -> Result<String, String> {
+    let webviews_guard = webviews.lock().map_err(|e| e.to_string())?;
+
+    if let Some(webview) = webviews_guard.get(&label) {
+        webview
+            .eval("window.history.forward()")
+            .map_err(|e| format!("Failed to go forward: {}", e))?;
+    } else {
+        return Err(format!("Webview '{}' not found", label));
+    }
+
+    drop(webviews_guard);
+
+    // Wait for navigation to complete
+    std::thread::sleep(std::time::Duration::from_millis(200));
+
+    // Get URL from webview
+    let webviews_guard = webviews.lock().map_err(|e| e.to_string())?;
+    if let Some(webview) = webviews_guard.get(&label) {
+        webview
+            .url()
+            .map(|url| url.to_string())
+            .map_err(|e| format!("Failed to get URL: {}", e))
+    } else {
+        Err(format!("Webview '{}' not found", label))
+    }
+}
+

@@ -1,9 +1,10 @@
 import { useState, useRef } from 'react';
 import { motion } from 'motion/react';
 import { invoke } from '@tauri-apps/api/core';
+import { useSnapshot } from 'valtio';
 import { useWebview } from './useWebview';
 import { BrowserToolbar } from './BrowserToolbar';
-import { workspaceActions } from '@/stores/workspace.store';
+import { browserStore, getBrowserState, updateBrowserUrl } from '@/stores/browser.store';
 import { normalizeUrl } from './browser.utils';
 
 interface BrowserPanelProps {
@@ -15,11 +16,16 @@ export function BrowserPanel({ tab }: BrowserPanelProps) {
   const [error, setError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Restore URL from browserState if available, normalize to ensure valid scheme
-  const savedUrl = tab.browserState?.url || tab.url;
-  const initialUrl = normalizeUrl(savedUrl || 'https://www.google.com');
+  // Get reactive snapshot of browser state
+  const browserSnap = useSnapshot(browserStore);
+  const initialUrl = normalizeUrl('https://www.google.com');
 
-  const { webviewLabelRef, currentUrlRef } = useWebview({
+  // Initialize browser state for this tab
+  getBrowserState(tab.id, initialUrl);
+
+  const currentUrl = browserSnap.browsers[tab.id]?.url || initialUrl;
+
+  const { webviewLabelRef } = useWebview({
     tabId: tab.id,
     initialUrl,
     containerRef,
@@ -41,11 +47,7 @@ export function BrowserPanel({ tab }: BrowserPanelProps) {
         url: normalizedUrl,
       });
 
-      currentUrlRef.current = normalizedUrl;
-
-      // Save normalized URL to tab state for persistence
-      workspaceActions.updateTabBrowserState(tab.id, { url: normalizedUrl });
-
+      // URL will be updated via the navigation event
       setError(null);
     } catch (err) {
       console.error('Navigation error:', err);
@@ -56,15 +58,27 @@ export function BrowserPanel({ tab }: BrowserPanelProps) {
   };
 
   const handleRefresh = () => {
-    handleNavigate(currentUrlRef.current || initialUrl);
+    handleNavigate(currentUrl);
   };
 
-  const handleGoBack = () => {
-    console.warn('Back navigation not yet implemented - requires history tracking');
+  const handleGoBack = async () => {
+    if (!webviewLabelRef.current) return;
+    try {
+      const newUrl = await invoke<string>('webview_go_back', { label: webviewLabelRef.current });
+      updateBrowserUrl(tab.id, newUrl);
+    } catch (err) {
+      console.error('Failed to go back:', err);
+    }
   };
 
-  const handleGoForward = () => {
-    console.warn('Forward navigation not yet implemented - requires history tracking');
+  const handleGoForward = async () => {
+    if (!webviewLabelRef.current) return;
+    try {
+      const newUrl = await invoke<string>('webview_go_forward', { label: webviewLabelRef.current });
+      updateBrowserUrl(tab.id, newUrl);
+    } catch (err) {
+      console.error('Failed to go forward:', err);
+    }
   };
 
   const handleHome = () => {
@@ -79,12 +93,14 @@ export function BrowserPanel({ tab }: BrowserPanelProps) {
     >
       {/* Toolbar with URL bar */}
       <BrowserToolbar
-        url={currentUrlRef.current || initialUrl}
+        url={currentUrl}
         onNavigate={handleNavigate}
         onBack={handleGoBack}
         onForward={handleGoForward}
         onReload={handleRefresh}
         onHome={handleHome}
+        canGoBack={true}
+        canGoForward={true}
         isLoading={isLoading}
       />
 
@@ -110,7 +126,7 @@ export function BrowserPanel({ tab }: BrowserPanelProps) {
 
       {/* Status bar */}
       <div className="px-3 py-1.5 text-[10px] text-muted-foreground/70 border-t border-border/50">
-        <span>Native Tauri child webview • {currentUrlRef.current}</span>
+        <span>Native Tauri child webview • {currentUrl}</span>
       </div>
     </motion.div>
   );

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, RotateCw, Home } from 'lucide-react';
 
 interface BrowserToolbarProps {
@@ -25,6 +25,11 @@ export function BrowserToolbar({
   isLoading = false,
 }: BrowserToolbarProps) {
   const [inputUrl, setInputUrl] = useState(url);
+
+  // Update input when URL prop changes (from back/forward navigation)
+  useEffect(() => {
+    setInputUrl(url);
+  }, [url]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
