@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { motion } from 'motion/react';
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { useWebview } from './useWebview';
+import { useWebview, getWebviewPosition } from './useWebview';
 import { BrowserToolbar } from './BrowserToolbar';
 
 interface BrowserPanelProps {
@@ -31,28 +31,17 @@ export function BrowserPanel({ tab }: BrowserPanelProps) {
       setIsLoading(true);
 
       // Ensure we have valid dimensions
-      let rect = containerRef.current.getBoundingClientRect();
-      if (rect.height === 0) {
-        console.warn('Container has 0 height, waiting for layout...');
+      if (containerRef.current.offsetHeight === 0) {
         await new Promise(resolve => setTimeout(resolve, 50));
-        rect = containerRef.current.getBoundingClientRect();
       }
 
-      // console.log('Container rect:', { x: rect.x, y: rect.y, width: rect.width, height: rect.height });
-
-      // FIX: Invert Y coordinate for macOS bottom-left origin
-      const window = getCurrentWindow();
-      const windowSize = await window.innerSize();
-      const correctedY = windowSize.height - rect.y - rect.height;
+      const position = getWebviewPosition(containerRef.current);
 
       await invoke('navigate_webview', {
-        window,
+        window: getCurrentWindow(),
         label: webviewLabelRef.current,
         url,
-        x: rect.x,
-        y: correctedY,
-        width: rect.width,
-        height: rect.height,
+        ...position,
       });
       currentUrlRef.current = url;
       setError(null);
@@ -98,7 +87,7 @@ export function BrowserPanel({ tab }: BrowserPanelProps) {
       />
 
       {/* Browser webview container */}
-      <div ref={containerRef} className="flex-1 relative bg-background border-4 border-red-500">
+      <div ref={containerRef} className="flex-1 relative bg-background">
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/50">
             <div className="text-sm text-muted-foreground">Loading webview...</div>

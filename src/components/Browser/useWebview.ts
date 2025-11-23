@@ -2,6 +2,29 @@ import { useEffect, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
+// Calculate webview position from container
+export function getWebviewPosition(element: HTMLElement) {
+  // Use getBoundingClientRect for viewport-relative position
+  const rect = element.getBoundingClientRect();
+
+  // On macOS, Tauri's LogicalPosition includes the window title bar (~28px)
+  // JavaScript's viewport coordinates start below the title bar
+  // So we need to add the title bar height to the Y coordinate
+  const MACOS_TITLE_BAR_HEIGHT = 28;
+  const adjustedY = rect.y + MACOS_TITLE_BAR_HEIGHT;
+
+  // Use clientWidth/clientHeight which excludes scrollbars
+  const contentWidth = element.clientWidth;
+  const contentHeight = element.clientHeight;
+
+  return {
+    x: rect.x,
+    y: adjustedY,
+    width: contentWidth,
+    height: contentHeight,
+  };
+}
+
 interface UseWebviewOptions {
   tabId: string;
   initialUrl: string;
@@ -19,7 +42,6 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
     let mounted = true;
 
     const createWebview = async () => {
-      // console.log('createWebview called for tabId:', tabId);
       if (!containerRef.current || !mounted) return;
 
       // Wait for the container to have proper dimensions (flex-1 containers need layout time)
@@ -43,52 +65,17 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
 
       const label = `browser-${tabId}`;
 
-      // // Log container element details for debugging positioning
-      // const computedStyle = window.getComputedStyle(containerRef.current);
-
-      // // Check if there are any parent elements with padding/margin that might affect positioning
-      // let parent = containerRef.current.parentElement;
-      // const parentOffsets = [];
-      // while (parent && parent.tagName !== 'BODY') {
-      //   const parentStyle = window.getComputedStyle(parent);
-      //   parentOffsets.push({
-      //     tag: parent.tagName,
-      //     class: parent.className,
-      //     padding: parentStyle.padding,
-      //     margin: parentStyle.margin,
-      //     border: parentStyle.border
-      //   });
-      //   parent = parent.parentElement;
-      //   if (parentOffsets.length > 10) break; // Increase limit to see more parents
-      // }
-
-      // console.log('Container element:', JSON.stringify({
-      //   rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
-      //   display: computedStyle.display,
-      //   position: computedStyle.position,
-      //   devicePixelRatio: window.devicePixelRatio,
-      //   parentOffsets
-      // }, null, 2));
-
       try {
         setError(null);
         setIsLoading(true);
 
-        // Create native Tauri child webview via Rust command
-        // FIX: macOS uses bottom-left origin, browsers use top-left origin
-        // Invert Y coordinate: correctedY = windowHeight - browserY - elementHeight
-        const window = getCurrentWindow();
-        const windowSize = await window.innerSize();
-        const correctedY = windowSize.height - rect.y - rect.height;
+        const position = getWebviewPosition(containerRef.current);
 
         await invoke('create_browser_webview', {
-          window,
+          window: getCurrentWindow(),
           label,
           url: initialUrl || 'about:blank',
-          x: rect.x,
-          y: correctedY,
-          width: rect.width,
-          height: rect.height,
+          ...position,
         });
 
         if (mounted) {
@@ -122,13 +109,13 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
     };
   }, [tabId]); // Only recreate if tab.id changes
 
-  // Update webview position when container resizes
+  // Resize handling - call set_position/set_size on existing webviews
   useEffect(() => {
-    if (!containerRef.current || !webviewLabelRef.current) return;
+    if (!containerRef.current) return;
 
     let rafId: number | null = null;
     let lastUpdate = 0;
-    const throttleMs = 16; // ~60fps
+    const throttleMs = 100; // Update every 100ms max
 
     const updatePosition = () => {
       const now = Date.now();
@@ -139,23 +126,19 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
       lastUpdate = now;
 
       if (!containerRef.current || !webviewLabelRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
+      const position = getWebviewPosition(containerRef.current);
 
-      // FIX: Invert Y coordinate for macOS bottom-left origin
-      getCurrentWindow().innerSize().then((windowSize) => {
-        const correctedY = windowSize.height - rect.y - rect.height;
-        invoke('update_webview_position', {
-          label: webviewLabelRef.current,
-          x: rect.x,
-          y: correctedY,
-        }).catch(console.error);
-      });
-
-      invoke('update_webview_size', {
+      // Call set_position and set_size on the existing webview
+      invoke('update_webview_bounds', {
+        window: getCurrentWindow(),
         label: webviewLabelRef.current,
-        width: rect.width,
-        height: rect.height,
-      }).catch(console.error);
+        x: position.x,
+        y: position.y,
+        width: position.width,
+        height: position.height,
+      }).catch((err) => {
+        console.error('Failed to update webview bounds:', err);
+      });
     };
 
     const debouncedUpdate = () => {
@@ -165,12 +148,13 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
 
     const resizeObserver = new ResizeObserver(debouncedUpdate);
     resizeObserver.observe(containerRef.current);
-    window.addEventListener('scroll', debouncedUpdate, { passive: true });
+
+    window.addEventListener('resize', debouncedUpdate, { passive: true });
 
     return () => {
       if (rafId) cancelAnimationFrame(rafId);
       resizeObserver.disconnect();
-      window.removeEventListener('scroll', debouncedUpdate);
+      window.removeEventListener('resize', debouncedUpdate);
     };
   }, []);
 

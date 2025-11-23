@@ -98,19 +98,25 @@ fn create_browser_webview(
         }
     }
 
-    let webview_builder = WebviewBuilder::new(&label, webview_url)
-        .auto_resize();
+    let webview_builder = WebviewBuilder::new(&label, webview_url);
 
-    // Log the coordinates we're using
-    println!("Creating webview at position: ({}, {}), size: ({}x{})", x, y, width, height);
-
+    // CRITICAL: add_child with position doesn't work reliably
+    // Add at origin first, then set position
     let webview = window
         .add_child(
             webview_builder,
-            LogicalPosition::new(x, y),
+            LogicalPosition::new(0.0, 0.0),
             LogicalSize::new(width, height),
         )
         .map_err(|e| format!("Failed to create webview: {}", e))?;
+
+    // Small delay to ensure webview is ready
+    std::thread::sleep(std::time::Duration::from_millis(10));
+
+    // NOW set the actual position
+    webview
+        .set_position(LogicalPosition::new(x, y))
+        .map_err(|e| format!("Failed to set position: {}", e))?;
 
     // Store the webview
     let mut webviews = state.webviews.lock().map_err(|e| e.to_string())?;
@@ -131,10 +137,13 @@ fn close_browser_webview(label: String, state: State<AppState>) -> Result<(), St
 }
 
 #[tauri::command]
-fn update_webview_position(
+fn update_webview_bounds(
+    _window: Window,
     label: String,
     x: f64,
     y: f64,
+    width: f64,
+    height: f64,
     state: State<AppState>,
 ) -> Result<(), String> {
     let webviews = state.webviews.lock().map_err(|e| e.to_string())?;
@@ -143,21 +152,7 @@ fn update_webview_position(
         webview
             .set_position(LogicalPosition::new(x, y))
             .map_err(|e| format!("Failed to set position: {}", e))?;
-    }
 
-    Ok(())
-}
-
-#[tauri::command]
-fn update_webview_size(
-    label: String,
-    width: f64,
-    height: f64,
-    state: State<AppState>,
-) -> Result<(), String> {
-    let webviews = state.webviews.lock().map_err(|e| e.to_string())?;
-
-    if let Some(webview) = webviews.get(&label) {
         webview
             .set_size(LogicalSize::new(width, height))
             .map_err(|e| format!("Failed to set size: {}", e))?;
@@ -177,8 +172,6 @@ async fn navigate_webview(
     height: f64,
     state: State<'_, AppState>,
 ) -> Result<(), String> {
-    println!("Navigate webview {} to {}", label, url);
-
     let webview_url = if url.starts_with("http://") || url.starts_with("https://") {
         url.clone()
     } else if url == "about:blank" {
@@ -188,19 +181,14 @@ async fn navigate_webview(
         format!("https://www.google.com/search?q={}", urlencoding::encode(&url))
     };
 
-    println!("Resolved URL: {}", webview_url);
-
     // We need to recreate the webview with the new URL
     // First, close the existing one
     {
         let mut webviews = state.webviews.lock().map_err(|e| e.to_string())?;
         if let Some(webview) = webviews.remove(&label) {
-            println!("Closing existing webview");
             webview.close().map_err(|e| format!("Failed to close webview: {}", e))?;
         }
     }
-
-    println!("Creating new webview with URL: {}", webview_url);
 
     let parsed_url = if webview_url.starts_with("http://") || webview_url.starts_with("https://") {
         WebviewUrl::External(webview_url.parse().map_err(|e| format!("Invalid URL: {}", e))?)
@@ -208,19 +196,22 @@ async fn navigate_webview(
         WebviewUrl::App(webview_url.into())
     };
 
-    let webview_builder = WebviewBuilder::new(&label, parsed_url)
-        .auto_resize();
+    let webview_builder = WebviewBuilder::new(&label, parsed_url);
 
-    // Use the container position/size passed from frontend
+    // Add at origin first, then set position (workaround for Tauri positioning bug)
     let webview = window
         .add_child(
             webview_builder,
-            LogicalPosition::new(x, y),
+            LogicalPosition::new(0.0, 0.0),
             LogicalSize::new(width, height),
         )
         .map_err(|e| format!("Failed to create webview: {}", e))?;
 
-    println!("Webview created successfully");
+    std::thread::sleep(std::time::Duration::from_millis(10));
+
+    webview
+        .set_position(LogicalPosition::new(x, y))
+        .map_err(|e| format!("Failed to set position: {}", e))?;
 
     // Store the new webview
     let mut webviews = state.webviews.lock().map_err(|e| e.to_string())?;
@@ -252,8 +243,7 @@ pub fn run() {
             get_all_processes,
             create_browser_webview,
             close_browser_webview,
-            update_webview_position,
-            update_webview_size,
+            update_webview_bounds,
             navigate_webview
         ])
         .setup(move |app| {
