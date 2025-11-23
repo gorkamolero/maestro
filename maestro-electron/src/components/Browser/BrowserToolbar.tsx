@@ -37,7 +37,7 @@ export function BrowserToolbar({
   };
 
   return (
-    <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-background/50">
+    <div className="h-14 flex items-center gap-2 px-3 border-b border-border/50 bg-black">
       {/* Navigation buttons */}
       <div className="flex items-center gap-1">
         <button

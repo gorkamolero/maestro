@@ -35,9 +35,9 @@ function App() {
         minWidth={180}
         maxWidth={400}
         onResize={handleSidebarResize}
-        className="bg-muted/40"
+        className="bg-muted/20"
       >
-        <div className="h-full flex flex-col">
+        <div className="h-full flex flex-col pt-4">
           {/* Sidebar with favorites and tabs */}
           <div className="flex-1 overflow-hidden">
             <Sidebar />
@@ -51,8 +51,10 @@ function App() {
       </ResizablePanel>
 
       {/* Main workspace area */}
-      <div className="flex-1 flex flex-col">
-        <WorkspacePanel />
+      <div className="flex-1 pt-4 bg-muted/20">
+        <div className="h-full flex flex-col rounded-lg overflow-hidden bg-background">
+          <WorkspacePanel />
+        </div>
       </div>
 
       {/* Modals */}

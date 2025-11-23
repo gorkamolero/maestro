@@ -66,7 +66,7 @@ export function DraggableTab({ tab, zone, index }: DraggableTabProps) {
               ? 'bg-white/15 hover:bg-white/20'
               : 'bg-white/5 hover:bg-white/10',
             // Active state border
-            isActive && !isFavoriteZone && 'border-l-2 border-blue-400',
+            isActive && !isFavoriteZone && 'border-l-2 border-primary',
             snapshot.isDragging ? 'opacity-30' : 'cursor-grab'
           )}
           style={{
@@ -80,7 +80,7 @@ export function DraggableTab({ tab, zone, index }: DraggableTabProps) {
             <>
               {getTabIcon()}
               {isActive && (
-                <div className="absolute bottom-1 w-6 h-0.5 bg-blue-400 rounded-full" />
+                <div className="absolute bottom-1 w-6 h-0.5 bg-primary rounded-full" />
               )}
             </>
           ) : (
