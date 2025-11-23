@@ -11,7 +11,7 @@ export interface Tab {
   title: string;
   status: TabStatus;
   segmentId?: string; // Link to timeline segment
-  content?: any; // Type-specific content
+  content?: unknown; // Type-specific content
   isFavorite?: boolean; // Whether this tab is favorited
   terminalState?: {
     buffer: string;

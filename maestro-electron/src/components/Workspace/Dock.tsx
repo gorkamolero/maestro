@@ -1,7 +1,7 @@
 import { useSnapshot } from 'valtio';
 import { spacesStore, spacesActions } from '@/stores/spaces.store';
 import { workspaceStore, workspaceActions } from '@/stores/workspace.store';
-import { Plus, Home, Music, FlaskConical } from 'lucide-react';
+import { Plus, Home, Music, FlaskConical, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -9,7 +9,7 @@ import { SpaceEditor } from './SpaceEditor';
 import { useState } from 'react';
 import type { Space } from '@/types';
 
-const SPACE_ICONS: Record<string, any> = {
+const SPACE_ICONS: Record<string, LucideIcon> = {
   home: Home,
   music: Music,
   science: FlaskConical,

@@ -1,5 +1,5 @@
 import { useSnapshot } from 'valtio';
-import { DragDropContext, DropResult } from '@hello-pangea/dnd';
+import { DragDropContext, DropResult, type DragUpdate } from '@hello-pangea/dnd';
 import { workspaceStore, workspaceActions, type TabType } from '@/stores/workspace.store';
 import { spacesStore } from '@/stores/spaces.store';
 import { Terminal, Globe, FileText } from 'lucide-react';
@@ -28,7 +28,7 @@ function SidebarContent() {
   const [api, setApi] = useState<CarouselApi>();
   const { setTargetZone } = useDragContext();
 
-  const handleDragUpdate = (result: any) => {
+  const handleDragUpdate = (result: DragUpdate) => {
     if (result.destination) {
       const targetZone = result.destination.droppableId.split('-')[0] as 'favorites' | 'tabs';
       setTargetZone(targetZone);

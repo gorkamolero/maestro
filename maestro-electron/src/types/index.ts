@@ -1,4 +1,5 @@
 // Core Types
+import type { Tab } from '@/stores/workspace.store';
 
 export interface Workspace {
   id: string;
@@ -109,7 +110,7 @@ export interface TabDragData {
   tabId: string;
   sourceZone: TabDropZone;
   sourceIndex: number;
-  tab: any; // Full tab object for preview (using any to avoid circular dependency)
+  tab: Tab; // Full tab object for preview
 }
 
 export interface DropZoneData {

@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
 
 // ============================================================================
 // Expose Electron APIs to renderer
@@ -6,11 +6,11 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('electron', {
   // IPC invoke (for request-response)
-  invoke: (channel: string, args?: any) => ipcRenderer.invoke(channel, args),
+  invoke: (channel: string, args?: unknown) => ipcRenderer.invoke(channel, args),
 
   // IPC on (for events)
-  on: (channel: string, callback: (payload: any) => void) => {
-    const subscription = (_event: any, payload: any) => {
+  on: (channel: string, callback: (payload: unknown) => void) => {
+    const subscription = (_event: IpcRendererEvent, payload: unknown) => {
       if (payload !== undefined) {
         callback(payload);
       }
@@ -28,15 +28,22 @@ contextBridge.exposeInMainWorld('electron', {
 // Expose PTY API via IPC (node-pty runs in main process)
 // ============================================================================
 
+interface PtySpawnOptions {
+  cwd?: string;
+  env?: Record<string, string>;
+  cols?: number;
+  rows?: number;
+}
+
 contextBridge.exposeInMainWorld('pty', {
-  spawn: async (shell: string, args: string[], options: any) => {
+  spawn: async (shell: string, args: string[], options: PtySpawnOptions) => {
     // Request main process to spawn a PTY
     const ptyId = await ipcRenderer.invoke('pty-spawn', { shell, args, options });
 
     // Return wrapper object that communicates via IPC
     return {
       onData: (callback: (data: string) => void) => {
-        const listener = (_event: any, data: string) => callback(data);
+        const listener = (_event: IpcRendererEvent, data: string) => callback(data);
         ipcRenderer.on(`pty-data-${ptyId}`, listener);
         // Return cleanup function
         return () => ipcRenderer.removeListener(`pty-data-${ptyId}`, listener);
@@ -48,7 +55,7 @@ contextBridge.exposeInMainWorld('pty', {
         ipcRenderer.send('pty-resize', ptyId, { cols, rows });
       },
       onExit: (callback: (exitCode: { exitCode: number }) => void) => {
-        const listener = (_event: any, exitCode: { exitCode: number }) => callback(exitCode);
+        const listener = (_event: IpcRendererEvent, exitCode: { exitCode: number }) => callback(exitCode);
         ipcRenderer.on(`pty-exit-${ptyId}`, listener);
         return () => ipcRenderer.removeListener(`pty-exit-${ptyId}`, listener);
       },

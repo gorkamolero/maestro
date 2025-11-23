@@ -1,6 +1,6 @@
 import React, { Activity } from 'react';
 import { useSnapshot } from 'valtio';
-import { workspaceStore, workspaceActions } from '@/stores/workspace.store';
+import { workspaceStore, workspaceActions, type Tab } from '@/stores/workspace.store';
 import { Terminal, Globe, Bot } from 'lucide-react';
 import { motion } from 'motion/react';
 import { SegmentMetrics } from '@/components/Monitor/SegmentMetrics';
@@ -77,7 +77,7 @@ export function WorkspacePanel() {
 }
 
 // Terminal component - now fully functional!
-function TerminalView({ tab }: { tab: any }) {
+function TerminalView({ tab }: { tab: Tab }) {
   const { activeSegments } = useSnapshot(segmentsStore);
   const segment = activeSegments.find((s) => s.id === tab.segmentId);
 
@@ -123,7 +123,7 @@ function TerminalView({ tab }: { tab: any }) {
 }
 
 // Browser component - now with BrowserPanel!
-function BrowserView({ tab }: { tab: any }) {
+function BrowserView({ tab }: { tab: Tab }) {
   const { activeSegments } = useSnapshot(segmentsStore);
   const segment = activeSegments.find((s) => s.id === tab.segmentId);
 
@@ -152,7 +152,7 @@ function BrowserView({ tab }: { tab: any }) {
   );
 }
 
-function AgentPlaceholder({ tab }: { tab: any }) {
+function AgentPlaceholder({ tab }: { tab: Tab }) {
   const { activeSegments } = useSnapshot(segmentsStore);
   const segment = activeSegments.find((s) => s.id === tab.segmentId);
 
@@ -188,7 +188,7 @@ function AgentPlaceholder({ tab }: { tab: any }) {
   );
 }
 
-function NoteEditor({ tab }: { tab: any }) {
+function NoteEditor({ tab }: { tab: Tab }) {
   return (
     <motion.div
       initial={{ opacity: 0 }}

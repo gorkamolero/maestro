@@ -5,9 +5,10 @@ import { useWebview } from './useWebview';
 import { BrowserToolbar } from './BrowserToolbar';
 import { browserStore, getBrowserState } from '@/stores/browser.store';
 import { normalizeUrl } from './browser.utils';
+import type { Tab } from '@/stores/workspace.store';
 
 interface BrowserPanelProps {
-  tab: any; // Workspace tab
+  tab: Tab;
 }
 
 export function BrowserPanel({ tab }: BrowserPanelProps) {

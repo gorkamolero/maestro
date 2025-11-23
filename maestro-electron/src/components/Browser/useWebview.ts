@@ -254,6 +254,7 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
       resizeObserver.disconnect();
       window.removeEventListener('resize', debouncedUpdate);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return {

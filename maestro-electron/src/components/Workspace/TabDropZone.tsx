@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { Droppable } from '@hello-pangea/dnd';
+import { Droppable, type DraggableProvided, type DraggableStateSnapshot, type DraggableRubric } from '@hello-pangea/dnd';
 import { Star } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Tab } from '@/stores/workspace.store';
@@ -9,7 +9,7 @@ import { useDragContext } from './DragContext';
 import { cn } from '@/lib/utils';
 
 interface DragCloneContentProps {
-  provided: any;
+  provided: DraggableProvided;
   tab: Tab;
   getTabIcon: (tab: Tab) => ReactElement;
   sourceZone: ZoneType;
@@ -105,7 +105,7 @@ export function TabDropZone({
     }
   };
 
-  const renderClone = (provided: any, _snapshot: any, rubric: any) => {
+  const renderClone = (provided: DraggableProvided, _snapshot: DraggableStateSnapshot, rubric: DraggableRubric) => {
     const tab = tabs[rubric.source.index];
     const sourceZone = rubric.source.droppableId.split('-')[0] as ZoneType;
 

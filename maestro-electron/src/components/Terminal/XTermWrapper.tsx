@@ -118,7 +118,7 @@ export function XTermWrapper({
         });
 
         // Store PTY reference
-        (terminal as any)._pty = pty;
+        (terminal as unknown as { _pty: typeof pty })._pty = pty;
       } catch (err) {
         console.error('Failed to spawn shell:', err);
         terminal.writeln('\x1b[1;31mFailed to spawn shell\x1b[0m');

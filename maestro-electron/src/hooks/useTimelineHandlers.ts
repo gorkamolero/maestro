@@ -1,5 +1,5 @@
-import { useCallback, useState, type RefObject } from 'react';
-import { useReactFlow } from '@xyflow/react';
+import React, { useCallback, useState, type RefObject } from 'react';
+import { useReactFlow, type Viewport } from '@xyflow/react';
 import { useSnapshot } from 'valtio';
 import { spacesStore, spacesActions } from '@/stores/spaces.store';
 import { segmentsActions } from '@/stores/segments.store';
@@ -32,13 +32,13 @@ export function useTimelineHandlers({ containerRef, referenceTime }: TimelineHan
   }, []);
 
   // Update space label offset to keep them at left edge
-  const onMove = useCallback((_event: any, viewport: any) => {
+  const onMove = useCallback((_event: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent | null, viewport: Viewport) => {
     setTrackLabelOffset(-viewport.x / viewport.zoom);
   }, []);
 
   // Click on canvas to create segment
   const onPaneClick = useCallback(
-    (event: any) => {
+    (event: React.MouseEvent | MouseEvent) => {
       const bounds = containerRef.current?.getBoundingClientRect();
       if (!bounds) return;
 

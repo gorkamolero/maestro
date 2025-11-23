@@ -1,5 +1,5 @@
 import { ipcMain, BrowserWindow } from 'electron';
-import si from 'systeminformation';
+import si, { type Systeminformation } from 'systeminformation';
 
 const segmentProcesses = new Map<string, number[]>();
 
@@ -51,12 +51,12 @@ export function registerMetricsHandlers() {
     const processes = await si.processes();
     const metrics = pids
       .map((pid) => processes.list.find((p) => p.pid === pid))
-      .filter(Boolean)
+      .filter((proc): proc is Systeminformation.ProcessesProcessData => proc !== undefined)
       .map((proc) => ({
-        pid: proc!.pid,
-        name: proc!.name,
-        ram: Math.round((proc!.mem || 0) / 1024 / 1024),
-        cpu: proc!.cpu || 0,
+        pid: proc.pid,
+        name: proc.name,
+        ram: Math.round((proc.mem || 0) / 1024 / 1024),
+        cpu: proc.cpu || 0,
       }));
 
     const totalRam = metrics.reduce((sum, m) => sum + m.ram, 0);
@@ -74,8 +74,9 @@ export function registerMetricsHandlers() {
   ipcMain.handle('kill_process', async (_event, { pid }) => {
     try {
       process.kill(pid);
-    } catch (err: any) {
-      throw new Error(`Failed to kill process ${pid}: ${err.message}`);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      throw new Error(`Failed to kill process ${pid}: ${errorMessage}`);
     }
   });
 
