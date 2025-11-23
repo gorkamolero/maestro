@@ -18,9 +18,9 @@ Maestro is a timeline-based work orchestrator that manages parallel work streams
 
 ## PHASE 2: Core Tool Integration (Remaining)
 
-### Agent 2: Browser Integration ⚠️ BLOCKED
+### Agent 2: Browser Integration ✅ COMPLETE
 
-**Status:** Implementation complete, but blocked on webview positioning issue.
+**Status:** Fully implemented with positioning fix. See CHANGELOG.md for implementation details.
 
 **Completed:**
 - [x] Embedded webview using Tauri `window.add_child()` API
@@ -29,42 +29,24 @@ Maestro is a timeline-based work orchestrator that manages parallel work streams
 - [x] Multiple browser instances (each workspace tab is a browser)
 - [x] Browser state persists across tab switches (using React Activity)
 - [x] Dynamic webview creation/destruction via Rust commands
-- [x] ResizeObserver for position/size updates
+- [x] ResizeObserver for position/size updates with throttling
+- [x] Fixed macOS child webview positioning (discovered 28px title bar offset)
+- [x] Implemented workaround for Tauri add_child() positioning bug
+- [x] Centralized positioning logic in `getWebviewPosition()` helper
 
-**Remaining:**
-- [ ] Isolated browser profile per track/space
-- [ ] Cookie/session isolation per space
+**Remaining Features (Future Enhancements):**
 - [ ] Back/forward navigation (requires history tracking)
-
-**Current Blocker:**
-🚨 **Child webview positioning issue on macOS with Retina display**
-
-The child webview does not position correctly using coordinates from `getBoundingClientRect()`:
-- **X coordinate**: Works perfectly ✅
-- **Y coordinate**: Consistently offset by ~30-50px (appears too high) ❌
-- **Temporary workaround**: Multiply Y coordinate by 1.5
-- **Problem**: Workaround is unreliable and breaks understanding
-
-**Technical Details:**
-- Device: macOS with 2x DPI (Retina display)
-- Using: `LogicalPosition` with coordinates from `getBoundingClientRect()`
-- Tauri version: v2.0.0-beta with `unstable` feature flag
-- Related issue: GitHub #10053 (fixed in wry but behavior persists)
-
-**Investigation Questions:**
-1. What coordinate system does `LogicalPosition` expect? (window, viewport, screen?)
-2. Does `LogicalPosition` account for DPI automatically, or should we use `PhysicalPosition`?
-3. Is there a relationship between `getBoundingClientRect()` viewport coords and Tauri's window coordinate system?
-4. Does `.auto_resize()` conflict with manual positioning? (GitHub #9611)
-5. Is this a platform-specific bug on macOS with Retina displays?
+- [ ] Browser profile isolation per space
+- [ ] Cookie/session isolation
+- [ ] Download handling
+- [ ] Context menu (copy/paste/inspect)
+- [ ] DevTools integration
 
 **Files Implemented:**
 - `src/components/Browser/BrowserPanel.tsx`
 - `src/components/Browser/BrowserToolbar.tsx`
 - `src/components/Browser/useWebview.ts`
-- `src-tauri/src/lib.rs` (browser commands)
-
-**Next Steps:** Research Tauri coordinate system documentation or community for definitive answer on child webview positioning with high-DPI displays.
+- `src-tauri/src/lib.rs` (browser commands: create, close, navigate, update_webview_bounds)
 
 ### Agent 4: Segment Content Visualizations
 - [ ] All segments use consistent "chorizo" container (horizontal rounded rectangles)
@@ -337,11 +319,10 @@ src/
 │   │   ├── TerminalPanel.tsx
 │   │   ├── TerminalHeader.tsx
 │   │   └── XTermWrapper.tsx
-│   ├── Browser/                 (TO BUILD - Agent 2)
+│   ├── Browser/                 (✅ Phase 2 Agent 2 complete)
 │   │   ├── BrowserPanel.tsx
-│   │   ├── BrowserTab.tsx
-│   │   ├── TabBar.tsx
-│   │   └── browser.utils.ts
+│   │   ├── BrowserToolbar.tsx
+│   │   └── useWebview.ts
 │   ├── Monitor/                 (✅ Phase 2 Agent 3 complete)
 │   │   ├── ResourcePanel.tsx
 │   │   ├── SegmentMetrics.tsx

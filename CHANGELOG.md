@@ -247,7 +247,7 @@ src/stores/
 
 ### Phase 2: Remaining Agents
 
-#### Agent 2: Browser Integration (In Progress - Blocked)
+#### Agent 2: Browser Integration ✅ COMPLETE
 
 **Implementation Stack:**
 - ✅ Tauri v2 child webview using `window.add_child()` API
@@ -255,23 +255,31 @@ src/stores/
 - ✅ BrowserToolbar with URL bar and navigation controls
 - ✅ Dynamic webview creation/destruction via Rust commands
 - ✅ Navigation via webview recreation (close + create with new URL)
+- ✅ React Activity component for tab lifecycle (browsers stay alive when hidden)
 
 **Features Implemented:**
 - ✅ Browser opens in workspace panel as Arc-style tab
 - ✅ URL bar with search functionality (auto-Google search for non-URLs)
-- ✅ Navigation buttons (back/forward/reload/home)
+- ✅ Navigation buttons (back/forward/reload/home placeholders)
 - ✅ Loading states
 - ✅ Multiple browser tabs (each workspace tab is a browser instance)
-- ✅ React Activity component for lifecycle management
-- ✅ ResizeObserver for dynamic positioning updates
+- ✅ Browser state persists across tab switches (no reload needed)
+- ✅ Proper positioning and resizing on macOS with automatic window resize handling
+- ✅ ResizeObserver with throttled updates for smooth performance
+
+**Positioning Fix:**
+- ✅ Fixed macOS child webview positioning by accounting for 28px title bar offset
+- ✅ Discovered JavaScript viewport coordinates start below title bar, but Tauri's LogicalPosition includes it
+- ✅ Implemented workaround: create webview at (0,0) then immediately call `set_position()` (Tauri positioning bug)
+- ✅ Removed `.auto_resize()` which conflicts with manual positioning (Issue #9611)
+- ✅ Combined `update_webview_position` and `update_webview_size` into single `update_webview_bounds` command
 
 **Rust Commands Created:**
 ```rust
-create_browser_webview   // Create child webview at position
-close_browser_webview    // Destroy webview
-update_webview_position  // Move webview
-update_webview_size      // Resize webview
-navigate_webview         // Navigate to new URL (recreate approach)
+create_browser_webview     // Create child webview at position
+close_browser_webview      // Destroy webview
+update_webview_bounds      // Update position and size simultaneously
+navigate_webview           // Navigate to new URL (recreate approach)
 ```
 
 **Files Created:**
@@ -279,7 +287,7 @@ navigate_webview         // Navigate to new URL (recreate approach)
 src/components/Browser/
 ├── BrowserPanel.tsx       # Main container
 ├── BrowserToolbar.tsx     # URL bar and controls
-├── useWebview.ts          # Webview lifecycle hook
+├── useWebview.ts          # Webview lifecycle hook with positioning logic
 └── index.ts               # Barrel exports
 
 Rust (src-tauri):
@@ -287,25 +295,19 @@ Rust (src-tauri):
 └── capabilities/default.json  # Window permissions
 ```
 
-**Current Blocker:**
-🚨 **Child webview positioning issue on macOS with Retina display (2x DPI)**
-- X coordinate works correctly
-- Y coordinate consistently offset (appears ~30-50px too high)
-- Temporary workaround: multiply Y by 1.5 (not reliable)
-- Root cause unknown - possible DPI scaling bug in Tauri v2 beta
-- Issue appears related to GitHub Issue #10053 (resolved in wry, but behavior persists)
-- `LogicalPosition` vs `PhysicalPosition` coordinate system unclear
-- `getBoundingClientRect()` viewport coords vs Tauri window coords mismatch
+**Architecture:**
+- Browser tabs managed via React Activity (mounted but hidden pattern)
+- Webview stays alive, hidden when tab is inactive
+- Position/size updated on window resize via ResizeObserver (100ms throttle)
+- All positioning logic centralized in `getWebviewPosition()` helper
 
-**Investigation Needed:**
-- Relationship between `getBoundingClientRect()` and Tauri's coordinate system
-- Whether LogicalPosition accounts for DPI automatically
-- Platform-specific positioning differences (macOS vs Windows)
-- Impact of `.auto_resize()` on manual positioning (Issue #9611)
+**Known Limitations:**
+- Back/forward navigation not implemented (requires history tracking)
+- No browser profile isolation per space
+- No cookie/session isolation
+- Webview recreated on navigation (limitation of Tauri child webview API)
 
-**Status:** Implementation complete but blocked on coordinate system issue. Browser is functional with positioning workaround.
-
-**Last Updated:** 2025-11-22
+**Completed**: 2025-11-23
 
 #### Agent 4: Segment Content Visualizations (Not Started)
 - Type-specific internal visualizations
