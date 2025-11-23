@@ -64,7 +64,7 @@ export function registerPortalHandler(getMainWindow: () => BrowserWindow | null)
       console.log('[PORTAL] Set __WEBCONTENTS_ID__ on portal window:', webContents.id);
 
       // Listen for body bounds from renderer
-      const handleBodyBounds = (_event: any, portalId: number, bounds: { x: number, y: number, width: number, height: number }) => {
+      const handleBodyBounds = (_event: unknown, portalId: number, bounds: { x: number, y: number, width: number, height: number }) => {
         if (portalId !== webContents.id) return;
 
         console.log('[PORTAL] Received body bounds for portal:', portalId, bounds);

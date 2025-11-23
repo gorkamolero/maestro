@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState, useMemo, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useMemo, type ReactNode } from 'react';
 import Yoga from 'yoga-layout';
 
 interface ViewBounds {
@@ -40,16 +40,14 @@ interface ViewProps {
 
 export function View({ children, style = {} }: ViewProps) {
   const parentContext = useContext(ViewContext);
-  const nodeRef = useRef<Yoga.YogaNode>();
   const [layoutReady, setLayoutReady] = useState(false);
 
-  // Create yoga node
-  if (!nodeRef.current) {
+  // Create yoga node once using lazy initialization
+  const [node] = useState(() => {
     console.log('[View] Creating Yoga node');
-    nodeRef.current = Yoga.Node.create();
-  }
+    return Yoga.Node.create();
+  });
 
-  const node = nodeRef.current;
   console.log('[View] Rendering, style:', style);
 
   // Apply styles to yoga node
@@ -125,8 +123,8 @@ export function View({ children, style = {} }: ViewProps) {
       node.calculateLayout(width, height, Yoga.DIRECTION_LTR);
     }
 
-    // Mark layout as ready
-    setLayoutReady(true);
+    // Mark layout as ready (schedule for next render to avoid cascading renders)
+    queueMicrotask(() => setLayoutReady(true));
 
     return () => {
       if (parentContext) {
