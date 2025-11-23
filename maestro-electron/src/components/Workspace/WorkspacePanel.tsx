@@ -11,6 +11,11 @@ import type { TerminalState } from '@/components/Terminal/terminal.utils';
 export function WorkspacePanel() {
   const { tabs, activeTabId } = useSnapshot(workspaceStore);
 
+  // Log activeTabId changes
+  React.useEffect(() => {
+    console.log('[WORKSPACE] activeTabId changed to:', activeTabId);
+  }, [activeTabId]);
+
   // Hooks must be called before any early returns
   const [mountedTabs, setMountedTabs] = React.useState(new Set<string>());
 
@@ -65,7 +70,11 @@ export function WorkspacePanel() {
             <div className="absolute inset-0">
               {tab.type === 'note' && <NoteEditor tab={tab} />}
               {tab.type === 'terminal' && <TerminalView tab={tab} />}
-              {tab.type === 'browser' && <BrowserView tab={tab} />}
+              {tab.type === 'browser' && (() => {
+                const isActiveComputed = tab.id === activeTabId;
+                console.log(`[WORKSPACE] Computing isActive for browser tab ${tab.id}: tab.id === ${activeTabId} = ${isActiveComputed}`);
+                return <BrowserView tab={tab} isActive={isActiveComputed} />;
+              })()}
               {tab.type === 'agent' && <AgentPlaceholder tab={tab} />}
             </div>
           </Activity>
@@ -121,7 +130,11 @@ function TerminalView({ tab }: { tab: Tab }) {
 }
 
 // Browser component - now with BrowserPanel!
-function BrowserView({ tab }: { tab: Tab }) {
+function BrowserView({ tab, isActive }: { tab: Tab; isActive: boolean }) {
+  React.useEffect(() => {
+    console.log(`[BROWSERVIEW] Rendered with isActive=${isActive} for tab ${tab.id}`);
+  }, [isActive, tab.id]);
+
   const { activeSegments } = useSnapshot(segmentsStore);
   const segment = activeSegments.find((s) => s.id === tab.segmentId);
 
@@ -143,7 +156,7 @@ function BrowserView({ tab }: { tab: Tab }) {
 
       {/* Browser panel */}
       <div className="flex-1 flex flex-col">
-        <BrowserPanel tab={tab} />
+        <BrowserPanel tab={tab} isActive={isActive} />
       </div>
     </motion.div>
   );

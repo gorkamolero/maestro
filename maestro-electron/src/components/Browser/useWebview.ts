@@ -33,10 +33,20 @@ interface UseWebviewOptions {
   containerRef: React.RefObject<HTMLDivElement | null>;
   setIsLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
+  isActive: boolean;
 }
 
-export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setError }: UseWebviewOptions) {
+export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setError, isActive }: UseWebviewOptions) {
   const webviewLabelRef = useRef<string | null>(null);
+
+  // Log prop changes
+  const prevActiveRef = useRef(isActive);
+  useEffect(() => {
+    if (prevActiveRef.current !== isActive) {
+      console.log(`[WEBVIEW] isActive changed for tab ${tabId}: ${prevActiveRef.current} -> ${isActive}`);
+      prevActiveRef.current = isActive;
+    }
+  }, [isActive, tabId]);
 
   // Get navigation state from valtio store
   const browserSnap = useSnapshot(browserStore);
@@ -94,8 +104,15 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
     handleNavigate('https://www.google.com');
   }, [handleNavigate]);
 
-  // Create webview ONCE per tab.id
+  // Create webview ONCE per tab.id, but only when active
   useEffect(() => {
+    console.log(`[WEBVIEW] Effect running for tab ${tabId}, isActive=${isActive}`);
+
+    if (!isActive) {
+      console.log(`[WEBVIEW] Tab ${tabId} is inactive, skipping view creation`);
+      return; // Don't create view if tab is not active
+    }
+
     let mounted = true;
 
     const createWebview = async () => {
@@ -156,16 +173,18 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
 
     createWebview();
 
-    // Cleanup webview on unmount
+    // Cleanup webview on unmount or when isActive changes
     return () => {
+      console.log(`[WEBVIEW] Cleanup running for tab ${tabId}, label=${webviewLabelRef.current}`);
       mounted = false;
       if (webviewLabelRef.current) {
+        console.log(`[WEBVIEW] Calling closeBrowserView for ${webviewLabelRef.current}`);
         platform.closeBrowserView(webviewLabelRef.current).catch((err) => {
           console.error('Error closing webview:', err);
         });
       }
     };
-  }, [tabId, initialUrl, containerRef, setIsLoading, setError]);
+  }, [tabId, initialUrl, containerRef, setIsLoading, setError, isActive]);
 
   // Listen to navigation events to sync URL and history from actual webview
   useEffect(() => {
@@ -256,6 +275,7 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
 
   return {
     webviewLabelRef,

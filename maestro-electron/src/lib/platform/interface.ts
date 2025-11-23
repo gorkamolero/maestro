@@ -115,6 +115,11 @@ export interface IPlatformBridge {
    */
   hideModalOverlay(): Promise<void>;
 
+  /**
+   * Close all portal overlays
+   */
+  closeAllPortals(): Promise<void>;
+
   // ============================================================================
   // Terminal: PTY Management
   // ============================================================================

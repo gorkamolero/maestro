@@ -84,6 +84,10 @@ export class ElectronBridge implements IPlatformBridge {
     await this.invoke('hide_modal_overlay');
   }
 
+  async closeAllPortals(): Promise<void> {
+    await this.invoke('close_all_portals');
+  }
+
   // ============================================================================
   // Terminal: PTY Management
   // ============================================================================

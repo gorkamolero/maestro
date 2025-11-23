@@ -9,9 +9,10 @@ import type { Tab } from '@/stores/workspace.store';
 
 interface BrowserPanelProps {
   tab: Tab;
+  isActive: boolean;
 }
 
-export function BrowserPanel({ tab }: BrowserPanelProps) {
+export function BrowserPanel({ tab, isActive }: BrowserPanelProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -40,6 +41,7 @@ export function BrowserPanel({ tab }: BrowserPanelProps) {
     containerRef,
     setIsLoading,
     setError,
+    isActive,
   });
 
   return (

@@ -2,21 +2,64 @@ import { ipcMain, BrowserWindow, BrowserView } from 'electron';
 
 const browserViews = new Map<string, BrowserView>();
 
+const creatingViews = new Set<string>();
+
 export function registerBrowserHandlers(getMainWindow: () => BrowserWindow | null) {
   ipcMain.handle('create_browser_view', async (_event, options) => {
     const { label, url, x, y, width, height } = options;
     const mainWindow = getMainWindow();
 
-    const view = new BrowserView({
+    if (!mainWindow) return label;
+
+    // Prevent duplicate creation (race condition from React StrictMode)
+    if (creatingViews.has(label)) {
+      console.log('[BROWSER] Already creating view, ignoring duplicate request:', label);
+      return label;
+    }
+
+    // Check if view already exists - if so, just update it
+    let view = browserViews.get(label);
+    if (view) {
+      console.log('[BROWSER] Reusing existing browser view:', label);
+
+      // Remove all other browser views from the window
+      for (const [otherLabel, otherView] of browserViews.entries()) {
+        if (otherLabel !== label) {
+          mainWindow.removeBrowserView(otherView);
+          console.log('[BROWSER] Removed other browser view:', otherLabel);
+        }
+      }
+
+      // Add this view back and update bounds
+      mainWindow.addBrowserView(view);
+      view.setBounds({
+        x: Math.round(x),
+        y: Math.round(y),
+        width: Math.round(width),
+        height: Math.round(height),
+      });
+      return label;
+    }
+
+    // Mark as creating BEFORE any work
+    creatingViews.add(label);
+
+    // Remove all existing browser views before adding new one
+    for (const [otherLabel, otherView] of browserViews.entries()) {
+      mainWindow.removeBrowserView(otherView);
+      console.log('[BROWSER] Removed browser view:', otherLabel);
+    }
+
+    // Create new view
+    view = new BrowserView({
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
       },
     });
 
-    if (!mainWindow) return label;
-
-    mainWindow.setBrowserView(view);
+    mainWindow.addBrowserView(view);
+    console.log('[BROWSER] Added new browser view:', label);
     view.setBounds({
       x: Math.round(x),
       y: Math.round(y),
@@ -25,6 +68,9 @@ export function registerBrowserHandlers(getMainWindow: () => BrowserWindow | nul
     });
 
     await view.webContents.loadURL(url);
+
+    // Done creating
+    creatingViews.delete(label);
 
     // Listen to ALL navigation events to keep URL and history synced
     const sendNavigationUpdate = () => {
@@ -52,14 +98,19 @@ export function registerBrowserHandlers(getMainWindow: () => BrowserWindow | nul
   });
 
   ipcMain.handle('close_browser_view', async (_event, { label }) => {
+    console.log('[BROWSER] Received close_browser_view for:', label);
     const view = browserViews.get(label);
     const mainWindow = getMainWindow();
 
     if (view && mainWindow) {
+      console.log('[BROWSER] Removing browser view from window:', label);
       mainWindow.removeBrowserView(view);
       // @ts-expect-error - destroy exists but isn't typed
       view.webContents.destroy();
       browserViews.delete(label);
+      console.log('[BROWSER] Browser view removed and destroyed:', label);
+    } else {
+      console.log('[BROWSER] View or window not found for:', label, 'view exists:', !!view, 'mainWindow exists:', !!mainWindow);
     }
   });
 

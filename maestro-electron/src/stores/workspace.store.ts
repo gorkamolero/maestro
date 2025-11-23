@@ -102,6 +102,7 @@ export const workspaceActions = {
   },
 
   setActiveTab: (tabId: string) => {
+    console.log(`[WORKSPACE] setActiveTab called with:`, tabId, new Error().stack);
     const tab = workspaceStore.tabs.find((t) => t.id === tabId);
     if (tab) {
       workspaceStore.activeTabId = tabId;
