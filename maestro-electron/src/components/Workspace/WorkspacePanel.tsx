@@ -1,9 +1,8 @@
-import React from 'react';
+import React, { Activity } from 'react';
 import { useSnapshot } from 'valtio';
 import { workspaceStore, workspaceActions } from '@/stores/workspace.store';
 import { Terminal, Globe, Bot } from 'lucide-react';
 import { motion } from 'motion/react';
-import { Activity } from 'react';
 import { SegmentMetrics } from '@/components/Monitor/SegmentMetrics';
 import { segmentsStore } from '@/stores/segments.store';
 import { TerminalPanel } from '@/components/Terminal/TerminalPanel';
@@ -57,7 +56,7 @@ export function WorkspacePanel() {
   }
 
   return (
-    <div className="flex-1 relative">
+    <div className="flex-1 flex flex-col relative">
       {tabs.map((tab) => {
         // Only render if this tab is currently active OR has been mounted before
         if (!mountedTabs.has(tab.id)) return null;

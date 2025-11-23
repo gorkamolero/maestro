@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useSnapshot } from 'valtio';
+import { subscribe } from 'valtio';
 import { metricsStore } from '@/stores/metrics.store';
 import { cn } from '@/lib/utils';
 
@@ -21,35 +21,41 @@ export function MetricsGraph({
   height = 40,
   className,
 }: MetricsGraphProps) {
-  const { systemMetrics } = useSnapshot(metricsStore);
   const [dataPoints, setDataPoints] = useState<DataPoint[]>([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    if (!systemMetrics) return;
+    // Subscribe to metrics store updates
+    const unsubscribe = subscribe(metricsStore, () => {
+      const { systemMetrics } = metricsStore;
+      if (!systemMetrics) return;
 
-    const value =
-      type === 'cpu'
-        ? systemMetrics.total_cpu
-        : (systemMetrics.used_ram / systemMetrics.total_ram) * 100;
+      const value =
+        type === 'cpu'
+          ? systemMetrics.total_cpu
+          : (systemMetrics.used_ram / systemMetrics.total_ram) * 100;
 
-    setDataPoints((prev) => {
-      const newPoints = [
-        ...prev,
-        {
-          timestamp: Date.now(),
-          value,
-        },
-      ];
+      // setState in subscription callback is valid
+      setDataPoints((prev) => {
+        const newPoints = [
+          ...prev,
+          {
+            timestamp: Date.now(),
+            value,
+          },
+        ];
 
-      // Keep only the last N data points
-      if (newPoints.length > maxDataPoints) {
-        return newPoints.slice(newPoints.length - maxDataPoints);
-      }
+        // Keep only the last N data points
+        if (newPoints.length > maxDataPoints) {
+          return newPoints.slice(newPoints.length - maxDataPoints);
+        }
 
-      return newPoints;
+        return newPoints;
+      });
     });
-  }, [systemMetrics, type, maxDataPoints]);
+
+    return unsubscribe;
+  }, [type, maxDataPoints]);
 
   useEffect(() => {
     const canvas = canvasRef.current;

@@ -1,10 +1,20 @@
 import { persist } from 'valtio-persist';
 import { IndexedDBStrategy } from 'valtio-persist/indexed-db';
 
+export interface NavigationEntry {
+  url: string;
+  title: string;
+}
+
+export interface NavigationHistory {
+  entries: NavigationEntry[];
+  activeIndex: number;
+}
+
 export interface BrowserState {
   url: string;
   title?: string;
-  history: string[];
+  history: NavigationHistory;
 }
 
 interface BrowserStoreState {
@@ -29,21 +39,43 @@ export function getBrowserState(tabId: string, initialUrl: string): BrowserState
   if (!browserStore.browsers[tabId]) {
     browserStore.browsers[tabId] = {
       url: initialUrl,
-      history: [initialUrl],
+      history: {
+        entries: [{ url: initialUrl, title: '' }],
+        activeIndex: 0,
+      },
     };
   }
   return browserStore.browsers[tabId];
 }
 
-// Helper to update URL
-export function updateBrowserUrl(tabId: string, url: string) {
+// Helper to update navigation state
+export function updateBrowserNavigation(
+  tabId: string,
+  url: string,
+  history: NavigationHistory
+) {
+  console.log('[STORE] Updating browser navigation:', { tabId, url, history });
   const browser = browserStore.browsers[tabId];
   if (browser) {
     browser.url = url;
-    if (!browser.history.includes(url)) {
-      browser.history.push(url);
-    }
+    browser.history = history;
+    console.log('[STORE] Updated successfully');
+  } else {
+    console.log('[STORE] Browser not found for tab:', tabId);
   }
+}
+
+// Helper to compute navigation capabilities
+export function canGoBack(tabId: string): boolean {
+  const browser = browserStore.browsers[tabId];
+  if (!browser) return false;
+  return browser.history.activeIndex > 0;
+}
+
+export function canGoForward(tabId: string): boolean {
+  const browser = browserStore.browsers[tabId];
+  if (!browser) return false;
+  return browser.history.activeIndex < browser.history.entries.length - 1;
 }
 
 // Helper to remove browser state when tab closes

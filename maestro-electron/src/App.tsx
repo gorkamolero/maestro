@@ -30,7 +30,7 @@ function App() {
       </div>
 
       {/* Main workspace area */}
-      <div className="flex-1">
+      <div className="flex-1 flex flex-col">
         <WorkspacePanel />
       </div>
     </div>

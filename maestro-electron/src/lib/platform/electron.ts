@@ -31,7 +31,7 @@ export class ElectronBridge implements IPlatformBridge {
     handler: (payload: T) => void
   ): Promise<UnlistenFn> {
     // @ts-expect-error - window.electron will be added by Electron preload
-    const unsubscribe = window.electron.on(event, (_event: unknown, payload: T) => {
+    const unsubscribe = window.electron.on(event, (payload: T) => {
       handler(payload);
     });
     return () => unsubscribe();
@@ -69,6 +69,14 @@ export class ElectronBridge implements IPlatformBridge {
 
   async browserGoForward(label: string): Promise<string> {
     return this.invoke<string>('browser_go_forward', { label });
+  }
+
+  async browserCanGoBack(label: string): Promise<boolean> {
+    return this.invoke<boolean>('browser_can_go_back', { label });
+  }
+
+  async browserCanGoForward(label: string): Promise<boolean> {
+    return this.invoke<boolean>('browser_can_go_forward', { label });
   }
 
   // ============================================================================

@@ -94,6 +94,20 @@ export interface IPlatformBridge {
    */
   browserGoForward(label: string): Promise<string>;
 
+  /**
+   * Check if browser can go back
+   * @param label Webview identifier
+   * @returns True if can go back
+   */
+  browserCanGoBack(label: string): Promise<boolean>;
+
+  /**
+   * Check if browser can go forward
+   * @param label Webview identifier
+   * @returns True if can go forward
+   */
+  browserCanGoForward(label: string): Promise<boolean>;
+
   // ============================================================================
   // Terminal: PTY Management
   // ============================================================================

@@ -10,7 +10,11 @@ contextBridge.exposeInMainWorld('electron', {
 
   // IPC on (for events)
   on: (channel: string, callback: (payload: any) => void) => {
-    const subscription = (_event: any, ...args: any[]) => callback(...args);
+    const subscription = (_event: any, payload: any) => {
+      if (payload !== undefined) {
+        callback(payload);
+      }
+    };
     ipcRenderer.on(channel, subscription);
 
     // Return unsubscribe function

@@ -91,6 +91,14 @@ export class TauriBridge implements IPlatformBridge {
     return tauriInvoke<string>('webview_go_forward', { label });
   }
 
+  async browserCanGoBack(label: string): Promise<boolean> {
+    return tauriInvoke<boolean>('webview_can_go_back', { label });
+  }
+
+  async browserCanGoForward(label: string): Promise<boolean> {
+    return tauriInvoke<boolean>('webview_can_go_forward', { label });
+  }
+
   // ============================================================================
   // Terminal: PTY Management
   // ============================================================================

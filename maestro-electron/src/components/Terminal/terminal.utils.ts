@@ -15,7 +15,7 @@ export function stripAnsiCodes(text: string): string {
 /**
  * Get the last N lines from terminal buffer
  */
-export function getTerminalBuffer(terminal: Terminal, lines: number = 100): string {
+export function getTerminalBuffer(terminal: Terminal, lines = 100): string {
   const buffer = terminal.buffer.active;
   const totalLines = buffer.length;
   const startLine = Math.max(0, totalLines - lines);
@@ -67,7 +67,7 @@ export function extractWorkingDirectory(buffer: string): string | null {
 /**
  * Format terminal title from working directory
  */
-export function formatTerminalTitle(workingDir: string | null, fallback: string = 'Terminal'): string {
+export function formatTerminalTitle(workingDir: string | null, fallback = 'Terminal'): string {
   if (!workingDir) return fallback;
 
   // Show only the last directory name

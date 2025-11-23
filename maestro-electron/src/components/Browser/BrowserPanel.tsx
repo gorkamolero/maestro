@@ -1,10 +1,9 @@
 import { useState, useRef } from 'react';
 import { motion } from 'motion/react';
 import { useSnapshot } from 'valtio';
-import { platform } from '@/lib/platform';
 import { useWebview } from './useWebview';
 import { BrowserToolbar } from './BrowserToolbar';
-import { browserStore, getBrowserState, updateBrowserUrl } from '@/stores/browser.store';
+import { browserStore, getBrowserState } from '@/stores/browser.store';
 import { normalizeUrl } from './browser.utils';
 
 interface BrowserPanelProps {
@@ -25,62 +24,22 @@ export function BrowserPanel({ tab }: BrowserPanelProps) {
 
   const currentUrl = browserSnap.browsers[tab.id]?.url || initialUrl;
 
-  const { webviewLabelRef } = useWebview({
+  // All webview logic and handlers are in the hook
+  const {
+    canGoBack,
+    canGoForward,
+    handleNavigate,
+    handleGoBack,
+    handleGoForward,
+    handleRefresh,
+    handleHome,
+  } = useWebview({
     tabId: tab.id,
     initialUrl,
     containerRef,
     setIsLoading,
     setError,
   });
-
-  const handleNavigate = async (url: string) => {
-    if (!webviewLabelRef.current) return;
-
-    try {
-      setIsLoading(true);
-
-      // Normalize URL first (ensure it has valid scheme)
-      const normalizedUrl = normalizeUrl(url);
-
-      await platform.navigateBrowser(webviewLabelRef.current, normalizedUrl);
-
-      // URL will be updated via the navigation event
-      setError(null);
-    } catch (err) {
-      console.error('Navigation error:', err);
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleRefresh = () => {
-    handleNavigate(currentUrl);
-  };
-
-  const handleGoBack = async () => {
-    if (!webviewLabelRef.current) return;
-    try {
-      const newUrl = await platform.browserGoBack(webviewLabelRef.current);
-      updateBrowserUrl(tab.id, newUrl);
-    } catch (err) {
-      console.error('Failed to go back:', err);
-    }
-  };
-
-  const handleGoForward = async () => {
-    if (!webviewLabelRef.current) return;
-    try {
-      const newUrl = await platform.browserGoForward(webviewLabelRef.current);
-      updateBrowserUrl(tab.id, newUrl);
-    } catch (err) {
-      console.error('Failed to go forward:', err);
-    }
-  };
-
-  const handleHome = () => {
-    handleNavigate('https://www.google.com');
-  };
 
   return (
     <motion.div
@@ -94,10 +53,10 @@ export function BrowserPanel({ tab }: BrowserPanelProps) {
         onNavigate={handleNavigate}
         onBack={handleGoBack}
         onForward={handleGoForward}
-        onReload={handleRefresh}
+        onReload={() => handleRefresh(currentUrl)}
         onHome={handleHome}
-        canGoBack={true}
-        canGoForward={true}
+        canGoBack={canGoBack}
+        canGoForward={canGoForward}
         isLoading={isLoading}
       />
 

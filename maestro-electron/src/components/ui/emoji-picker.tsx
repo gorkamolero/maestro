@@ -10,13 +10,13 @@ interface EmojiPickerComponentProps {
 
 export function EmojiPickerComponent({ onChange, children }: EmojiPickerComponentProps) {
   const [open, setOpen] = useState(false);
-  const [theme, setTheme] = useState<Theme>(Theme.DARK);
+  const [theme, setTheme] = useState<Theme>(() => {
+    // Initialize theme from DOM
+    const isDark = document.documentElement.classList.contains('dark');
+    return isDark ? Theme.DARK : Theme.LIGHT;
+  });
 
   useEffect(() => {
-    // Check if dark mode is active
-    const isDark = document.documentElement.classList.contains('dark');
-    setTheme(isDark ? Theme.DARK : Theme.LIGHT);
-
     // Listen for theme changes
     const observer = new MutationObserver(() => {
       const isDark = document.documentElement.classList.contains('dark');

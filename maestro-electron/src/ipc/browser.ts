@@ -24,16 +24,28 @@ export function registerBrowserHandlers(getMainWindow: () => BrowserWindow | nul
       height: Math.round(height),
     });
 
-    view.webContents.loadURL(url);
+    await view.webContents.loadURL(url);
 
-    // Listen to navigation events
-    view.webContents.on('did-navigate', (_event, url) => {
-      mainWindow?.webContents.send('webview-navigation', { label, url });
-    });
+    // Listen to ALL navigation events to keep URL and history synced
+    const sendNavigationUpdate = () => {
+      const currentUrl = view.webContents.getURL();
+      const entries = view.webContents.navigationHistory.getAllEntries();
+      const activeIndex = view.webContents.navigationHistory.getActiveIndex();
 
-    view.webContents.on('did-navigate-in-page', (_event, url) => {
-      mainWindow?.webContents.send('webview-navigation', { label, url });
-    });
+      console.log('[BACKEND] Sending navigation update:', { label, url: currentUrl, entries, activeIndex });
+
+      mainWindow?.webContents.send('browser-navigation-updated', {
+        label,
+        url: currentUrl,
+        history: {
+          entries,
+          activeIndex
+        }
+      });
+    };
+
+    view.webContents.on('did-navigate', sendNavigationUpdate);
+    view.webContents.on('did-navigate-in-page', sendNavigationUpdate);
 
     browserViews.set(label, view);
     return label;
@@ -72,8 +84,8 @@ export function registerBrowserHandlers(getMainWindow: () => BrowserWindow | nul
 
   ipcMain.handle('browser_go_back', async (_event, { label }) => {
     const view = browserViews.get(label);
-    if (view && view.webContents.canGoBack()) {
-      view.webContents.goBack();
+    if (view && view.webContents.navigationHistory.canGoBack()) {
+      view.webContents.navigationHistory.goBack();
       await new Promise((resolve) => setTimeout(resolve, 100));
       return view.webContents.getURL();
     }
@@ -82,11 +94,21 @@ export function registerBrowserHandlers(getMainWindow: () => BrowserWindow | nul
 
   ipcMain.handle('browser_go_forward', async (_event, { label }) => {
     const view = browserViews.get(label);
-    if (view && view.webContents.canGoForward()) {
-      view.webContents.goForward();
+    if (view && view.webContents.navigationHistory.canGoForward()) {
+      view.webContents.navigationHistory.goForward();
       await new Promise((resolve) => setTimeout(resolve, 100));
       return view.webContents.getURL();
     }
     return view?.webContents.getURL() || '';
+  });
+
+  ipcMain.handle('browser_can_go_back', async (_event, { label }) => {
+    const view = browserViews.get(label);
+    return view?.webContents.navigationHistory.canGoBack() || false;
+  });
+
+  ipcMain.handle('browser_can_go_forward', async (_event, { label }) => {
+    const view = browserViews.get(label);
+    return view?.webContents.navigationHistory.canGoForward() || false;
   });
 }

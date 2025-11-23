@@ -25,14 +25,19 @@ function DragCloneContent({ provided, tab, getTabIcon, sourceZone }: DragCloneCo
 
   return (
     <div
+      // eslint-disable-next-line react-hooks/refs
       ref={provided.innerRef}
+      // eslint-disable-next-line react-hooks/refs
       {...provided.draggableProps}
+      // eslint-disable-next-line react-hooks/refs
       {...provided.dragHandleProps}
       className={cn(
         'cursor-grabbing flex items-center justify-center',
         renderAsFavorite ? 'w-12 h-12' : 'min-w-[200px]'
       )}
+      // eslint-disable-next-line react-hooks/refs
       style={{
+        // eslint-disable-next-line react-hooks/refs
         ...provided.draggableProps.style,
         userSelect: 'none',
         WebkitUserSelect: 'none',

@@ -1,6 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
+import { useSnapshot } from 'valtio';
 import { platform } from '@/lib/platform';
-import { updateBrowserUrl } from '@/stores/browser.store';
+import { updateBrowserNavigation, browserStore } from '@/stores/browser.store';
+import { normalizeUrl } from './browser.utils';
 
 // Calculate webview position from container
 export function getWebviewPosition(element: HTMLElement) {
@@ -35,6 +37,62 @@ interface UseWebviewOptions {
 
 export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setError }: UseWebviewOptions) {
   const webviewLabelRef = useRef<string | null>(null);
+
+  // Get navigation state from valtio store
+  const browserSnap = useSnapshot(browserStore);
+  const browser = browserSnap.browsers[tabId];
+  const navigationCanGoBack = browser ? browser.history.activeIndex > 0 : false;
+  const navigationCanGoForward = browser ? browser.history.activeIndex < browser.history.entries.length - 1 : false;
+
+  // Navigate to URL
+  const handleNavigate = useCallback(async (url: string) => {
+    if (!webviewLabelRef.current) return;
+
+    try {
+      setIsLoading(true);
+      const normalizedUrl = normalizeUrl(url);
+      await platform.navigateBrowser(webviewLabelRef.current, normalizedUrl);
+      // State will be updated via browser-navigation-updated event
+      setError(null);
+    } catch (err) {
+      console.error('Navigation error:', err);
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [setIsLoading, setError]);
+
+  // Go back
+  const handleGoBack = useCallback(async () => {
+    if (!webviewLabelRef.current) return;
+    try {
+      await platform.browserGoBack(webviewLabelRef.current);
+      // State will be updated via browser-navigation-updated event
+    } catch (err) {
+      console.error('Failed to go back:', err);
+    }
+  }, []);
+
+  // Go forward
+  const handleGoForward = useCallback(async () => {
+    if (!webviewLabelRef.current) return;
+    try {
+      await platform.browserGoForward(webviewLabelRef.current);
+      // State will be updated via browser-navigation-updated event
+    } catch (err) {
+      console.error('Failed to go forward:', err);
+    }
+  }, []);
+
+  // Refresh
+  const handleRefresh = useCallback((url: string) => {
+    handleNavigate(url);
+  }, [handleNavigate]);
+
+  // Go home
+  const handleHome = useCallback(() => {
+    handleNavigate('https://www.google.com');
+  }, [handleNavigate]);
 
   // Create webview ONCE per tab.id
   useEffect(() => {
@@ -107,24 +165,37 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
         });
       }
     };
-  }, [tabId]); // Only recreate if tab.id changes
+  }, [tabId, initialUrl, containerRef, setIsLoading, setError]);
 
-  // Listen to navigation events from webview
+  // Listen to navigation events to sync URL and history from actual webview
   useEffect(() => {
     let unlistenPromise: Promise<() => void>;
 
     const setupListener = async () => {
-      unlistenPromise = platform.listen<{ label: string; url: string }>('webview-navigation', (payload) => {
+      unlistenPromise = platform.listen<{
+        label: string;
+        url: string;
+        history: {
+          entries: Array<{ url: string; title: string }>;
+          activeIndex: number;
+        };
+      }>('browser-navigation-updated', (payload) => {
+        console.log('[FRONTEND] Received navigation update:', payload);
+
+        if (!payload || !payload.label || !payload.url || !payload.history) {
+          console.log('[FRONTEND] Missing payload data, ignoring');
+          return;
+        }
+
         // Only handle events for this webview
-        if (payload.label !== webviewLabelRef.current) return;
+        if (payload.label !== webviewLabelRef.current) {
+          console.log('[FRONTEND] Label mismatch, ignoring:', payload.label, 'vs', webviewLabelRef.current);
+          return;
+        }
 
-        const newUrl = payload.url;
-
-        // Ignore about:blank navigations
-        if (newUrl === 'about:blank') return;
-
-        // Update browser store
-        updateBrowserUrl(tabId, newUrl);
+        console.log('[FRONTEND] Updating browser navigation for tab:', tabId);
+        // Update browser store with URL and full navigation history
+        updateBrowserNavigation(tabId, payload.url, payload.history);
       });
     };
 
@@ -187,5 +258,12 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
 
   return {
     webviewLabelRef,
+    canGoBack: navigationCanGoBack,
+    canGoForward: navigationCanGoForward,
+    handleNavigate,
+    handleGoBack,
+    handleGoForward,
+    handleRefresh,
+    handleHome,
   };
 }
