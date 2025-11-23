@@ -14,6 +14,7 @@ import {
 import { useEffect, useState } from 'react';
 import { TabDropZone } from './TabDropZone';
 import { DragProvider, useDragContext } from './DragContext';
+import { FavoritesList, AddFavoriteModal } from '@/components/Launcher';
 
 const TAB_LABELS: Record<TabType, string> = {
   terminal: 'Terminal',
@@ -187,6 +188,13 @@ function SidebarContent() {
 
                   <Separator />
 
+                  {/* Connected Apps Section */}
+                  <div className="flex-shrink-0">
+                    <FavoritesList workspaceId={space.id} />
+                  </div>
+
+                  <Separator />
+
                   {/* Tabs Section */}
                   <div className="flex-1 px-3 py-2 overflow-y-auto min-h-0">
                     <TabDropZone
@@ -209,9 +217,12 @@ function SidebarContent() {
 }
 
 export function Sidebar() {
+  const { activeSpaceId } = useSnapshot(workspaceStore);
+
   return (
     <DragProvider>
       <SidebarContent />
+      {activeSpaceId && <AddFavoriteModal workspaceId={activeSpaceId} />}
     </DragProvider>
   );
 }

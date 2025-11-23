@@ -1,5 +1,8 @@
 mod monitor;
 mod browser;
+mod models;
+mod macos;
+mod commands;
 
 use monitor::{ProcessMetrics, ResourceMonitor, SegmentResourceMetrics, SystemMetrics};
 use std::sync::Arc;
@@ -91,12 +94,22 @@ pub fn run() {
             get_segment_metrics,
             kill_process,
             get_all_processes,
+            // Browser commands
             browser::create_browser_webview,
             browser::close_browser_webview,
             browser::update_webview_bounds,
             browser::navigate_webview,
             browser::webview_go_back,
-            browser::webview_go_forward
+            browser::webview_go_forward,
+            // Launcher commands
+            commands::register_connected_app,
+            commands::get_running_apps,
+            commands::is_app_running,
+            commands::bring_app_to_front,
+            commands::launch_favorite_simple,
+            commands::check_accessibility_permission,
+            commands::request_accessibility_permission,
+            commands::capture_window_state
         ])
         .setup(move |app| {
             // Start metrics emission thread
