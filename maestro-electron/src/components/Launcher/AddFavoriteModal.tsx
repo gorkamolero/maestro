@@ -14,9 +14,7 @@ interface AddFavoriteModalProps {
 }
 
 export function AddFavoriteModal({ workspaceId }: AddFavoriteModalProps) {
-  console.log('[AddFavoriteModal] Component called, workspaceId:', workspaceId);
   const snap = useSnapshot(launcherStore);
-  console.log('[AddFavoriteModal] snap.isAddModalOpen:', snap.isAddModalOpen);
   const [selectedAppPath, setSelectedAppPath] = useState('');
   const [appInfo, setAppInfo] = useState<ConnectedApp | null>(null);
   const [name, setName] = useState('');
@@ -92,11 +90,8 @@ export function AddFavoriteModal({ workspaceId }: AddFavoriteModalProps) {
   };
 
   if (!snap.isAddModalOpen) {
-    console.log('[AddFavoriteModal] Modal is closed');
     return null;
   }
-
-  console.log('[AddFavoriteModal] Rendering modal');
 
   return (
     <View style={{
