@@ -8,12 +8,15 @@ contextBridge.exposeInMainWorld('electron', {
   // IPC invoke (for request-response)
   invoke: (channel: string, args?: unknown) => ipcRenderer.invoke(channel, args),
 
-  // IPC on (for events)
-  on: (channel: string, callback: (payload: unknown) => void) => {
-    const subscription = (_event: IpcRendererEvent, payload: unknown) => {
-      if (payload !== undefined) {
-        callback(payload);
-      }
+  // IPC send (for one-way messages to main)
+  send: (channel: string, ...args: unknown[]) => {
+    ipcRenderer.send(channel, ...args);
+  },
+
+  // IPC on (for events from main)
+  on: (channel: string, callback: (...args: unknown[]) => void) => {
+    const subscription = (_event: IpcRendererEvent, ...args: unknown[]) => {
+      callback(...args);
     };
     ipcRenderer.on(channel, subscription);
 

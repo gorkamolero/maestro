@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { platform } from '@/lib/platform';
+import { useViewBounds } from '@/components/View';
 
 interface PortalWindowProps {
   children: ReactNode;
@@ -11,6 +12,7 @@ export function PortalWindow({ children, onClose }: PortalWindowProps) {
   const [containerEl, setContainerEl] = useState<HTMLElement | null>(null);
   const windowRef = useRef<Window | null>(null);
   const mountCountRef = useRef(0);
+  const viewBounds = useViewBounds();
 
   useEffect(() => {
     mountCountRef.current++;
@@ -24,17 +26,9 @@ export function PortalWindow({ children, onClose }: PortalWindowProps) {
           return;
         }
 
-        // Check if portal root already exists (from previous StrictMode mount)
-        let container = externalWindow.document.getElementById('portal-root');
-        if (container) {
-          console.log('[PortalWindow] Portal root already exists, reusing it');
-          setContainerEl(container);
-          return;
-        }
-
-        // Set up basic document structure
-        externalWindow.document.write('<!DOCTYPE html><html><head></head><body><div id="portal-root"></div></body></html>');
-        externalWindow.document.close();
+        // Mark this window as a portal so stores can skip persistence
+        // @ts-expect-error - Adding custom property to window
+        externalWindow.__IS_PORTAL_WINDOW__ = true;
 
         // Copy styles from parent window
         const parentStyles = Array.from(document.head.querySelectorAll('style, link[rel="stylesheet"]'));
@@ -43,21 +37,36 @@ export function PortalWindow({ children, onClose }: PortalWindowProps) {
           externalWindow.document.head.appendChild(clonedStyle);
         });
 
-        // Make body transparent and pass through mouse events
+        // Copy dark mode class from parent
+        if (document.documentElement.classList.contains('dark')) {
+          externalWindow.document.documentElement.classList.add('dark');
+        }
+
+        // Make body and html fully transparent to support rounded corners
         externalWindow.document.body.style.backgroundColor = 'transparent';
         externalWindow.document.documentElement.style.backgroundColor = 'transparent';
-        externalWindow.document.body.style.pointerEvents = 'none';
 
-        // Allow clicks on the portal root content
-        const portalRoot = externalWindow.document.getElementById('portal-root');
-        if (portalRoot) {
-          (portalRoot as HTMLElement).style.pointerEvents = 'auto';
-        }
+        // Enable transparency for rounded corners
+        externalWindow.document.body.style.overflow = 'hidden';
+        externalWindow.document.body.style.margin = '0';
+        externalWindow.document.body.style.padding = '0';
+        externalWindow.document.body.style.width = '100%';
+        externalWindow.document.body.style.height = '100%';
+        externalWindow.document.body.style.overflow = 'hidden';
+        externalWindow.document.body.style.pointerEvents = 'auto';
 
-        container = externalWindow.document.getElementById('portal-root');
-        if (container) {
-          setContainerEl(container);
-        }
+        // Fix for Electron BrowserView mouse events being blocked by draggable regions
+        // See: https://github.com/electron/electron/issues/28057
+        externalWindow.document.body.style.webkitUserSelect = 'auto';
+        externalWindow.document.body.style.webkitAppRegion = 'no-drag';
+
+        // Store the webContents ID on the window so we can reference it later
+        // This will be set by the main process after interception
+        // @ts-expect-error - Custom property
+        externalWindow.__PORTAL_ID__ = null;
+
+        // Render directly into body
+        setContainerEl(externalWindow.document.body);
       } catch (error) {
         console.error('[PortalWindow] Error setting up portal:', error);
       }
@@ -127,6 +136,48 @@ export function PortalWindow({ children, onClose }: PortalWindowProps) {
       console.error('[PortalWindow] Error setting up escape handler:', error);
     }
   }, [onClose]);
+
+  // Send View bounds to main process following the Stack Browser pattern
+  useEffect(() => {
+    if (!viewBounds || !windowRef.current) {
+      console.log('[PortalWindow] Not sending bounds - viewBounds:', viewBounds, 'windowRef:', !!windowRef.current);
+      return;
+    }
+
+    const portalWindow = windowRef.current;
+
+    // Wait for __WEBCONTENTS_ID__ to be set by main process using a Promise
+    const waitForWebContentsId = (): Promise<number> => {
+      return new Promise((resolve) => {
+        const check = () => {
+          // @ts-expect-error - Custom property set by main process
+          const webContentsId = portalWindow.__WEBCONTENTS_ID__;
+          if (webContentsId !== undefined && webContentsId !== null) {
+            resolve(webContentsId);
+          } else {
+            setTimeout(check, 10);
+          }
+        };
+        check();
+      });
+    };
+
+    // Send bounds once ID is available
+    waitForWebContentsId().then((webContentsId) => {
+      console.log('[PortalWindow] Sending View bounds to main process:', viewBounds);
+      console.log('[PortalWindow] __WEBCONTENTS_ID__:', webContentsId);
+
+      // @ts-expect-error - window.opener exists on child windows
+      if (portalWindow.opener && !portalWindow.opener.closed) {
+        console.log('[PortalWindow] Sending via window.opener.electron.send');
+        // @ts-expect-error - window.electron is added by preload
+        portalWindow.opener.electron.send('portal-body-bounds', webContentsId, viewBounds);
+        console.log('[PortalWindow] Bounds sent successfully');
+      } else {
+        console.log('[PortalWindow] No opener or opener closed');
+      }
+    });
+  }, [viewBounds]);
 
   if (!containerEl) return null;
 

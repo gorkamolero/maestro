@@ -2,6 +2,29 @@
 
 All notable changes to Maestro will be documented in this file.
 
+## [Unreleased] - 2025-11-23
+
+### Stack Browser Pattern Implementation ✅ COMPLETE
+
+#### Modal System with Yoga Layout
+- ✅ Implemented Stack Browser pattern for modals above BrowserViews
+- ✅ Added Facebook Yoga layout engine for flexbox-style positioning
+- ✅ Created View component with nested layout support
+- ✅ Implemented PortalWindow component for React Portal to BrowserView bridge
+- ✅ Fixed timing race condition for WebContents ID synchronization
+- ✅ Added TestPortal component for development testing
+- ✅ Configured Vite for top-level-await support (yoga-layout requirement)
+
+**Key Components**:
+- `src/components/View.tsx` - Yoga layout calculator
+- `src/components/PortalWindow.tsx` - Portal to BrowserView bridge
+- `src/ipc/portal.ts` - window.open() interception and BrowserView management
+- `src/components/ui/modal-content.tsx` - Modal UI component with dialog styling
+
+**Dependencies**: yoga-layout@^2.0.1
+
+**Files**: Added View.tsx, ModalContent component; Modified PortalWindow.tsx, portal.ts, vite.renderer.config.ts
+
 ## [Unreleased] - 2025-11-22
 
 ### Phase 1: Core Foundation ✅ COMPLETE

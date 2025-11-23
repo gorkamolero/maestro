@@ -49,28 +49,74 @@ export function registerPortalHandler(getMainWindow: () => BrowserWindow | null)
         return;
       }
 
-      // Create a BrowserView using the intercepted WebContents
-      const portalView = new BrowserView({ webContents });
-
-      // Set transparent background
-      portalView.setBackgroundColor('#00000000');
-
-      // Add it to the window
-      win.addBrowserView(portalView);
-
-      // Position it to cover the entire window
-      const bounds = win.getContentBounds();
-      portalView.setBounds({
-        x: 0,
-        y: 0,
-        width: bounds.width,
-        height: bounds.height,
+      // Create a BrowserView using the intercepted WebContents with transparency
+      const portalView = new BrowserView({
+        webContents,
+        webPreferences: {
+          devTools: false,
+          transparent: true,
+        }
       });
 
-      // Set it as the top view so it appears above browser views
-      win.setTopBrowserView(portalView);
+      // Set the webContents ID on the window so PortalWindow can access it
+      webContents.executeJavaScript(`window.__WEBCONTENTS_ID__ = ${webContents.id}`);
+
+      console.log('[PORTAL] Set __WEBCONTENTS_ID__ on portal window:', webContents.id);
+
+      // Listen for body bounds from renderer
+      const handleBodyBounds = (_event: any, portalId: number, bounds: { x: number, y: number, width: number, height: number }) => {
+        if (portalId !== webContents.id) return;
+
+        console.log('[PORTAL] Received body bounds for portal:', portalId, bounds);
+
+        // Check if the portal was destroyed before we got the bounds
+        if (!portalViews.has(webContents.id)) {
+          console.log('[PORTAL] Portal was destroyed before bounds arrived, skipping setup');
+          ipcMain.removeListener('portal-body-bounds', handleBodyBounds);
+          return;
+        }
+
+        // Check if WebContents or BrowserView was destroyed
+        if (portalView.webContents.isDestroyed()) {
+          console.log('[PORTAL] Portal WebContents was destroyed, skipping setup');
+          portalViews.delete(webContents.id);
+          ipcMain.removeListener('portal-body-bounds', handleBodyBounds);
+          return;
+        }
+
+        // Remove the listener after successful validation
+        ipcMain.removeListener('portal-body-bounds', handleBodyBounds);
+
+        // Add the portal to the window
+        win.addBrowserView(portalView);
+
+        // Position it to match the body element
+        portalView.setBounds({
+          x: Math.round(bounds.x),
+          y: Math.round(bounds.y),
+          width: Math.round(bounds.width),
+          height: Math.round(bounds.height),
+        });
+
+        // Make it auto-resize with the window
+        portalView.setAutoResize({
+          width: true,
+          height: true,
+        });
+
+        // Set it as the top view so it appears above browser views
+        win.setTopBrowserView(portalView);
+
+        // Give the portal WebContents focus so it receives input events
+        webContents.focus();
+
+        console.log('[PORTAL] BrowserView setup complete, WebContents ready');
+      };
+
+      ipcMain.on('portal-body-bounds', handleBodyBounds);
 
       // Store the portal view
+      // BrowserView will be positioned when bounds are received from PortalWindow
       portalViews.set(webContents.id, portalView);
       creatingPortals.delete(webContents.id);
 

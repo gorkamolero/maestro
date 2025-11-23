@@ -35,6 +35,7 @@ interface WorkspaceState {
   tabs: Tab[];
   layout: WorkspaceLayout;
   viewMode: ViewMode;
+  showTestPortal: boolean;
 }
 
 const { store } = await persist<WorkspaceState>(
@@ -48,11 +49,13 @@ const { store } = await persist<WorkspaceState>(
       dockHeight: 48,
     },
     viewMode: 'split',
+    showTestPortal: false,
   },
   'maestro-workspace',
   {
     storageStrategy: IndexedDBStrategy,
     debounceTime: 1000,
+    omit: ['showTestPortal'], // Don't persist UI state
   }
 );
 

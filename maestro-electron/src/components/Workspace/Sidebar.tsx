@@ -2,7 +2,7 @@ import { useSnapshot } from 'valtio';
 import { DragDropContext, DropResult, type DragUpdate } from '@hello-pangea/dnd';
 import { workspaceStore, workspaceActions, type TabType } from '@/stores/workspace.store';
 import { spacesStore } from '@/stores/spaces.store';
-import { Terminal, Globe, FileText, Plus } from 'lucide-react';
+import { Terminal, Globe, FileText, Plus, Square } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
@@ -29,7 +29,6 @@ function SidebarContent() {
   const launcherSnap = useSnapshot(launcherStore);
   const [api, setApi] = useState<CarouselApi>();
   const { setTargetZone } = useDragContext();
-
   const handleDragUpdate = (result: DragUpdate) => {
     if (result.destination) {
       const targetZone = result.destination.droppableId.split('-')[0] as 'favorites' | 'tabs';
@@ -90,8 +89,19 @@ function SidebarContent() {
     workspaceActions.openTab(activeSpaceId, type, title);
   };
 
+
   const handleAddApp = () => {
+    console.log('[Sidebar] Opening add modal, setting isAddModalOpen to true');
+    console.log('[Sidebar] Current isAddModalOpen:', launcherStore.isAddModalOpen);
+    // eslint-disable-next-line react-hooks/immutability
     launcherStore.isAddModalOpen = true;
+    console.log('[Sidebar] After setting, isAddModalOpen:', launcherStore.isAddModalOpen);
+  };
+
+  const handleTestPortal = () => {
+    console.log('[Sidebar] Toggle test portal');
+    // eslint-disable-next-line react-hooks/immutability
+    workspaceStore.showTestPortal = !workspaceStore.showTestPortal;
   };
 
   if (!activeSpaceId) {
@@ -163,6 +173,20 @@ function SidebarContent() {
             </TooltipTrigger>
             <TooltipContent side="right">
               <p className="text-xs">Add App</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={handleTestPortal}
+                className="w-10 h-10 rounded-lg bg-background/50 hover:bg-background flex items-center justify-center transition-colors shadow-sm"
+              >
+                <Square className="w-4 h-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <p className="text-xs">Test Portal</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

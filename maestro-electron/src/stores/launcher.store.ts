@@ -33,6 +33,7 @@ const { store } = await persist<LauncherState>(
   {
     storageStrategy: IndexedDBStrategy,
     debounceTime: 1000,
+    omit: ['isAddModalOpen', 'editingFavoriteId'], // Don't persist UI state
   }
 );
 

@@ -32,7 +32,81 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Maestro is a Tauri v2 desktop application combining a Rust backend with a React + TypeScript + Vite frontend. The application uses pnpm as its package manager.
+Maestro is an Electron desktop application (migrated from Tauri) with a React + TypeScript + Vite frontend. The application uses npm as its package manager.
+
+## Stack Browser Pattern for Modals
+
+Maestro implements the Stack Browser pattern (inspired by [Ika Pkhakadze's architecture](https://www.ika.im/posts/building-a-browser-in-electron)) to display modals above Electron BrowserViews.
+
+### Why This Pattern?
+
+BrowserViews in Electron sit in the OS window hierarchy, above the normal DOM. Standard React modals render in the DOM and appear **behind** BrowserViews. To show modals on top, we render them as separate BrowserViews positioned using Yoga layout.
+
+### Implementation Components
+
+1. **View Component** (`src/components/View.tsx`)
+   - Uses Facebook Yoga layout engine for flexbox-style positioning
+   - Calculates absolute bounds (x, y, width, height) for child elements
+   - Provides bounds via React Context
+   - Does NOT render DOM elements itself - only calculates layout
+
+2. **PortalWindow Component** (`src/components/PortalWindow.tsx`)
+   - Creates a portal window using `window.open()`
+   - Reads bounds from parent View via `useViewBounds()` hook
+   - Sends bounds to main process via IPC: `window.opener.electron.send('portal-body-bounds', webContentsId, bounds)`
+   - **Critical timing fix**: Polls for `window.__WEBCONTENTS_ID__` to be set before sending bounds (fixes race condition)
+
+3. **Portal Handler** (`src/ipc/portal.ts`)
+   - Intercepts `window.open()` calls via `-add-new-contents` event
+   - Creates BrowserView from intercepted WebContents
+   - Listens for `portal-body-bounds` IPC message
+   - Positions BrowserView using received bounds
+   - Sets BrowserView as top view with `setTopBrowserView()`
+
+### Usage Example
+
+```tsx
+// Centered 400x300 modal
+<View style={{
+  width: '100%',
+  height: '100%',
+  justifyContent: 'center',
+  alignItems: 'center'
+}}>
+  <View style={{ width: 400, height: 300 }}>
+    <PortalWindow onClose={handleClose}>
+      <ModalContent>
+        {/* Your modal UI */}
+      </ModalContent>
+    </PortalWindow>
+  </View>
+</View>
+```
+
+### Common Pitfall: Timing Race Condition
+
+**Problem**: `window.__WEBCONTENTS_ID__` is set asynchronously by the main process using `executeJavaScript()`, but PortalWindow needs it immediately to send bounds.
+
+**Solution**: Poll for the ID before sending:
+```typescript
+const checkAndSend = () => {
+  const webContentsId = windowRef.current.__WEBCONTENTS_ID__;
+  if (webContentsId === undefined) {
+    setTimeout(checkAndSend, 10);
+    return;
+  }
+  // Send bounds with valid ID
+};
+```
+
+### Valtio Store Persistence
+
+Modal state (like `isAddModalOpen`, `showTestPortal`) should NOT be persisted:
+```typescript
+persist(initialState, 'store-name', {
+  omit: ['isAddModalOpen', 'showTestPortal'] // Exclude UI state
+})
+```
 
 ## Architecture
 

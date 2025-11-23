@@ -5,10 +5,15 @@ import { Sidebar } from '@/components/Workspace/Sidebar';
 import { WorkspacePanel } from '@/components/Workspace/WorkspacePanel';
 import { AddFavoriteModal } from '@/components/Launcher';
 import { workspaceStore } from '@/stores/workspace.store';
+import { ResizablePanel } from '@/components/ui/resizable-panel';
 
 function App() {
   const [darkMode] = useState(true);
-  const { activeSpaceId } = useSnapshot(workspaceStore);
+  const { activeSpaceId, layout } = useSnapshot(workspaceStore);
+
+  useEffect(() => {
+    console.log('[App] activeSpaceId changed:', activeSpaceId);
+  }, [activeSpaceId]);
 
   useEffect(() => {
     if (darkMode) {
@@ -18,20 +23,32 @@ function App() {
     }
   }, [darkMode]);
 
+  const handleSidebarResize = (width: number) => {
+    workspaceStore.layout.sidebarWidth = width;
+  };
+
   return (
     <div className="h-screen bg-background text-foreground flex">
-      {/* Arc-style left sidebar */}
-      <div className="w-[240px] bg-muted/40 flex flex-col">
-        {/* Sidebar with favorites and tabs */}
-        <div className="flex-1 overflow-hidden">
-          <Sidebar />
-        </div>
+      {/* Arc-style left sidebar - now resizable */}
+      <ResizablePanel
+        defaultWidth={layout.sidebarWidth}
+        minWidth={180}
+        maxWidth={400}
+        onResize={handleSidebarResize}
+        className="bg-muted/40"
+      >
+        <div className="h-full flex flex-col">
+          {/* Sidebar with favorites and tabs */}
+          <div className="flex-1 overflow-hidden">
+            <Sidebar />
+          </div>
 
-        {/* Space switcher at bottom-left */}
-        <div className="p-2 border-t border-border/50">
-          <Dock />
+          {/* Space switcher at bottom-left */}
+          <div className="p-2 border-t border-border/50">
+            <Dock />
+          </div>
         </div>
-      </div>
+      </ResizablePanel>
 
       {/* Main workspace area */}
       <div className="flex-1 flex flex-col">

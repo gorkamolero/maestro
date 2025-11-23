@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import { Star, X, Edit2 } from 'lucide-react';
-import { Tab, workspaceActions } from '@/stores/workspace.store';
+import { Tab, workspaceActions, workspaceStore } from '@/stores/workspace.store';
 import { TabDropZone } from '@/types';
 import { cn } from '@/lib/utils';
+import { useSnapshot } from 'valtio';
 
 interface DraggableTabProps {
   tab: Tab;
@@ -13,10 +14,12 @@ interface DraggableTabProps {
 }
 
 export function DraggableTab({ tab, zone, index }: DraggableTabProps) {
+  const { activeTabId } = useSnapshot(workspaceStore);
   const [isRenaming, setIsRenaming] = useState(false);
   const [editedTitle, setEditedTitle] = useState(tab.title);
 
   const draggableId = `${zone}-${tab.id}`;
+  const isActive = activeTabId === tab.id;
 
   const handleRename = () => {
     if (editedTitle.trim() && editedTitle !== tab.title) {
@@ -56,8 +59,14 @@ export function DraggableTab({ tab, zone, index }: DraggableTabProps) {
           className={cn(
             'group relative transition-colors',
             isFavoriteZone
-              ? 'w-12 h-12 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center'
-              : 'flex items-center gap-2 rounded-lg px-3 py-2 bg-white/5 hover:bg-white/10',
+              ? 'w-12 h-12 rounded-xl flex items-center justify-center'
+              : 'flex items-center gap-2 rounded-lg px-3 py-2',
+            // Background colors
+            isActive && !snapshot.isDragging
+              ? 'bg-white/15 hover:bg-white/20'
+              : 'bg-white/5 hover:bg-white/10',
+            // Active state border
+            isActive && !isFavoriteZone && 'border-l-2 border-blue-400',
             snapshot.isDragging ? 'opacity-30' : 'cursor-grab'
           )}
           style={{
@@ -67,8 +76,13 @@ export function DraggableTab({ tab, zone, index }: DraggableTabProps) {
           }}
         >
           {isFavoriteZone ? (
-            // Favorites: Icon only
-            <>{getTabIcon()}</>
+            // Favorites: Icon only with active indicator
+            <>
+              {getTabIcon()}
+              {isActive && (
+                <div className="absolute bottom-1 w-6 h-0.5 bg-blue-400 rounded-full" />
+              )}
+            </>
           ) : (
             // Tabs: Full layout with status, title, actions
             <>
