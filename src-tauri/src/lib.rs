@@ -1,15 +1,14 @@
 mod monitor;
+mod browser;
 
 use monitor::{ProcessMetrics, ResourceMonitor, SegmentResourceMetrics, SystemMetrics};
 use std::sync::Arc;
 use std::sync::Mutex;
-use std::collections::HashMap;
-use tauri::{Emitter, State, WebviewUrl, WebviewBuilder, LogicalPosition, LogicalSize, Webview, Window};
+use tauri::{Emitter, State};
 
 // Global state for the application
 struct AppState {
     monitor: Arc<Mutex<ResourceMonitor>>,
-    webviews: Arc<Mutex<HashMap<String, Webview>>>,
 }
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
@@ -70,159 +69,10 @@ fn get_all_processes(state: State<AppState>) -> Result<Vec<ProcessMetrics>, Stri
     Ok(monitor.get_all_processes())
 }
 
-// Browser Webview Commands
-#[tauri::command]
-fn create_browser_webview(
-    window: Window,
-    label: String,
-    url: String,
-    x: f64,
-    y: f64,
-    width: f64,
-    height: f64,
-    state: State<AppState>,
-) -> Result<String, String> {
-    let webview_url = if url.starts_with("http://") || url.starts_with("https://") {
-        WebviewUrl::External(url.parse().map_err(|e| format!("Invalid URL: {}", e))?)
-    } else if url == "about:blank" {
-        WebviewUrl::App("about:blank".into())
-    } else {
-        return Err("Invalid URL scheme".to_string());
-    };
-
-    // Check if webview already exists
-    {
-        let webviews = state.webviews.lock().map_err(|e| e.to_string())?;
-        if webviews.contains_key(&label) {
-            return Ok(label); // Already exists, just return the label
-        }
-    }
-
-    let webview_builder = WebviewBuilder::new(&label, webview_url);
-
-    // CRITICAL: add_child with position doesn't work reliably
-    // Add at origin first, then set position
-    let webview = window
-        .add_child(
-            webview_builder,
-            LogicalPosition::new(0.0, 0.0),
-            LogicalSize::new(width, height),
-        )
-        .map_err(|e| format!("Failed to create webview: {}", e))?;
-
-    // Small delay to ensure webview is ready
-    std::thread::sleep(std::time::Duration::from_millis(10));
-
-    // NOW set the actual position
-    webview
-        .set_position(LogicalPosition::new(x, y))
-        .map_err(|e| format!("Failed to set position: {}", e))?;
-
-    // Store the webview
-    let mut webviews = state.webviews.lock().map_err(|e| e.to_string())?;
-    webviews.insert(label.clone(), webview);
-
-    Ok(label)
-}
-
-#[tauri::command]
-fn close_browser_webview(label: String, state: State<AppState>) -> Result<(), String> {
-    let mut webviews = state.webviews.lock().map_err(|e| e.to_string())?;
-
-    if let Some(webview) = webviews.remove(&label) {
-        webview.close().map_err(|e| format!("Failed to close webview: {}", e))?;
-    }
-
-    Ok(())
-}
-
-#[tauri::command]
-fn update_webview_bounds(
-    _window: Window,
-    label: String,
-    x: f64,
-    y: f64,
-    width: f64,
-    height: f64,
-    state: State<AppState>,
-) -> Result<(), String> {
-    let webviews = state.webviews.lock().map_err(|e| e.to_string())?;
-
-    if let Some(webview) = webviews.get(&label) {
-        webview
-            .set_position(LogicalPosition::new(x, y))
-            .map_err(|e| format!("Failed to set position: {}", e))?;
-
-        webview
-            .set_size(LogicalSize::new(width, height))
-            .map_err(|e| format!("Failed to set size: {}", e))?;
-    }
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn navigate_webview(
-    window: Window,
-    label: String,
-    url: String,
-    x: f64,
-    y: f64,
-    width: f64,
-    height: f64,
-    state: State<'_, AppState>,
-) -> Result<(), String> {
-    let webview_url = if url.starts_with("http://") || url.starts_with("https://") {
-        url.clone()
-    } else if url == "about:blank" {
-        url.clone()
-    } else {
-        // Assume it's a search query and use Google
-        format!("https://www.google.com/search?q={}", urlencoding::encode(&url))
-    };
-
-    // We need to recreate the webview with the new URL
-    // First, close the existing one
-    {
-        let mut webviews = state.webviews.lock().map_err(|e| e.to_string())?;
-        if let Some(webview) = webviews.remove(&label) {
-            webview.close().map_err(|e| format!("Failed to close webview: {}", e))?;
-        }
-    }
-
-    let parsed_url = if webview_url.starts_with("http://") || webview_url.starts_with("https://") {
-        WebviewUrl::External(webview_url.parse().map_err(|e| format!("Invalid URL: {}", e))?)
-    } else {
-        WebviewUrl::App(webview_url.into())
-    };
-
-    let webview_builder = WebviewBuilder::new(&label, parsed_url);
-
-    // Add at origin first, then set position (workaround for Tauri positioning bug)
-    let webview = window
-        .add_child(
-            webview_builder,
-            LogicalPosition::new(0.0, 0.0),
-            LogicalSize::new(width, height),
-        )
-        .map_err(|e| format!("Failed to create webview: {}", e))?;
-
-    std::thread::sleep(std::time::Duration::from_millis(10));
-
-    webview
-        .set_position(LogicalPosition::new(x, y))
-        .map_err(|e| format!("Failed to set position: {}", e))?;
-
-    // Store the new webview
-    let mut webviews = state.webviews.lock().map_err(|e| e.to_string())?;
-    webviews.insert(label, webview);
-
-    Ok(())
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let monitor = Arc::new(std::sync::Mutex::new(ResourceMonitor::new()));
+    let webviews = browser::WebviewMap::default();
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
@@ -230,8 +80,8 @@ pub fn run() {
         .plugin(tauri_plugin_pty::init())
         .manage(AppState {
             monitor: monitor.clone(),
-            webviews: Arc::new(Mutex::new(HashMap::new())),
         })
+        .manage(webviews)
         .invoke_handler(tauri::generate_handler![
             greet,
             get_system_metrics,
@@ -241,10 +91,10 @@ pub fn run() {
             get_segment_metrics,
             kill_process,
             get_all_processes,
-            create_browser_webview,
-            close_browser_webview,
-            update_webview_bounds,
-            navigate_webview
+            browser::create_browser_webview,
+            browser::close_browser_webview,
+            browser::update_webview_bounds,
+            browser::navigate_webview
         ])
         .setup(move |app| {
             // Start metrics emission thread

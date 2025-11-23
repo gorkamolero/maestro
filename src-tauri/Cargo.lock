@@ -1978,6 +1978,7 @@ dependencies = [
  "tauri-plugin-opener",
  "tauri-plugin-pty",
  "tauri-plugin-shell",
+ "url",
  "urlencoding",
 ]
 

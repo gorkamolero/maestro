@@ -19,6 +19,10 @@ export interface Tab {
     scrollPosition: number;
     theme: 'termius-dark' | 'dracula' | 'nord';
   };
+  browserState?: {
+    url: string;
+    title?: string;
+  };
 }
 
 export type ViewMode = 'timeline' | 'workspace' | 'split';
@@ -215,6 +219,13 @@ export const workspaceActions = {
     const tab = workspaceStore.tabs.find((t) => t.id === tabId);
     if (tab && tab.type === 'terminal') {
       tab.terminalState = state;
+    }
+  },
+
+  updateTabBrowserState: (tabId: string, state: Tab['browserState']) => {
+    const tab = workspaceStore.tabs.find((t) => t.id === tabId);
+    if (tab && tab.type === 'browser') {
+      tab.browserState = state;
     }
   },
 };

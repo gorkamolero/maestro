@@ -1,9 +1,10 @@
 import { useState, useRef } from 'react';
 import { motion } from 'motion/react';
 import { invoke } from '@tauri-apps/api/core';
-import { getCurrentWindow } from '@tauri-apps/api/window';
-import { useWebview, getWebviewPosition } from './useWebview';
+import { useWebview } from './useWebview';
 import { BrowserToolbar } from './BrowserToolbar';
+import { workspaceActions } from '@/stores/workspace.store';
+import { normalizeUrl } from './browser.utils';
 
 interface BrowserPanelProps {
   tab: any; // Workspace tab
@@ -14,7 +15,9 @@ export function BrowserPanel({ tab }: BrowserPanelProps) {
   const [error, setError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const initialUrl = tab.url || 'about:blank';
+  // Restore URL from browserState if available, normalize to ensure valid scheme
+  const savedUrl = tab.browserState?.url || tab.url;
+  const initialUrl = normalizeUrl(savedUrl || 'https://www.google.com');
 
   const { webviewLabelRef, currentUrlRef } = useWebview({
     tabId: tab.id,
@@ -25,25 +28,24 @@ export function BrowserPanel({ tab }: BrowserPanelProps) {
   });
 
   const handleNavigate = async (url: string) => {
-    if (!webviewLabelRef.current || !containerRef.current) return;
+    if (!webviewLabelRef.current) return;
 
     try {
       setIsLoading(true);
 
-      // Ensure we have valid dimensions
-      if (containerRef.current.offsetHeight === 0) {
-        await new Promise(resolve => setTimeout(resolve, 50));
-      }
-
-      const position = getWebviewPosition(containerRef.current);
+      // Normalize URL first (ensure it has valid scheme)
+      const normalizedUrl = normalizeUrl(url);
 
       await invoke('navigate_webview', {
-        window: getCurrentWindow(),
         label: webviewLabelRef.current,
-        url,
-        ...position,
+        url: normalizedUrl,
       });
-      currentUrlRef.current = url;
+
+      currentUrlRef.current = normalizedUrl;
+
+      // Save normalized URL to tab state for persistence
+      workspaceActions.updateTabBrowserState(tab.id, { url: normalizedUrl });
+
       setError(null);
     } catch (err) {
       console.error('Navigation error:', err);
