@@ -9,22 +9,22 @@ export function getWebviewPosition(element: HTMLElement) {
   // Use getBoundingClientRect for viewport-relative position
   const rect = element.getBoundingClientRect();
 
-  // On macOS, Tauri's LogicalPosition includes the window title bar (~28px)
-  // JavaScript's viewport coordinates start below the title bar
-  // So we need to add the title bar height to the Y coordinate
-  const MACOS_TITLE_BAR_HEIGHT = 28;
-  const adjustedY = rect.y + MACOS_TITLE_BAR_HEIGHT;
+  console.log('[getWebviewPosition] rect:', rect);
 
   // Use clientWidth/clientHeight which excludes scrollbars
   const contentWidth = element.clientWidth;
   const contentHeight = element.clientHeight;
 
-  return {
+  const position = {
     x: rect.x,
-    y: adjustedY,
+    y: rect.y,
     width: contentWidth,
     height: contentHeight,
   };
+
+  console.log('[getWebviewPosition] returning:', position);
+
+  return position;
 }
 
 interface UseWebviewOptions {
