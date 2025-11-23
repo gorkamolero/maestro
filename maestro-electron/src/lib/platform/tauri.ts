@@ -13,9 +13,6 @@ import type {
   BrowserViewOptions,
   Terminal,
   TerminalOptions,
-  SystemMetrics,
-  ProcessMetrics,
-  SegmentResourceMetrics,
   UnlistenFn,
 } from './types';
 
@@ -129,38 +126,6 @@ export class TauriBridge implements IPlatformBridge {
         // The PTY will be cleaned up when the terminal component unmounts
       },
     };
-  }
-
-  // ============================================================================
-  // Resource Monitor: System Metrics
-  // ============================================================================
-
-  async getSystemMetrics(): Promise<SystemMetrics> {
-    return tauriInvoke<SystemMetrics>('get_system_metrics');
-  }
-
-  async getProcessMetrics(pid: number): Promise<ProcessMetrics | null> {
-    return tauriInvoke<ProcessMetrics | null>('get_process_metrics', { pid });
-  }
-
-  async trackSegmentProcess(segmentId: string, pid: number): Promise<void> {
-    await tauriInvoke('track_segment_process', { segmentId, pid });
-  }
-
-  async untrackSegment(segmentId: string): Promise<void> {
-    await tauriInvoke('untrack_segment', { segmentId });
-  }
-
-  async getSegmentMetrics(segmentId: string): Promise<SegmentResourceMetrics | null> {
-    return tauriInvoke<SegmentResourceMetrics | null>('get_segment_metrics', { segmentId });
-  }
-
-  async killProcess(pid: number): Promise<void> {
-    await tauriInvoke('kill_process', { pid });
-  }
-
-  async getAllProcesses(): Promise<ProcessMetrics[]> {
-    return tauriInvoke<ProcessMetrics[]>('get_all_processes');
   }
 
   // ============================================================================

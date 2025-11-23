@@ -33,7 +33,6 @@ export interface Segment {
   type: SegmentType;
   status: SegmentStatus;
   config: SegmentConfig;
-  metrics?: ResourceMetrics;
 }
 
 export type SegmentType = 'browser' | 'terminal' | 'agent' | 'note' | 'external' | 'planted';
@@ -91,13 +90,6 @@ export interface Marker {
   title: string;
   description?: string;
   color?: string;
-}
-
-export interface ResourceMetrics {
-  ram: number; // in MB
-  cpu: number; // percentage
-  processes: number;
-  lastUpdated: Date;
 }
 
 export type ZoomLevel = 'hour' | 'day' | 'week' | 'month';

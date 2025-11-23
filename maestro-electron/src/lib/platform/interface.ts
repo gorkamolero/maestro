@@ -10,9 +10,6 @@ import type {
   BrowserViewOptions,
   Terminal,
   TerminalOptions,
-  SystemMetrics,
-  ProcessMetrics,
-  SegmentResourceMetrics,
   UnlistenFn,
 } from './types';
 
@@ -120,55 +117,6 @@ export interface IPlatformBridge {
    * @returns Terminal instance
    */
   spawnTerminal(shell: string, args: string[], options: TerminalOptions): Promise<Terminal>;
-
-  // ============================================================================
-  // Resource Monitor: System Metrics
-  // ============================================================================
-
-  /**
-   * Get overall system metrics
-   * @returns System metrics (RAM, CPU, process count)
-   */
-  getSystemMetrics(): Promise<SystemMetrics>;
-
-  /**
-   * Get metrics for a specific process
-   * @param pid Process ID
-   * @returns Process metrics or null if not found
-   */
-  getProcessMetrics(pid: number): Promise<ProcessMetrics | null>;
-
-  /**
-   * Track a process as part of a segment
-   * @param segmentId Segment identifier
-   * @param pid Process ID
-   */
-  trackSegmentProcess(segmentId: string, pid: number): Promise<void>;
-
-  /**
-   * Stop tracking a segment's processes
-   * @param segmentId Segment identifier
-   */
-  untrackSegment(segmentId: string): Promise<void>;
-
-  /**
-   * Get aggregated metrics for all processes in a segment
-   * @param segmentId Segment identifier
-   * @returns Segment metrics or null if not found
-   */
-  getSegmentMetrics(segmentId: string): Promise<SegmentResourceMetrics | null>;
-
-  /**
-   * Kill/terminate a process
-   * @param pid Process ID
-   */
-  killProcess(pid: number): Promise<void>;
-
-  /**
-   * Get all running processes
-   * @returns Array of process metrics
-   */
-  getAllProcesses(): Promise<ProcessMetrics[]>;
 
   // ============================================================================
   // Platform Info

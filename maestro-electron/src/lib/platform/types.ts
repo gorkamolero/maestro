@@ -42,32 +42,6 @@ export interface Terminal {
 }
 
 // ============================================================================
-// Resource Monitor Types
-// ============================================================================
-
-export interface SystemMetrics {
-  total_ram: number; // in MB
-  used_ram: number; // in MB
-  total_cpu: number; // percentage
-  process_count: number;
-}
-
-export interface ProcessMetrics {
-  pid: number;
-  name: string;
-  ram: number; // in MB
-  cpu: number; // percentage
-}
-
-export interface SegmentResourceMetrics {
-  segment_id: string;
-  ram: number; // in MB
-  cpu: number; // percentage
-  processes: ProcessMetrics[];
-  last_updated: string;
-}
-
-// ============================================================================
 // IPC Types
 // ============================================================================
 

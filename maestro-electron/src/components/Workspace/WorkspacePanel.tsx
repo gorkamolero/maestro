@@ -3,7 +3,6 @@ import { useSnapshot } from 'valtio';
 import { workspaceStore, workspaceActions, type Tab } from '@/stores/workspace.store';
 import { Terminal, Globe, Bot } from 'lucide-react';
 import { motion } from 'motion/react';
-import { SegmentMetrics } from '@/components/Monitor/SegmentMetrics';
 import { segmentsStore } from '@/stores/segments.store';
 import { TerminalPanel } from '@/components/Terminal/TerminalPanel';
 import { BrowserPanel } from '@/components/Browser/BrowserPanel';
@@ -87,14 +86,13 @@ function TerminalView({ tab }: { tab: Tab }) {
       animate={{ opacity: 1 }}
       className="w-full h-full flex flex-col"
     >
-      {/* Terminal header with metrics */}
+      {/* Terminal header */}
       {segment && (
         <div className="flex items-center justify-between px-4 py-2 border-b border-border">
           <div className="flex items-center gap-2">
             <Terminal className="w-4 h-4" />
             <span className="text-sm">{tab.title}</span>
           </div>
-          <SegmentMetrics segmentId={segment.id} compact />
         </div>
       )}
 
@@ -133,14 +131,13 @@ function BrowserView({ tab }: { tab: Tab }) {
       animate={{ opacity: 1 }}
       className="w-full h-full flex flex-col"
     >
-      {/* Browser header with metrics */}
+      {/* Browser header */}
       {segment && (
         <div className="flex items-center justify-between px-4 py-2 border-b border-border">
           <div className="flex items-center gap-2">
             <Globe className="w-4 h-4" />
             <span className="text-sm">{tab.title}</span>
           </div>
-          <SegmentMetrics segmentId={segment.id} compact />
         </div>
       )}
 
@@ -162,14 +159,13 @@ function AgentPlaceholder({ tab }: { tab: Tab }) {
       animate={{ opacity: 1 }}
       className="flex-1 flex flex-col bg-background"
     >
-      {/* Agent header with metrics */}
+      {/* Agent header */}
       {segment && (
         <div className="flex items-center justify-between p-3 border-b border-border">
           <div className="flex items-center gap-2">
             <Bot className="w-4 h-4 text-muted-foreground" />
             <span className="text-sm font-medium">{tab.title}</span>
           </div>
-          <SegmentMetrics segmentId={segment.id} compact />
         </div>
       )}
 

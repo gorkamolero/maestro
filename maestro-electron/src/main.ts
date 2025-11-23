@@ -2,8 +2,8 @@ import { app, BrowserWindow } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import { registerBrowserHandlers } from './ipc/browser';
-import { registerMetricsHandlers, startMetricsPolling } from './ipc/metrics';
 import { registerTerminalHandlers } from './ipc/terminal';
+import { registerLauncherHandlers } from './ipc/launcher';
 
 // Handle creating/removing shortcuts on Windows
 if (started) {
@@ -46,11 +46,8 @@ const createWindow = () => {
 app.on('ready', () => {
   // Register IPC handlers after app is ready
   registerBrowserHandlers(getMainWindow);
-  registerMetricsHandlers();
   registerTerminalHandlers(getMainWindow);
-
-  // Start metrics polling
-  startMetricsPolling(getMainWindow);
+  registerLauncherHandlers();
 
   createWindow();
 });

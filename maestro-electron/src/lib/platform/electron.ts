@@ -10,9 +10,6 @@ import type {
   BrowserViewOptions,
   Terminal,
   TerminalOptions,
-  SystemMetrics,
-  ProcessMetrics,
-  SegmentResourceMetrics,
   UnlistenFn,
 } from './types';
 
@@ -86,38 +83,6 @@ export class ElectronBridge implements IPlatformBridge {
   async spawnTerminal(shell: string, args: string[], options: TerminalOptions): Promise<Terminal> {
     // @ts-expect-error - window.pty is added by preload
     return await window.pty.spawn(shell, args, options);
-  }
-
-  // ============================================================================
-  // Resource Monitor: System Metrics
-  // ============================================================================
-
-  async getSystemMetrics(): Promise<SystemMetrics> {
-    return this.invoke<SystemMetrics>('get_system_metrics');
-  }
-
-  async getProcessMetrics(pid: number): Promise<ProcessMetrics | null> {
-    return this.invoke<ProcessMetrics | null>('get_process_metrics', { pid });
-  }
-
-  async trackSegmentProcess(segmentId: string, pid: number): Promise<void> {
-    await this.invoke('track_segment_process', { segmentId, pid });
-  }
-
-  async untrackSegment(segmentId: string): Promise<void> {
-    await this.invoke('untrack_segment', { segmentId });
-  }
-
-  async getSegmentMetrics(segmentId: string): Promise<SegmentResourceMetrics | null> {
-    return this.invoke<SegmentResourceMetrics | null>('get_segment_metrics', { segmentId });
-  }
-
-  async killProcess(pid: number): Promise<void> {
-    await this.invoke('kill_process', { pid });
-  }
-
-  async getAllProcesses(): Promise<ProcessMetrics[]> {
-    return this.invoke<ProcessMetrics[]>('get_all_processes');
   }
 
   // ============================================================================

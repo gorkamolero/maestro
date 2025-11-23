@@ -30,7 +30,6 @@ Maestro is a timeline-based work orchestrator that manages parallel work streams
 **Tool Panels:**
 - [x] **Terminal Integration** - Full xterm.js with PTY support
 - [x] **Browser Integration** - Embedded webview with URL bar, navigation, multi-instance support
-- [x] **Resource Monitor** - Real-time RAM/CPU tracking
 
 **Browser Navigation:**
 - [x] Back/forward navigation with history tracking
@@ -71,6 +70,30 @@ Maestro is a timeline-based work orchestrator that manages parallel work streams
 ---
 
 ## FUTURE PHASES: Timeline & Advanced Features
+
+### System Resource Monitoring (Removed - Available for Future Reimplementation)
+
+**Status:** Removed in commit `bf3b624` (November 23, 2025) from maestro-electron
+**Reason:** Caused "Object has been destroyed" errors due to metrics polling accessing destroyed Electron objects after window closure
+
+**What was removed:**
+- Real-time system metrics (RAM, CPU, process count) via systeminformation package
+- Per-process metrics tracking and aggregation
+- Segment-level resource metrics with process association
+- Monitor UI components (ResourcePanel, SegmentMetrics, MetricsGraph)
+- Metrics IPC handlers and automatic polling system
+- Platform abstraction methods for metrics in Electron/Tauri bridges
+
+**Implementation notes for future reimplementation:**
+- Must properly clear all intervals/polling on window close events
+- Always check `window.isDestroyed()` before accessing window/webContents objects
+- Listen for window lifecycle events (`closed`, `destroy`) to trigger cleanup
+- Store interval IDs in module scope with explicit cleanup functions
+- Consider using Electron's native powerMonitor API instead of systeminformation
+- Implement proper cleanup in `app.on('will-quit')` handler
+- Add error boundaries around metrics updates to prevent crashes
+
+**Reference commit:** `bf3b624` contains all removed implementation code and details
 
 ### Timeline Features (Deferred)
 - Segment content visualizations (chorizo UI with interior animations)
@@ -117,7 +140,6 @@ Maestro is a timeline-based work orchestrator that manages parallel work streams
 - [ ] Can manage 10+ parallel tracks
 - [ ] Segments persist across restarts (✅ basic, needs validation)
 - [ ] Timeline navigable to any point (✅ basic, needs enhancements)
-- [ ] Resource monitor prevents >4GB usage
 
 ### Visual
 - [ ] Screenshots look professional
@@ -161,10 +183,6 @@ Maestro is a timeline-based work orchestrator that manages parallel work streams
     "engine": "Tauri v2 child webviews",
     "navigation": "on_navigation event handler",
     "state": "Dedicated browser.store.ts per tab"
-  },
-  "monitoring": {
-    "rust": "sysinfo crate",
-    "ipc": "Tauri events"
   }
 }
 ```
@@ -207,7 +225,6 @@ interface Segment {
   type: SegmentType
   status: SegmentStatus
   config: SegmentConfig
-  metrics?: ResourceMetrics
 }
 
 type SegmentType =
@@ -264,13 +281,6 @@ interface Marker {
   description?: string
   color?: string
 }
-
-interface ResourceMetrics {
-  ram: number  // in MB
-  cpu: number  // percentage
-  processes: number
-  lastUpdated: Date
-}
 ```
 
 ---
@@ -321,10 +331,7 @@ src/
 │   │   ├── useWebview.ts       # Webview lifecycle + navigation events
 │   │   ├── browser.utils.ts    # URL normalization
 │   │   └── index.ts            # Exports
-│   ├── Monitor/                 (✅ Phase 2 Agent 3 complete)
-│   │   ├── ResourcePanel.tsx
-│   │   ├── SegmentMetrics.tsx
-│   │   └── MetricsGraph.tsx
+│   ├── Monitor/                 (REMOVED - see commit bf3b624)
 │   └── Panes/                   (TO BUILD - Agent 7)
 │       ├── PaneManager.tsx
 │       ├── Pane.tsx
@@ -336,8 +343,7 @@ src/
 │   ├── spaces.store.ts         # Spaces/tracks
 │   ├── segments.store.ts       # Segment data
 │   ├── workspace.store.ts      # Workspace layout & tabs
-│   ├── browser.store.ts        # Browser state per tab (NEW)
-│   └── metrics.store.ts        # Resource metrics
+│   └── browser.store.ts        # Browser state per tab (NEW)
 ├── lib/
 │   ├── persistence.ts          # Save/load state (✅ basic via valtio-persist)
 │   ├── shortcuts.ts            # Keyboard handlers (TO BUILD)
