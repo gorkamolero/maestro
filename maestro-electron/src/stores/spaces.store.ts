@@ -1,15 +1,21 @@
 import { persist } from 'valtio-persist';
 import { IndexedDBStrategy } from 'valtio-persist/indexed-db';
+import { proxyWithHistory } from 'valtio-history';
+import { proxy } from 'valtio';
 import type { Space, Segment } from '@/types';
 
 interface SpacesState {
   spaces: Space[];
 }
 
+// Create proxy with history tracking
+export const spacesHistory = proxyWithHistory({
+  spaces: [],
+});
+
+// Then apply persistence to the .value (the actual state)
 const { store } = await persist<SpacesState>(
-  {
-    spaces: [],
-  },
+  spacesHistory.value,
   'maestro-spaces',
   {
     storageStrategy: IndexedDBStrategy,

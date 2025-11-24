@@ -1,5 +1,7 @@
 import { persist } from 'valtio-persist';
 import { IndexedDBStrategy } from 'valtio-persist/indexed-db';
+import { proxyWithHistory } from 'valtio-history';
+import { proxy } from 'valtio';
 import type { LaunchConfig, SavedState } from '@/types/launcher';
 
 export type TabType = 'terminal' | 'browser' | 'agent' | 'app-launcher' | 'tasks';
@@ -39,30 +41,40 @@ export interface WorkspaceLayout {
   dockHeight: number; // Fixed pixels
 }
 
+interface ClosedTab extends Tab {
+  closedAt: Date;
+}
+
 interface WorkspaceState {
   activeSpaceId: string | null;
   activeTabId: string | null;
   tabs: Tab[];
+  recentlyClosedTabs: ClosedTab[]; // Keep last 10 closed tabs
   layout: WorkspaceLayout;
   viewMode: ViewMode;
   workspaceViewMode: WorkspaceViewMode; // Notes view or Tabs view
   tabsViewMode: TabsViewMode; // Grid or List view for tabs
 }
 
-const { store } = await persist<WorkspaceState>(
-  {
-    activeSpaceId: null,
-    activeTabId: null,
-    tabs: [],
-    layout: {
-      timelineHeight: 30,
-      sidebarWidth: 200,
-      dockHeight: 48,
-    },
-    viewMode: 'split',
-    workspaceViewMode: 'tabs', // Default to tabs view
-    tabsViewMode: 'grid', // Default to grid view
+// Create proxy with history tracking
+export const workspaceHistory = proxyWithHistory({
+  activeSpaceId: null,
+  activeTabId: null,
+  tabs: [],
+  recentlyClosedTabs: [],
+  layout: {
+    timelineHeight: 30,
+    sidebarWidth: 200,
+    dockHeight: 48,
   },
+  viewMode: 'split',
+  workspaceViewMode: 'tabs', // Default to tabs view
+  tabsViewMode: 'grid', // Default to grid view
+});
+
+// Then apply persistence to the .value (the actual state)
+const { store } = await persist<WorkspaceState>(
+  workspaceHistory.value,
   'maestro-workspace',
   {
     storageStrategy: IndexedDBStrategy,
@@ -106,6 +118,18 @@ export const workspaceActions = {
     if (tabIndex === -1) return;
 
     const tab = workspaceStore.tabs[tabIndex];
+
+    // Save to recently closed tabs
+    workspaceStore.recentlyClosedTabs.unshift({
+      ...tab,
+      closedAt: new Date(),
+    });
+
+    // Keep only last 10 closed tabs
+    if (workspaceStore.recentlyClosedTabs.length > 10) {
+      workspaceStore.recentlyClosedTabs = workspaceStore.recentlyClosedTabs.slice(0, 10);
+    }
+
     workspaceStore.tabs.splice(tabIndex, 1);
 
     // If closing active tab, switch to another in same space
@@ -113,6 +137,29 @@ export const workspaceActions = {
       const nextTab = workspaceStore.tabs.find((t) => t.spaceId === tab.spaceId);
       workspaceStore.activeTabId = nextTab?.id || null;
     }
+  },
+
+  restoreRecentlyClosedTab: (closedTabIndex: number = 0) => {
+    const closedTab = workspaceStore.recentlyClosedTabs[closedTabIndex];
+    if (!closedTab) return null;
+
+    // Remove closedAt before restoring
+    const { closedAt, ...tabData } = closedTab;
+
+    // Generate new ID to avoid conflicts
+    const restoredTab: Tab = {
+      ...tabData,
+      id: crypto.randomUUID(),
+    };
+
+    workspaceStore.tabs.push(restoredTab);
+    workspaceStore.activeSpaceId = restoredTab.spaceId;
+    workspaceStore.activeTabId = restoredTab.id;
+
+    // Remove from closed tabs
+    workspaceStore.recentlyClosedTabs.splice(closedTabIndex, 1);
+
+    return restoredTab;
   },
 
   setActiveTab: (tabId: string) => {

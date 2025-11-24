@@ -7,7 +7,8 @@ import { NotesEditor } from '@/components/Notes/NotesEditor';
 import { AddFavoriteModal } from '@/components/Launcher';
 import { CommandPalettePortal } from '@/components/CommandPalettePortal';
 import { StatusBar } from '@/components/StatusBar';
-import { workspaceStore } from '@/stores/workspace.store';
+import { workspaceStore, workspaceActions } from '@/stores/workspace.store';
+import { historyActions } from '@/stores/history.store';
 import { spacesStore } from '@/stores/spaces.store';
 import { notesStore } from '@/stores/notes.store';
 import { ResizablePanel } from '@/components/ui/resizable-panel';
@@ -36,10 +37,42 @@ function App() {
     }
   }, [darkMode]);
 
-  // Cmd+K and Cmd+T keyboard shortcuts
+  // Global keyboard shortcuts
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
-      if ((e.key === 'k' || e.key === 't') && (e.metaKey || e.ctrlKey)) {
+      // Ctrl/Cmd+Z - Undo
+      if (e.key === 'z' && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
+        // Don't intercept if user is in an input field
+        const target = e.target as HTMLElement;
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+          return;
+        }
+        e.preventDefault();
+        historyActions.undo();
+        return;
+      }
+
+      // Ctrl/Cmd+Shift+Z - Redo
+      if (e.key === 'z' && (e.metaKey || e.ctrlKey) && e.shiftKey) {
+        // Don't intercept if user is in an input field
+        const target = e.target as HTMLElement;
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+          return;
+        }
+        e.preventDefault();
+        historyActions.redo();
+        return;
+      }
+
+      // Shift+Cmd+T - Restore most recent closed tab
+      if (e.key === 't' && (e.metaKey || e.ctrlKey) && e.shiftKey) {
+        e.preventDefault();
+        workspaceActions.restoreRecentlyClosedTab();
+        return;
+      }
+
+      // Cmd+K or Cmd+T - Open command palette
+      if ((e.key === 'k' || e.key === 't') && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
         e.preventDefault();
         setCommandPaletteOpen((open) => !open);
       }

@@ -1,5 +1,7 @@
 import { persist } from 'valtio-persist';
 import { IndexedDBStrategy } from 'valtio-persist/indexed-db';
+import { proxyWithHistory } from 'valtio-history';
+import { proxy } from 'valtio';
 
 // Types
 export type TaskStatus = 'inbox' | 'next' | 'active' | 'done' | 'archived';
@@ -58,14 +60,17 @@ interface TasksState {
   sortBy: 'priority' | 'dueDate' | 'created' | 'manual';
 }
 
-// Create persisted store
+// Create proxy with history tracking
+export const tasksHistory = proxyWithHistory({
+  tasks: [],
+  view: 'board',
+  filter: { boardTabId: null, status: null, search: '' },
+  sortBy: 'manual',
+});
+
+// Then apply persistence to the .value (the actual state)
 const { store } = await persist<TasksState>(
-  {
-    tasks: [],
-    view: 'board',
-    filter: { spaceId: null, status: null, search: '' },
-    sortBy: 'manual',
-  },
+  tasksHistory.value,
   'maestro-tasks',
   {
     storageStrategy: IndexedDBStrategy,

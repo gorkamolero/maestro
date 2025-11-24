@@ -11,6 +11,8 @@ import {
   ArrowRight,
   Search,
   Copy,
+  History,
+  CheckSquare,
 } from 'lucide-react';
 import { workspaceStore, workspaceActions } from '@/stores/workspace.store';
 import { spacesStore, spacesActions } from '@/stores/spaces.store';
@@ -34,7 +36,7 @@ interface CommandPaletteProps {
 
 export function CommandPalette({ onClose, isExiting = false }: CommandPaletteProps) {
   const [search, setSearch] = useState('');
-  const { activeSpaceId, tabs } = useSnapshot(workspaceStore);
+  const { activeSpaceId, tabs, recentlyClosedTabs } = useSnapshot(workspaceStore);
   const { spaces } = useSnapshot(spacesStore);
   const { connectedApps } = useSnapshot(launcherStore);
 
@@ -110,6 +112,11 @@ export function CommandPalette({ onClose, isExiting = false }: CommandPalettePro
 
     onClose();
   }, [activeTab, activeSpaceId, onClose]);
+
+  const handleRestoreClosedTab = useCallback((index: number) => {
+    workspaceActions.restoreRecentlyClosedTab(index);
+    onClose();
+  }, [onClose]);
 
   // Filter apps based on search
   const filteredApps = connectedApps.filter((app) =>
@@ -366,6 +373,25 @@ export function CommandPalette({ onClose, isExiting = false }: CommandPalettePro
                     <span className="flex-1">Duplicate Tab</span>
                     <CommandShortcut>D</CommandShortcut>
                   </Command.Item>
+                </Command.Group>
+              )}
+
+              {recentlyClosedTabs.length > 0 && (
+                <Command.Group heading="Recently Closed" className="mb-2">
+                  {recentlyClosedTabs.map((closedTab, index) => (
+                    <Command.Item
+                      key={`${closedTab.id}-${index}`}
+                      onSelect={() => handleRestoreClosedTab(index)}
+                      className="flex items-center gap-3 px-3 py-2 rounded cursor-pointer aria-selected:bg-accent"
+                    >
+                      {closedTab.type === 'terminal' && <Terminal className="w-4 h-4" />}
+                      {closedTab.type === 'browser' && <Globe className="w-4 h-4" />}
+                      {closedTab.type === 'note' && <FileText className="w-4 h-4" />}
+                      {closedTab.type === 'tasks' && <CheckSquare className="w-4 h-4" />}
+                      <span className="flex-1">{closedTab.title}</span>
+                      <History className="w-3 h-3 text-muted-foreground" />
+                    </Command.Item>
+                  ))}
                 </Command.Group>
               )}
             </>
