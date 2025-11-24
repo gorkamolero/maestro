@@ -6,6 +6,35 @@ All notable changes to Maestro will be documented in this file.
 
 ### Added
 
+#### Launch All Tabs, Backups, and Tab Deactivation (2025-01-24)
+
+**Launch All Tabs**
+- Right-click on a space button to access "Launch All Tabs" option
+- Launches all enabled (non-disabled) app-launcher tabs in the space
+- Disabled tabs are skipped during launch
+
+**Database Backup System**
+- Automatic backups every 30 minutes with version history
+- Keeps last 5 backups (older ones are automatically pruned)
+- Creates initial backup on app startup
+- Backups stored in separate IndexedDB database (`maestro-backups`)
+- Backup utilities: `createBackup()`, `getBackups()`, `restoreBackup()`, `deleteBackup()`
+
+**Tab Deactivation**
+- New `disabled` property on Tab interface
+- Right-click tab → "Disable Tab" / "Enable Tab" toggle
+- Disabled tabs appear grayed out (40% opacity + grayscale)
+- Disabled tabs won't launch when clicked or during "Launch All"
+- Visual state persists across sessions
+
+**Technical Details:**
+- `src/lib/backup.ts` - NEW: Complete backup system with IndexedDB storage
+- `src/stores/workspace.store.ts` - Added `toggleTabDisabled()`, `setTabDisabled()`, `getEnabledTabsForSpace()`
+- `src/hooks/useTabClick.ts` - Added `launchTab()` helper, respects disabled state
+- `src/components/Workspace/TabContextMenu.tsx` - Added enable/disable menu items
+- `src/components/Workspace/SpaceButton.tsx` - Added context menu with "Launch All Tabs"
+- `src/components/Workspace/GridTab.tsx` & `ListTab.tsx` - Visual disabled state styling
+
 #### Dynamic App Theme from Space Color (2025-01-24)
 - Space primary color now becomes the app's accent color when space is active
   - CSS custom properties updated at runtime: `--primary`, `--primary-foreground`, `--ring`, etc.

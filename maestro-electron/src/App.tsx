@@ -16,7 +16,11 @@ import { FileText, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { notesActions } from '@/stores/notes.store';
 import { applySpaceTheme, resetSpaceTheme } from '@/lib/space-theme';
+import { startAutoBackup } from '@/lib/backup';
 import '@/components/editor/themes/editor-theme.css';
+
+// Start automatic database backups
+startAutoBackup();
 
 function App() {
   const [darkMode] = useState(true);

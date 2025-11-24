@@ -12,6 +12,7 @@ export interface Tab {
   type: TabType;
   title: string;
   status: TabStatus;
+  disabled?: boolean; // Disabled tabs won't launch when clicked
   segmentId?: string; // Link to timeline segment
   content?: unknown; // Type-specific content
   terminalState?: {
@@ -262,5 +263,35 @@ export const workspaceActions = {
       );
       store.activeTabId = remainingTab?.id || null;
     }
+  },
+
+  /**
+   * Toggle tab disabled state. Disabled tabs won't launch when clicked.
+   */
+  toggleTabDisabled: (tabId: string) => {
+    const store = getWorkspaceStore();
+    const tab = store.tabs.find((t) => t.id === tabId);
+    if (tab) {
+      tab.disabled = !tab.disabled;
+    }
+  },
+
+  /**
+   * Set tab disabled state explicitly
+   */
+  setTabDisabled: (tabId: string, disabled: boolean) => {
+    const store = getWorkspaceStore();
+    const tab = store.tabs.find((t) => t.id === tabId);
+    if (tab) {
+      tab.disabled = disabled;
+    }
+  },
+
+  /**
+   * Get all enabled (non-disabled) tabs for a space
+   */
+  getEnabledTabsForSpace: (spaceId: string): Tab[] => {
+    const store = getWorkspaceStore();
+    return store.tabs.filter((t) => t.spaceId === spaceId && !t.disabled);
   },
 };

@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { Home, type LucideIcon } from 'lucide-react';
+import { Home, Play, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMorphingEdit } from '@/hooks/useMorphingEdit';
 import { spacesActions } from '@/stores/spaces.store';
+import { useWorkspaceStore } from '@/stores/workspace.store';
+import { launchTab } from '@/hooks/useTabClick';
 import { EmojiPickerComponent } from '@/components/ui/emoji-picker';
 import { SPACE_COLOR_PALETTE } from '@/types';
 import {
@@ -16,6 +18,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu';
 
 const SPACE_ICONS: Record<string, LucideIcon> = {
   home: Home,
@@ -42,6 +50,7 @@ export function SpaceButton({ space, isActive, onSwitch, onDelete }: SpaceButton
     secondary: space.secondaryColor,
   });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const { tabs } = useWorkspaceStore();
 
   const { isEditing, setIsEditing, containerRef, morphingProps, formProps } = useMorphingEdit({
     collapsedHeight: 32,
@@ -50,6 +59,16 @@ export function SpaceButton({ space, isActive, onSwitch, onDelete }: SpaceButton
 
   const Icon = SPACE_ICONS[space.icon || 'home'] || Home;
   const hasActiveSegments = space.segments.filter((s) => s.status === 'active').length > 0;
+
+  // Get enabled tabs for this space
+  const spaceTabs = tabs.filter((t) => t.spaceId === space.id && !t.disabled);
+
+  const handleLaunchAll = () => {
+    // Launch all enabled app-launcher tabs in this space
+    spaceTabs.forEach((tab) => {
+      launchTab(tab);
+    });
+  };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -79,37 +98,39 @@ export function SpaceButton({ space, isActive, onSwitch, onDelete }: SpaceButton
   };
 
   return (
-    <motion.div
-      role={!isEditing ? 'button' : undefined}
-      tabIndex={!isEditing ? 0 : undefined}
-      style={{
-        width: isEditing ? '180px' : '32px',
-        backgroundColor: !isEditing && isActive ? `${space.primaryColor}20` : undefined,
-      }}
-      onDoubleClick={() => {
-        if (!isEditing) {
-          setIsEditing(true);
-        }
-      }}
-      onClick={() => {
-        if (!isEditing) {
-          onSwitch();
-        }
-      }}
-      onKeyDown={(e) => {
-        if (!isEditing && (e.key === 'Enter' || e.key === ' ')) {
-          e.preventDefault();
-          onSwitch();
-        }
-      }}
-      className={cn(
-        'group relative overflow-hidden transition-all cursor-pointer',
-        'hover:bg-background/80',
-        isActive ? 'shadow-sm' : 'bg-muted/50',
-        !isEditing && 'rounded-lg flex items-center justify-center'
-      )}
-      {...morphingProps}
-    >
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <motion.div
+          role={!isEditing ? 'button' : undefined}
+          tabIndex={!isEditing ? 0 : undefined}
+          style={{
+            width: isEditing ? '180px' : '32px',
+            backgroundColor: !isEditing && isActive ? `${space.primaryColor}20` : undefined,
+          }}
+          onDoubleClick={() => {
+            if (!isEditing) {
+              setIsEditing(true);
+            }
+          }}
+          onClick={() => {
+            if (!isEditing) {
+              onSwitch();
+            }
+          }}
+          onKeyDown={(e) => {
+            if (!isEditing && (e.key === 'Enter' || e.key === ' ')) {
+              e.preventDefault();
+              onSwitch();
+            }
+          }}
+          className={cn(
+            'group relative overflow-hidden transition-all cursor-pointer',
+            'hover:bg-background/80',
+            isActive ? 'shadow-sm' : 'bg-muted/50',
+            !isEditing && 'rounded-lg flex items-center justify-center'
+          )}
+          {...morphingProps}
+        >
       {/* Collapsed view */}
       {!isEditing && (
         <div className="relative w-full h-full flex items-center justify-center">
@@ -236,6 +257,14 @@ export function SpaceButton({ space, isActive, onSwitch, onDelete }: SpaceButton
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </motion.div>
+        </motion.div>
+      </ContextMenuTrigger>
+      <ContextMenuContent className="w-48">
+        <ContextMenuItem onClick={handleLaunchAll} disabled={spaceTabs.length === 0}>
+          <Play className="w-4 h-4 mr-2" />
+          Launch All Tabs
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }

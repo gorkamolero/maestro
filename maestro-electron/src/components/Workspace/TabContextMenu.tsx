@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/context-menu';
 import { useSpacesStore } from '@/stores/spaces.store';
 import { workspaceActions, type Tab } from '@/stores/workspace.store';
-import { FolderInput, Trash2 } from 'lucide-react';
+import { FolderInput, Trash2, CircleSlash, CircleCheck } from 'lucide-react';
 import { ReactNode } from 'react';
 
 interface TabContextMenuProps {
@@ -26,6 +26,10 @@ export function TabContextMenu({ tab, children }: TabContextMenuProps) {
     workspaceActions.moveTabToSpace(tab.id, targetSpaceId);
   };
 
+  const handleToggleDisabled = () => {
+    workspaceActions.toggleTabDisabled(tab.id);
+  };
+
   const handleDelete = () => {
     workspaceActions.closeTab(tab.id);
   };
@@ -36,6 +40,22 @@ export function TabContextMenu({ tab, children }: TabContextMenuProps) {
         {children}
       </ContextMenuTrigger>
       <ContextMenuContent className="w-48">
+        {/* Enable/Disable toggle */}
+        <ContextMenuItem onClick={handleToggleDisabled}>
+          {tab.disabled ? (
+            <>
+              <CircleCheck className="w-4 h-4 mr-2" />
+              Enable Tab
+            </>
+          ) : (
+            <>
+              <CircleSlash className="w-4 h-4 mr-2" />
+              Disable Tab
+            </>
+          )}
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+
         {otherSpaces.length > 0 && (
           <>
             <ContextMenuSub>

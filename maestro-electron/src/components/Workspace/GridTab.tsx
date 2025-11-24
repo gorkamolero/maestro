@@ -58,6 +58,7 @@ export function GridTab({ tab, spaceId }: GridTabProps) {
         'group relative overflow-hidden',
         'bg-background/50 border border-border',
         !isEditing && 'cursor-grab active:cursor-grabbing hover:border-border/80 hover:bg-background/80',
+        tab.disabled && 'opacity-40 grayscale',
       )}
       {...morphingProps}
     >
