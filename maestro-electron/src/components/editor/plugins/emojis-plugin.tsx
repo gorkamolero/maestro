@@ -27,9 +27,9 @@ function $findAndTransformEmoji(node: TextNode): null | TextNode {
       let targetNode
 
       if (i === 0) {
-        ;[targetNode] = node.splitText(i + 2)
+        [targetNode] = node.splitText(i + 2)
       } else {
-        ;[, targetNode] = node.splitText(i, i + 2)
+        [, targetNode] = node.splitText(i, i + 2)
       }
 
       const emojiNode = $createEmojiNode(emojiStyle, emojiText)

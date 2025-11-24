@@ -1,10 +1,9 @@
 import { useSnapshot } from 'valtio';
 import { FileText, Plus } from 'lucide-react';
-import { notesStore, notesActions, notesComputed } from '@/stores/notes.store';
+import { notesStore, notesActions } from '@/stores/notes.store';
 import { NotesEditor } from './NotesEditor';
 import { NotesSidebar } from './NotesSidebar';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 
 interface NotesViewProps {
   spaceId: string;

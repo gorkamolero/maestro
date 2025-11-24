@@ -29,7 +29,7 @@ export function DragDropPastePlugin(): null {
     return editor.registerCommand(
       DRAG_DROP_PASTE,
       (files) => {
-        ;(async () => {
+        (async () => {
           const filesResult = await mediaFileReader(
             files,
             [ACCEPTABLE_IMAGE_TYPES].flatMap((x) => x)

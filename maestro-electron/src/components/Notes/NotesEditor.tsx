@@ -1,10 +1,8 @@
-import { useState, useEffect } from 'react';
 import { SerializedEditorState } from 'lexical';
 import { useSnapshot } from 'valtio';
 import { FileText } from 'lucide-react';
-import { notesStore, notesActions, notesComputed } from '@/stores/notes.store';
+import { notesStore, notesActions } from '@/stores/notes.store';
 import { Editor } from '@/components/blocks/editor-x/editor';
-import { cn } from '@/lib/utils';
 
 interface NotesEditorProps {
   noteId: string;

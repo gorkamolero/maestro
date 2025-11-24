@@ -111,7 +111,7 @@ export function AutocompletePlugin(): JSX.Element | null {
     let lastMatch: null | string = null
     let lastSuggestion: null | string = null
     let searchPromise: null | SearchPromise = null
-    let prevNodeFormat: number = 0
+    let prevNodeFormat = 0
     function $clearSuggestion() {
       const autocompleteNode =
         autocompleteNodeKey !== null ? $getNodeByKey(autocompleteNodeKey) : null

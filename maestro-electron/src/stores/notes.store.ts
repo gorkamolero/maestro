@@ -1,4 +1,3 @@
-import { proxy } from 'valtio';
 import { persist } from 'valtio-persist';
 import { IndexedDBStrategy } from 'valtio-persist/indexed-db';
 import type { SerializedEditorState } from 'lexical';
@@ -224,14 +223,6 @@ export const notesComputed = {
     return note?.linkedTaskIds || [];
   },
 };
-
-// Helper to find parent folder by path
-function findParentFolderByPath(spaceId: string, path: string): Folder | undefined {
-  const parentPath = path.substring(0, path.lastIndexOf('/'));
-  if (!parentPath) return undefined;
-
-  return notesStore.folders.find((f) => f.spaceId === spaceId && f.path === parentPath);
-}
 
 // Actions
 export const notesActions = {

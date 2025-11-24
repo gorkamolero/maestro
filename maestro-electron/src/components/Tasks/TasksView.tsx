@@ -7,7 +7,6 @@ interface TasksViewProps {
 }
 
 export function TasksView({ boardTabId }: TasksViewProps) {
-  const snap = useSnapshot(tasksStore);
   const stats = tasksComputed.stats;
 
   return (
