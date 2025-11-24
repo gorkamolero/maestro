@@ -1,7 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { useSnapshot } from 'valtio';
 import { X } from 'lucide-react';
-import { workspaceStore, workspaceActions, type Tab } from '@/stores/workspace.store';
+import { useWorkspaceStore, workspaceActions, type Tab } from '@/stores/workspace.store';
 import { cn } from '@/lib/utils';
 import { getTabIcon } from '@/lib/tab-utils';
 import { useTabClick } from '@/hooks/useTabClick';
@@ -14,7 +13,7 @@ interface GridTabProps {
 }
 
 export function GridTab({ tab }: GridTabProps) {
-  const { activeTabId } = useSnapshot(workspaceStore);
+  const { activeTabId } = useWorkspaceStore();
   const isActive = activeTabId === tab.id;
   const handleClick = useTabClick(tab);
   const { isEditing, setIsEditing, containerRef, morphingProps, formProps } = useMorphingEdit({

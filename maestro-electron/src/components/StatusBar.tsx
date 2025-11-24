@@ -1,14 +1,13 @@
-import { useSnapshot } from 'valtio';
-import { workspaceStore } from '@/stores/workspace.store';
-import { spacesStore } from '@/stores/spaces.store';
-import { tasksStore } from '@/stores/tasks.store';
+import { useWorkspaceStore } from '@/stores/workspace.store';
+import { useSpacesStore } from '@/stores/spaces.store';
+import { useTasksStore } from '@/stores/tasks.store';
 import { Activity, Cpu, HardDrive, Wifi } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export function StatusBar() {
-  const { activeSpaceId, tabs, activeTabId } = useSnapshot(workspaceStore);
-  const { spaces } = useSnapshot(spacesStore);
-  const { tasks } = useSnapshot(tasksStore);
+  const { activeSpaceId, tabs, activeTabId } = useWorkspaceStore();
+  const { spaces } = useSpacesStore();
+  const { tasks } = useTasksStore();
 
   // Mock performance metrics
   const [cpuUsage, setCpuUsage] = useState(0);

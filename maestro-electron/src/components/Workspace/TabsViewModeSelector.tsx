@@ -1,5 +1,4 @@
-import { useSnapshot } from 'valtio';
-import { workspaceStore, workspaceActions, type TabsViewMode } from '@/stores/workspace.store';
+import { useWorkspaceStore, workspaceActions, type TabsViewMode } from '@/stores/workspace.store';
 import { LayoutGrid, List } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
@@ -10,7 +9,7 @@ import {
 } from '@/components/ui/select';
 
 export function TabsViewModeSelector() {
-  const { tabsViewMode } = useSnapshot(workspaceStore);
+  const { tabsViewMode } = useWorkspaceStore();
 
   const handleChange = (mode: TabsViewMode) => {
     workspaceActions.setTabsViewMode(mode);

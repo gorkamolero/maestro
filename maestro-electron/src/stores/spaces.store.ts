@@ -1,75 +1,87 @@
-import { persist } from 'valtio-persist';
-import { IndexedDBStrategy } from 'valtio-persist/indexed-db';
-import { proxyWithHistory } from 'valtio-history';
-import { proxy } from 'valtio';
+import { useSnapshot } from 'valtio';
+import { persistWithHistory } from '@/lib/persist-with-history';
 import type { Space, Segment } from '@/types';
 
 interface SpacesState {
   spaces: Space[];
 }
 
-// Create proxy with history tracking
-export const spacesHistory = proxyWithHistory({
-  spaces: [],
-});
-
-// Then apply persistence to the .value (the actual state)
-const { store } = await persist<SpacesState>(
-  spacesHistory.value,
+// Create proxy with both history (undo/redo) and IndexedDB persistence
+const { history: spacesHistory } = await persistWithHistory<SpacesState>(
+  {
+    spaces: [],
+  },
   'maestro-spaces',
   {
-    storageStrategy: IndexedDBStrategy,
     debounceTime: 1000,
   }
 );
 
-export const spacesStore = store;
+export { spacesHistory };
+
+// Getter that always returns current value (important after undo/redo which replaces .value)
+export const getSpacesStore = () => spacesHistory.value;
+
+/**
+ * Hook to get reactive spaces state. Use this instead of useSnapshot(spacesStore).
+ */
+export function useSpacesStore() {
+  const { value } = useSnapshot(spacesHistory);
+  return value;
+}
 
 export const spacesActions = {
   addSpace: (name: string): Space => {
+    const store = getSpacesStore();
     const newSpace: Space = {
       id: crypto.randomUUID(),
       name,
-      position: spacesStore.spaces.length,
+      position: store.spaces.length,
       color: '#64748b', // slate-500
       segments: [],
       markers: [],
     };
-    spacesStore.spaces.push(newSpace);
+    store.spaces.push(newSpace);
     return newSpace;
   },
 
   removeSpace: (spaceId: string) => {
-    spacesStore.spaces = spacesStore.spaces.filter((t) => t.id !== spaceId);
+    const store = getSpacesStore();
+    store.spaces = store.spaces.filter((t) => t.id !== spaceId);
   },
 
   updateSpace: (spaceId: string, updates: Partial<Space>) => {
-    const index = spacesStore.spaces.findIndex((t) => t.id === spaceId);
+    const store = getSpacesStore();
+    const index = store.spaces.findIndex((t) => t.id === spaceId);
     if (index !== -1) {
-      spacesStore.spaces[index] = { ...spacesStore.spaces[index], ...updates };
+      store.spaces[index] = { ...store.spaces[index], ...updates };
     }
   },
 
   reorderSpaces: (spaces: Space[]) => {
-    spacesStore.spaces = spaces;
+    const store = getSpacesStore();
+    store.spaces = spaces;
   },
 
   addSegment: (spaceId: string, segment: Segment) => {
-    const space = spacesStore.spaces.find((t) => t.id === spaceId);
+    const store = getSpacesStore();
+    const space = store.spaces.find((t) => t.id === spaceId);
     if (space) {
       space.segments.push(segment);
     }
   },
 
   removeSegment: (spaceId: string, segmentId: string) => {
-    const space = spacesStore.spaces.find((t) => t.id === spaceId);
+    const store = getSpacesStore();
+    const space = store.spaces.find((t) => t.id === spaceId);
     if (space) {
       space.segments = space.segments.filter((s) => s.id !== segmentId);
     }
   },
 
   updateSegment: (spaceId: string, segmentId: string, updates: Partial<Segment>) => {
-    const space = spacesStore.spaces.find((t) => t.id === spaceId);
+    const store = getSpacesStore();
+    const space = store.spaces.find((t) => t.id === spaceId);
     if (space) {
       const index = space.segments.findIndex((s) => s.id === segmentId);
       if (index !== -1) {

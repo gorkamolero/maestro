@@ -1,5 +1,4 @@
-import { useSnapshot } from 'valtio';
-import { workspaceStore, workspaceActions } from '@/stores/workspace.store';
+import { useWorkspaceStore, workspaceActions } from '@/stores/workspace.store';
 import {
   LayoutGrid,
   LayoutList,
@@ -19,7 +18,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { ResourcePanel } from '@/components/Monitor/ResourcePanel';
 
 export function FloatingControls() {
-  const { viewMode, activeSpaceId } = useSnapshot(workspaceStore);
+  const { viewMode, activeSpaceId } = useWorkspaceStore();
 
   return (
     <div className="absolute top-4 right-4 z-[100] flex gap-2">

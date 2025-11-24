@@ -1,6 +1,6 @@
 import { useSnapshot } from 'valtio';
-import { workspaceStore, workspaceActions, type TabType } from '@/stores/workspace.store';
-import { spacesStore } from '@/stores/spaces.store';
+import { useWorkspaceStore, workspaceActions, type TabType } from '@/stores/workspace.store';
+import { useSpacesStore } from '@/stores/spaces.store';
 import { launcherStore } from '@/stores/launcher.store';
 import { Terminal, Globe, ListTodo, Plus, Command } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -26,8 +26,8 @@ interface TabsSidebarProps {
 }
 
 export function TabsSidebar({ onCommandPalette }: TabsSidebarProps) {
-  const { tabs, activeSpaceId, tabsViewMode } = useSnapshot(workspaceStore);
-  const { spaces } = useSnapshot(spacesStore);
+  const { tabs, activeSpaceId, tabsViewMode } = useWorkspaceStore();
+  const { spaces } = useSpacesStore();
   const [api, setApi] = useState<CarouselApi>();
 
   const currentSpaceIndex = spaces.findIndex((s) => s.id === activeSpaceId);

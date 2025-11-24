@@ -1,7 +1,5 @@
-import { persist } from 'valtio-persist';
-import { IndexedDBStrategy } from 'valtio-persist/indexed-db';
-import { proxyWithHistory } from 'valtio-history';
-import { proxy } from 'valtio';
+import { useSnapshot } from 'valtio';
+import { persistWithHistory } from '@/lib/persist-with-history';
 
 // Types
 export type TaskStatus = 'inbox' | 'next' | 'active' | 'done' | 'archived';
@@ -60,31 +58,38 @@ interface TasksState {
   sortBy: 'priority' | 'dueDate' | 'created' | 'manual';
 }
 
-// Create proxy with history tracking
-export const tasksHistory = proxyWithHistory({
-  tasks: [],
-  view: 'board',
-  filter: { boardTabId: null, status: null, search: '' },
-  sortBy: 'manual',
-});
-
-// Then apply persistence to the .value (the actual state)
-const { store } = await persist<TasksState>(
-  tasksHistory.value,
+// Create proxy with both history (undo/redo) and IndexedDB persistence
+const { history: tasksHistory } = await persistWithHistory<TasksState>(
+  {
+    tasks: [],
+    view: 'board',
+    filter: { boardTabId: null, status: null, search: '' },
+    sortBy: 'manual',
+  },
   'maestro-tasks',
   {
-    storageStrategy: IndexedDBStrategy,
     debounceTime: 1000,
     omit: ['filter'], // Don't persist UI filters
   }
 );
 
-export const tasksStore = store;
+export { tasksHistory };
+
+// Getter that always returns current value (important after undo/redo which replaces .value)
+export const getTasksStore = () => tasksHistory.value;
+
+/**
+ * Hook to get reactive tasks state. Use this instead of useSnapshot(tasksStore).
+ */
+export function useTasksStore() {
+  const { value } = useSnapshot(tasksHistory);
+  return value;
+}
 
 // Computed values
 export const tasksComputed = {
   get tasksByBoard(): Record<string, Task[]> {
-    return tasksStore.tasks.reduce((acc, task) => {
+    return getTasksStore().tasks.reduce((acc, task) => {
       if (!acc[task.boardTabId]) acc[task.boardTabId] = [];
       acc[task.boardTabId].push(task);
       return acc;
@@ -92,12 +97,12 @@ export const tasksComputed = {
   },
 
   get activeTasks(): Task[] {
-    return tasksStore.tasks.filter((t) => t.status === 'active');
+    return getTasksStore().tasks.filter((t) => t.status === 'active');
   },
 
   get stats(): TaskStats {
     const today = new Date().setHours(0, 0, 0, 0);
-    const todayTasks = tasksStore.tasks.filter(
+    const todayTasks = getTasksStore().tasks.filter(
       (t) => t.completedAt && new Date(t.completedAt).getTime() >= today
     );
 
@@ -109,11 +114,11 @@ export const tasksComputed = {
   },
 
   getTasksByBoard(boardTabId: string): Task[] {
-    return tasksStore.tasks.filter((t) => t.boardTabId === boardTabId);
+    return getTasksStore().tasks.filter((t) => t.boardTabId === boardTabId);
   },
 
   getTasksByStatus(boardTabId: string, status: TaskStatus): Task[] {
-    return tasksStore.tasks.filter(
+    return getTasksStore().tasks.filter(
       (t) => t.boardTabId === boardTabId && t.status === status
     );
   },
@@ -122,6 +127,7 @@ export const tasksComputed = {
 // Actions
 export const tasksActions = {
   addTask(boardTabId: string, title: string, status: TaskStatus = 'inbox'): Task {
+    const store = getTasksStore();
     const task: Task = {
       id: crypto.randomUUID(),
       boardTabId,
@@ -137,12 +143,13 @@ export const tasksActions = {
       labels: [],
     };
 
-    tasksStore.tasks.push(task);
+    store.tasks.push(task);
     return task;
   },
 
   moveTask(id: string, status: TaskStatus) {
-    const task = tasksStore.tasks.find((t) => t.id === id);
+    const store = getTasksStore();
+    const task = store.tasks.find((t) => t.id === id);
     if (!task) return;
 
     const prevStatus = task.status;
@@ -161,11 +168,12 @@ export const tasksActions = {
   },
 
   startTask(id: string) {
-    const task = tasksStore.tasks.find((t) => t.id === id);
+    const store = getTasksStore();
+    const task = store.tasks.find((t) => t.id === id);
     if (!task) return;
 
     // Pause any other active tasks in the same space
-    tasksStore.tasks.forEach((t) => {
+    store.tasks.forEach((t) => {
       if (t.spaceId === task.spaceId && t.status === 'active' && t.id !== id) {
         tasksActions.pauseTask(t.id);
       }
@@ -183,7 +191,8 @@ export const tasksActions = {
   },
 
   pauseTask(id: string) {
-    const task = tasksStore.tasks.find((t) => t.id === id);
+    const store = getTasksStore();
+    const task = store.tasks.find((t) => t.id === id);
     if (!task || task.status !== 'active') return;
 
     const currentSession = task.sessions[task.sessions.length - 1];
@@ -198,7 +207,8 @@ export const tasksActions = {
   },
 
   completeTask(id: string) {
-    const task = tasksStore.tasks.find((t) => t.id === id);
+    const store = getTasksStore();
+    const task = store.tasks.find((t) => t.id === id);
     if (!task) return;
 
     // End current session if active
@@ -211,19 +221,22 @@ export const tasksActions = {
   },
 
   deleteTask(id: string) {
-    const index = tasksStore.tasks.findIndex((t) => t.id === id);
-    if (index >= 0) tasksStore.tasks.splice(index, 1);
+    const store = getTasksStore();
+    const index = store.tasks.findIndex((t) => t.id === id);
+    if (index >= 0) store.tasks.splice(index, 1);
   },
 
   updateTask(id: string, updates: Partial<Task>) {
-    const task = tasksStore.tasks.find((t) => t.id === id);
+    const store = getTasksStore();
+    const task = store.tasks.find((t) => t.id === id);
     if (!task) return;
 
     Object.assign(task, updates);
   },
 
   archiveCompleted(boardTabId: string) {
-    tasksStore.tasks.forEach((task) => {
+    const store = getTasksStore();
+    store.tasks.forEach((task) => {
       if (task.boardTabId === boardTabId && task.status === 'done') {
         task.status = 'archived';
       }
@@ -231,14 +244,16 @@ export const tasksActions = {
   },
 
   linkTabs(taskId: string, tabIds: string[]) {
-    const task = tasksStore.tasks.find((t) => t.id === taskId);
+    const store = getTasksStore();
+    const task = store.tasks.find((t) => t.id === taskId);
     if (!task) return;
 
     task.linkedTabIds = tabIds;
   },
 
   linkApps(taskId: string, appIds: string[]) {
-    const task = tasksStore.tasks.find((t) => t.id === taskId);
+    const store = getTasksStore();
+    const task = store.tasks.find((t) => t.id === taskId);
     if (!task) return;
 
     task.linkedAppIds = appIds;

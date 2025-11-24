@@ -14,8 +14,8 @@ import {
   History,
   CheckSquare,
 } from 'lucide-react';
-import { workspaceStore, workspaceActions } from '@/stores/workspace.store';
-import { spacesStore, spacesActions } from '@/stores/spaces.store';
+import { useWorkspaceStore, workspaceActions } from '@/stores/workspace.store';
+import { useSpacesStore, spacesActions } from '@/stores/spaces.store';
 import { launcherStore, launcherActions } from '@/stores/launcher.store';
 import { getBrowserState } from '@/stores/browser.store';
 import { urlHistoryActions } from '@/stores/url-history.store';
@@ -36,12 +36,11 @@ interface CommandPaletteProps {
 
 export function CommandPalette({ onClose, isExiting = false }: CommandPaletteProps) {
   const [search, setSearch] = useState('');
-  const { activeSpaceId, tabs, recentlyClosedTabs } = useSnapshot(workspaceStore);
-  const { spaces } = useSnapshot(spacesStore);
+  const { activeSpaceId, tabs, recentlyClosedTabs, activeTabId } = useWorkspaceStore();
+  const { spaces } = useSpacesStore();
   const { connectedApps } = useSnapshot(launcherStore);
 
   // Get current active tab from workspace store
-  const { activeTabId } = useSnapshot(workspaceStore);
   const activeTab = tabs.find((t) => t.id === activeTabId);
 
   // Create handlers

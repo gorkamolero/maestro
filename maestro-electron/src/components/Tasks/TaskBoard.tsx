@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useSnapshot } from 'valtio';
 import {
   DndContext,
   DragOverlay,
@@ -10,7 +9,7 @@ import {
   useSensor,
   useSensors
 } from '@dnd-kit/core';
-import { TaskStatus, tasksStore, tasksActions } from '@/stores/tasks.store';
+import { TaskStatus, useTasksStore, tasksActions } from '@/stores/tasks.store';
 import { TaskColumn } from './TaskColumn';
 import { TaskCard } from './TaskCard';
 
@@ -26,7 +25,7 @@ const COLUMNS: Array<{ id: TaskStatus; title: string }> = [
 ];
 
 export function TaskBoard({ boardTabId }: TaskBoardProps) {
-  const snap = useSnapshot(tasksStore);
+  const snap = useTasksStore();
   const [activeId, setActiveId] = useState<string | null>(null);
 
   // Configure sensors for better drag experience

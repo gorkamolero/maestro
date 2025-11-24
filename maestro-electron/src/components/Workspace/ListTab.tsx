@@ -1,9 +1,8 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { X } from 'lucide-react';
-import { Tab, workspaceActions, workspaceStore } from '@/stores/workspace.store';
+import { Tab, workspaceActions, useWorkspaceStore } from '@/stores/workspace.store';
 import { cn } from '@/lib/utils';
 import { getTabIcon } from '@/lib/tab-utils';
-import { useSnapshot } from 'valtio';
 import { useTabClick } from '@/hooks/useTabClick';
 import { useMorphingEdit } from '@/hooks/useMorphingEdit';
 import { TabContextMenu } from './TabContextMenu';
@@ -14,7 +13,7 @@ interface ListTabProps {
 }
 
 export function ListTab({ tab }: ListTabProps) {
-  const { activeTabId } = useSnapshot(workspaceStore);
+  const { activeTabId } = useWorkspaceStore();
   const handleTabClick = useTabClick(tab);
   const { isEditing, setIsEditing, containerRef, morphingProps, formProps } = useMorphingEdit({
     collapsedHeight: 50,

@@ -6,6 +6,32 @@ All notable changes to Maestro will be documented in this file.
 
 ### Added
 
+#### Undo/Redo and Recently Closed Tabs (2025-01-24)
+- Implemented global undo/redo system with Cmd+Z / Cmd+Shift+Z
+  - Created `persistWithHistory` utility combining valtio-history with IndexedDB persistence
+  - Debounced history saves (100ms) coalesce rapid mutations into single history entries
+  - Works across workspace, tasks, and spaces stores
+  - Handles valtio snapshot Date serialization edge case
+- Added recently closed tabs feature with Shift+Cmd+T to restore
+  - Stores last 10 closed tabs with metadata
+  - `restoreRecentlyClosedTab()` action recreates tab with new ID
+  - Closed tabs include original type, title, and configuration
+
+**Technical Details:**
+- `persistWithHistory<T>()` creates proxyWithHistory as source of truth
+- Uses `skipSubscribe: true` with manual subscription for debounced batching
+- `getWorkspaceStore()` getter pattern prevents stale references after undo
+- Custom Date serialization handles frozen valtio snapshot objects
+- Global `historyActions.undo()/redo()` tries each store in priority order
+
+**Files Created/Modified:**
+- `src/lib/persist-with-history.ts` - New utility combining history + persistence
+- `src/stores/history.store.ts` - Global undo/redo actions
+- `src/stores/workspace.store.ts` - Uses persistWithHistory, added recently closed tabs
+- `src/stores/tasks.store.ts` - Uses persistWithHistory
+- `src/stores/spaces.store.ts` - Uses persistWithHistory
+- `src/App.tsx` - Keyboard shortcuts for undo/redo/restore tab
+
 #### Tab Context Menu for Moving Between Spaces (2025-01-24)
 - Added right-click context menu to tab components (both grid and list views)
   - "Move to Space" submenu shows all other available spaces

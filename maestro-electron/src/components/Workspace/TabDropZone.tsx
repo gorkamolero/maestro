@@ -1,6 +1,6 @@
 import SortableList, { SortableItem } from 'react-easy-sort';
 import { arrayMoveImmutable } from 'array-move';
-import { Tab, type TabsViewMode, workspaceStore } from '@/stores/workspace.store';
+import { Tab, type TabsViewMode, getWorkspaceStore } from '@/stores/workspace.store';
 import { ListTab } from './ListTab';
 import { FavoritesGrid } from './FavoritesGrid';
 
@@ -22,8 +22,9 @@ export function TabDropZone({
     const newTabs = arrayMoveImmutable(tabs, oldIndex, newIndex);
 
     // Update store with new order
-    const allTabs = workspaceStore.tabs.filter(t => t.spaceId !== spaceId);
-    workspaceStore.tabs = [...allTabs, ...newTabs];
+    const store = getWorkspaceStore();
+    const allTabs = store.tabs.filter(t => t.spaceId !== spaceId);
+    store.tabs = [...allTabs, ...newTabs];
   };
 
   return (

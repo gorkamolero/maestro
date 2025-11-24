@@ -1,6 +1,6 @@
 import SortableList, { SortableItem } from 'react-easy-sort';
 import { arrayMoveImmutable } from 'array-move';
-import { Tab, workspaceStore } from '@/stores/workspace.store';
+import { Tab, getWorkspaceStore } from '@/stores/workspace.store';
 import { GridTab } from './GridTab';
 
 interface FavoritesGridProps {
@@ -14,8 +14,9 @@ export function FavoritesGrid({ tabs, spaceId }: FavoritesGridProps) {
     const newTabs = arrayMoveImmutable(tabs, oldIndex, newIndex);
 
     // Update store with new order
-    const allTabs = workspaceStore.tabs.filter(t => t.spaceId !== spaceId);
-    workspaceStore.tabs = [...allTabs, ...newTabs];
+    const store = getWorkspaceStore();
+    const allTabs = store.tabs.filter(t => t.spaceId !== spaceId);
+    store.tabs = [...allTabs, ...newTabs];
   };
 
   return (

@@ -1,5 +1,4 @@
-import { useSnapshot } from 'valtio';
-import { workspaceStore, workspaceActions } from '@/stores/workspace.store';
+import { useWorkspaceStore, workspaceActions } from '@/stores/workspace.store';
 import { FileText, LayoutGrid } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { TabsSidebar } from './TabsSidebar';
@@ -11,7 +10,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ onCommandPalette }: SidebarProps) {
-  const { activeSpaceId, workspaceViewMode } = useSnapshot(workspaceStore);
+  const { activeSpaceId, workspaceViewMode } = useWorkspaceStore();
 
   const handleViewModeSwitch = (mode: 'notes' | 'tabs') => {
     workspaceActions.setWorkspaceViewMode(mode);

@@ -8,8 +8,7 @@ import {
   ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
-import { useSnapshot } from 'valtio';
-import { spacesStore } from '@/stores/spaces.store';
+import { useSpacesStore } from '@/stores/spaces.store';
 import { workspaceActions, type Tab } from '@/stores/workspace.store';
 import { FolderInput, Trash2 } from 'lucide-react';
 import { ReactNode } from 'react';
@@ -20,7 +19,7 @@ interface TabContextMenuProps {
 }
 
 export function TabContextMenu({ tab, children }: TabContextMenuProps) {
-  const { spaces } = useSnapshot(spacesStore);
+  const { spaces } = useSpacesStore();
   const otherSpaces = spaces.filter(s => s.id !== tab.spaceId);
 
   const handleMoveToSpace = (targetSpaceId: string) => {

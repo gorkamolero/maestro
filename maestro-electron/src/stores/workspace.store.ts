@@ -1,7 +1,5 @@
-import { persist } from 'valtio-persist';
-import { IndexedDBStrategy } from 'valtio-persist/indexed-db';
-import { proxyWithHistory } from 'valtio-history';
-import { proxy } from 'valtio';
+import { useSnapshot } from 'valtio';
+import { persistWithHistory } from '@/lib/persist-with-history';
 import type { LaunchConfig, SavedState } from '@/types/launcher';
 
 export type TabType = 'terminal' | 'browser' | 'agent' | 'app-launcher' | 'tasks';
@@ -56,47 +54,57 @@ interface WorkspaceState {
   tabsViewMode: TabsViewMode; // Grid or List view for tabs
 }
 
-// Create proxy with history tracking
-export const workspaceHistory = proxyWithHistory({
-  activeSpaceId: null,
-  activeTabId: null,
-  tabs: [],
-  recentlyClosedTabs: [],
-  layout: {
-    timelineHeight: 30,
-    sidebarWidth: 200,
-    dockHeight: 48,
+// Create proxy with both history (undo/redo) and IndexedDB persistence
+const { history: workspaceHistory } = await persistWithHistory<WorkspaceState>(
+  {
+    activeSpaceId: null,
+    activeTabId: null,
+    tabs: [],
+    recentlyClosedTabs: [],
+    layout: {
+      timelineHeight: 30,
+      sidebarWidth: 200,
+      dockHeight: 48,
+    },
+    viewMode: 'split',
+    workspaceViewMode: 'tabs', // Default to tabs view
+    tabsViewMode: 'grid', // Default to grid view
   },
-  viewMode: 'split',
-  workspaceViewMode: 'tabs', // Default to tabs view
-  tabsViewMode: 'grid', // Default to grid view
-});
-
-// Then apply persistence to the .value (the actual state)
-const { store } = await persist<WorkspaceState>(
-  workspaceHistory.value,
   'maestro-workspace',
   {
-    storageStrategy: IndexedDBStrategy,
     debounceTime: 1000,
   }
 );
 
-export const workspaceStore = store;
+export { workspaceHistory };
+
+// Getter that always returns current value (important after undo/redo which replaces .value)
+export const getWorkspaceStore = () => workspaceHistory.value;
+
+/**
+ * Hook to get reactive workspace state. Use this instead of useSnapshot(workspaceStore).
+ * This properly handles undo/redo by subscribing to the history proxy.
+ */
+export function useWorkspaceStore() {
+  const { value } = useSnapshot(workspaceHistory);
+  return value;
+}
 
 export const workspaceActions = {
   switchSpace: (spaceId: string) => {
-    workspaceStore.activeSpaceId = spaceId;
+    const store = getWorkspaceStore();
+    store.activeSpaceId = spaceId;
     // Switch to first tab of this space, if any
-    const firstTab = workspaceStore.tabs.find((t) => t.spaceId === spaceId);
+    const firstTab = store.tabs.find((t) => t.spaceId === spaceId);
     if (firstTab) {
-      workspaceStore.activeTabId = firstTab.id;
+      store.activeTabId = firstTab.id;
     } else {
-      workspaceStore.activeTabId = null;
+      store.activeTabId = null;
     }
   },
 
   openTab: (spaceId: string, type: TabType, title: string, config?: Partial<Tab>) => {
+    const store = getWorkspaceStore();
     const newTab: Tab = {
       id: crypto.randomUUID(),
       spaceId,
@@ -106,41 +114,40 @@ export const workspaceActions = {
       ...config,
     };
 
-    workspaceStore.tabs.push(newTab);
-    workspaceStore.activeSpaceId = spaceId;
-    workspaceStore.activeTabId = newTab.id;
+    store.tabs.push(newTab);
+    store.activeSpaceId = spaceId;
+    store.activeTabId = newTab.id;
 
     return newTab;
   },
 
   closeTab: (tabId: string) => {
-    const tabIndex = workspaceStore.tabs.findIndex((t) => t.id === tabId);
+    const store = getWorkspaceStore();
+    const tabIndex = store.tabs.findIndex((t) => t.id === tabId);
     if (tabIndex === -1) return;
 
-    const tab = workspaceStore.tabs[tabIndex];
+    const tab = store.tabs[tabIndex];
 
-    // Save to recently closed tabs
-    workspaceStore.recentlyClosedTabs.unshift({
+    store.recentlyClosedTabs.unshift({
       ...tab,
       closedAt: new Date(),
     });
 
-    // Keep only last 10 closed tabs
-    if (workspaceStore.recentlyClosedTabs.length > 10) {
-      workspaceStore.recentlyClosedTabs = workspaceStore.recentlyClosedTabs.slice(0, 10);
+    if (store.recentlyClosedTabs.length > 10) {
+      store.recentlyClosedTabs = store.recentlyClosedTabs.slice(0, 10);
     }
 
-    workspaceStore.tabs.splice(tabIndex, 1);
+    store.tabs.splice(tabIndex, 1);
 
-    // If closing active tab, switch to another in same space
-    if (workspaceStore.activeTabId === tabId) {
-      const nextTab = workspaceStore.tabs.find((t) => t.spaceId === tab.spaceId);
-      workspaceStore.activeTabId = nextTab?.id || null;
+    if (store.activeTabId === tabId) {
+      const nextTab = store.tabs.find((t) => t.spaceId === tab.spaceId);
+      store.activeTabId = nextTab?.id || null;
     }
   },
 
   restoreRecentlyClosedTab: (closedTabIndex: number = 0) => {
-    const closedTab = workspaceStore.recentlyClosedTabs[closedTabIndex];
+    const store = getWorkspaceStore();
+    const closedTab = store.recentlyClosedTabs[closedTabIndex];
     if (!closedTab) return null;
 
     // Remove closedAt before restoring
@@ -152,49 +159,56 @@ export const workspaceActions = {
       id: crypto.randomUUID(),
     };
 
-    workspaceStore.tabs.push(restoredTab);
-    workspaceStore.activeSpaceId = restoredTab.spaceId;
-    workspaceStore.activeTabId = restoredTab.id;
+    store.tabs.push(restoredTab);
+    store.activeSpaceId = restoredTab.spaceId;
+    store.activeTabId = restoredTab.id;
 
     // Remove from closed tabs
-    workspaceStore.recentlyClosedTabs.splice(closedTabIndex, 1);
+    store.recentlyClosedTabs.splice(closedTabIndex, 1);
 
     return restoredTab;
   },
 
   setActiveTab: (tabId: string) => {
-    const tab = workspaceStore.tabs.find((t) => t.id === tabId);
+    const store = getWorkspaceStore();
+    const tab = store.tabs.find((t) => t.id === tabId);
     if (tab) {
-      workspaceStore.activeTabId = tabId;
-      workspaceStore.activeSpaceId = tab.spaceId;
+      store.activeTabId = tabId;
+      store.activeSpaceId = tab.spaceId;
     }
   },
 
   updateTabStatus: (tabId: string, status: TabStatus) => {
-    const tab = workspaceStore.tabs.find((t) => t.id === tabId);
+    const store = getWorkspaceStore();
+    const tab = store.tabs.find((t) => t.id === tabId);
     if (tab) {
       tab.status = status;
     }
   },
 
   setTimelineHeight: (height: number) => {
-    workspaceStore.layout.timelineHeight = Math.max(20, Math.min(50, height));
+    const store = getWorkspaceStore();
+    store.layout.timelineHeight = Math.max(20, Math.min(50, height));
   },
 
   setViewMode: (mode: ViewMode) => {
-    workspaceStore.viewMode = mode;
+    const store = getWorkspaceStore();
+    store.viewMode = mode;
   },
 
   setWorkspaceViewMode: (mode: WorkspaceViewMode) => {
-    workspaceStore.workspaceViewMode = mode;
+    const store = getWorkspaceStore();
+    store.workspaceViewMode = mode;
   },
 
   setTabsViewMode: (mode: TabsViewMode) => {
-    workspaceStore.tabsViewMode = mode;
+    const store = getWorkspaceStore();
+    store.tabsViewMode = mode;
   },
 
   renameTab: (tabId: string, newTitle: string) => {
-    const tab = workspaceStore.tabs.find((t) => t.id === tabId);
+    const store = getWorkspaceStore();
+    const tab = store.tabs.find((t) => t.id === tabId);
     if (tab) {
       tab.title = newTitle;
     }
@@ -204,46 +218,49 @@ export const workspaceActions = {
    * Reorder tab within space
    */
   reorderTab(tabId: string, newIndex: number) {
-    const tab = workspaceStore.tabs.find((t) => t.id === tabId);
+    const store = getWorkspaceStore();
+    const tab = store.tabs.find((t) => t.id === tabId);
     if (!tab) return;
 
     // Get tabs in same space
-    const spaceTabs = workspaceStore.tabs.filter((t) => t.spaceId === tab.spaceId);
+    const spaceTabs = store.tabs.filter((t) => t.spaceId === tab.spaceId);
     const safeIndex = Math.min(newIndex, spaceTabs.length - 1);
 
     // Remove from current position
-    const currentIndex = workspaceStore.tabs.findIndex((t) => t.id === tabId);
-    workspaceStore.tabs.splice(currentIndex, 1);
+    const currentIndex = store.tabs.findIndex((t) => t.id === tabId);
+    store.tabs.splice(currentIndex, 1);
 
     // Calculate global index for insertion (considering tabs from other spaces)
-    const tabsBeforeSpace = workspaceStore.tabs.filter(
+    const tabsBeforeSpace = store.tabs.filter(
       (t, idx) => idx < currentIndex && t.spaceId !== tab.spaceId
     ).length;
 
-    workspaceStore.tabs.splice(tabsBeforeSpace + safeIndex, 0, tab);
+    store.tabs.splice(tabsBeforeSpace + safeIndex, 0, tab);
   },
 
   updateTabTerminalState: (tabId: string, state: Tab['terminalState']) => {
-    const tab = workspaceStore.tabs.find((t) => t.id === tabId);
+    const store = getWorkspaceStore();
+    const tab = store.tabs.find((t) => t.id === tabId);
     if (tab && tab.type === 'terminal') {
       tab.terminalState = state;
     }
   },
 
   moveTabToSpace: (tabId: string, targetSpaceId: string) => {
-    const tab = workspaceStore.tabs.find((t) => t.id === tabId);
+    const store = getWorkspaceStore();
+    const tab = store.tabs.find((t) => t.id === tabId);
     if (!tab) return;
 
     // Update the tab's spaceId
     tab.spaceId = targetSpaceId;
 
     // If this was the active tab, clear it since it's moved to another space
-    if (workspaceStore.activeTabId === tabId) {
+    if (store.activeTabId === tabId) {
       // Find another tab in the current space
-      const remainingTab = workspaceStore.tabs.find(
-        (t) => t.spaceId === workspaceStore.activeSpaceId && t.id !== tabId
+      const remainingTab = store.tabs.find(
+        (t) => t.spaceId === store.activeSpaceId && t.id !== tabId
       );
-      workspaceStore.activeTabId = remainingTab?.id || null;
+      store.activeTabId = remainingTab?.id || null;
     }
   },
 };

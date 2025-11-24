@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useSnapshot } from 'valtio';
 import { Dock } from '@/components/Workspace/Dock';
 import { Sidebar } from '@/components/Workspace/Sidebar';
 import { WorkspacePanel } from '@/components/Workspace/WorkspacePanel';
@@ -7,9 +6,9 @@ import { NotesEditor } from '@/components/Notes/NotesEditor';
 import { AddFavoriteModal } from '@/components/Launcher';
 import { CommandPalettePortal } from '@/components/CommandPalettePortal';
 import { StatusBar } from '@/components/StatusBar';
-import { workspaceStore, workspaceActions } from '@/stores/workspace.store';
+import { useWorkspaceStore, workspaceActions, getWorkspaceStore } from '@/stores/workspace.store';
 import { historyActions } from '@/stores/history.store';
-import { spacesStore } from '@/stores/spaces.store';
+import { useSpacesStore } from '@/stores/spaces.store';
 import { notesStore } from '@/stores/notes.store';
 import { ResizablePanel } from '@/components/ui/resizable-panel';
 import { FileText, Plus } from 'lucide-react';
@@ -20,8 +19,8 @@ import '@/components/editor/themes/editor-theme.css';
 function App() {
   const [darkMode] = useState(true);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
-  const { activeSpaceId, layout, workspaceViewMode } = useSnapshot(workspaceStore);
-  const { spaces } = useSnapshot(spacesStore);
+  const { activeSpaceId, layout, workspaceViewMode } = useWorkspaceStore();
+  const { spaces } = useSpacesStore();
 
   const activeSpace = spaces.find((s) => s.id === activeSpaceId);
 
@@ -83,7 +82,7 @@ function App() {
   }, []);
 
   const handleSidebarResize = (width: number) => {
-    workspaceStore.layout.sidebarWidth = width;
+    getWorkspaceStore().layout.sidebarWidth = width;
   };
 
   return (

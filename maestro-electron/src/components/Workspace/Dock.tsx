@@ -1,6 +1,5 @@
-import { useSnapshot } from 'valtio';
-import { spacesStore, spacesActions } from '@/stores/spaces.store';
-import { workspaceStore, workspaceActions } from '@/stores/workspace.store';
+import { useSpacesStore, spacesActions } from '@/stores/spaces.store';
+import { useWorkspaceStore, workspaceActions } from '@/stores/workspace.store';
 import { Plus } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -10,8 +9,8 @@ import { useState } from 'react';
 import type { Space } from '@/types';
 
 export function Dock() {
-  const spacesSnap = useSnapshot(spacesStore);
-  const workspaceSnap = useSnapshot(workspaceStore);
+  const spacesSnap = useSpacesStore();
+  const workspaceSnap = useWorkspaceStore();
   const [newSpacePopoverOpen, setNewSpacePopoverOpen] = useState(false);
 
   const handleCreateSpace = (name: string, icon?: string) => {

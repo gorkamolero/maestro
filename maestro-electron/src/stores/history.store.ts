@@ -2,9 +2,6 @@ import { workspaceHistory } from './workspace.store';
 import { tasksHistory } from './tasks.store';
 import { spacesHistory } from './spaces.store';
 
-// Store all history instances
-const histories = [workspaceHistory, tasksHistory, spacesHistory];
-
 /**
  * Global undo/redo actions that work across all stores
  */
@@ -14,12 +11,17 @@ export const historyActions = {
    * Tries each history instance until one succeeds
    */
   undo: () => {
-    for (const history of histories) {
-      // Check if we can undo using the history nodes
-      if (history.history.index > 0) {
-        history.undo();
-        return true;
-      }
+    if (workspaceHistory?.history?.index > 0) {
+      workspaceHistory.undo();
+      return true;
+    }
+    if (tasksHistory?.history?.index > 0) {
+      tasksHistory.undo();
+      return true;
+    }
+    if (spacesHistory?.history?.index > 0) {
+      spacesHistory.undo();
+      return true;
     }
     return false;
   },
@@ -29,12 +31,20 @@ export const historyActions = {
    * Tries each history instance until one succeeds
    */
   redo: () => {
-    for (const history of histories) {
-      // Check if we can redo using the history nodes
-      if (history.history.index < history.history.nodes.length - 1) {
-        history.redo();
-        return true;
-      }
+    const wh = workspaceHistory?.history;
+    if (wh && wh.index < wh.nodes.length - 1) {
+      workspaceHistory.redo();
+      return true;
+    }
+    const th = tasksHistory?.history;
+    if (th && th.index < th.nodes.length - 1) {
+      tasksHistory.redo();
+      return true;
+    }
+    const sh = spacesHistory?.history;
+    if (sh && sh.index < sh.nodes.length - 1) {
+      spacesHistory.redo();
+      return true;
     }
     return false;
   },
@@ -43,13 +53,24 @@ export const historyActions = {
    * Check if any store can undo
    */
   canUndo: () => {
-    return histories.some((history) => history.history.index > 0);
+    return (
+      (workspaceHistory?.history?.index ?? 0) > 0 ||
+      (tasksHistory?.history?.index ?? 0) > 0 ||
+      (spacesHistory?.history?.index ?? 0) > 0
+    );
   },
 
   /**
    * Check if any store can redo
    */
   canRedo: () => {
-    return histories.some((history) => history.history.index < history.history.nodes.length - 1);
+    const wh = workspaceHistory?.history;
+    const th = tasksHistory?.history;
+    const sh = spacesHistory?.history;
+    return (
+      (wh && wh.index < wh.nodes.length - 1) ||
+      (th && th.index < th.nodes.length - 1) ||
+      (sh && sh.index < sh.nodes.length - 1)
+    );
   },
 };
