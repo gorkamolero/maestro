@@ -331,8 +331,17 @@ export function MorphSurface({
         }
       >
         <MorphSurfaceContext.Provider value={context}>
-          <MorphSurfaceDock />
-          <MorphSurfaceFeedback ref={inputRef} onSuccess={onFeedbackSuccess} />
+          {renderTrigger && renderContent ? (
+            <>
+              {!showFeedback && renderTrigger({ isOpen: showFeedback, onClick: openFeedback })}
+              <MorphSurfaceFeedback ref={inputRef} onSuccess={onFeedbackSuccess} />
+            </>
+          ) : (
+            <>
+              <MorphSurfaceDock />
+              <MorphSurfaceFeedback ref={inputRef} onSuccess={onFeedbackSuccess} />
+            </>
+          )}
         </MorphSurfaceContext.Provider>
       </motion.div>
     </div>
