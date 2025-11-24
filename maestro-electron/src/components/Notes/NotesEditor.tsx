@@ -3,7 +3,7 @@ import { SerializedEditorState } from 'lexical';
 import { useSnapshot } from 'valtio';
 import { FileText } from 'lucide-react';
 import { notesStore, notesActions, notesComputed } from '@/stores/notes.store';
-import { Editor } from '@/components/blocks/editor-00/editor';
+import { Editor } from '@/components/blocks/editor-x/editor';
 import { cn } from '@/lib/utils';
 
 interface NotesEditorProps {
@@ -33,7 +33,7 @@ const emptyEditorState = {
 
 export function NotesEditor({ noteId }: NotesEditorProps) {
   const snap = useSnapshot(notesStore);
-  const note = notesComputed.getNoteById(noteId);
+  const note = snap.notes.find(n => n.id === noteId);
 
   if (!note) {
     return (
@@ -88,6 +88,7 @@ export function NotesEditor({ noteId }: NotesEditorProps) {
       <div className="flex-1 overflow-y-auto">
         <div className="h-full">
           <Editor
+            key={noteId}
             editorSerializedState={note.content || emptyEditorState}
             onSerializedChange={handleChange}
           />

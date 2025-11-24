@@ -7,7 +7,6 @@ import { segmentsStore } from '@/stores/segments.store';
 import { TerminalPanel } from '@/components/Terminal/TerminalPanel';
 import { BrowserPanel } from '@/components/Browser/BrowserPanel';
 import { TasksView } from '@/components/Tasks/TasksView';
-import { NotesView } from '@/components/Notes/NotesView';
 import type { TerminalState } from '@/components/Terminal/terminal.utils';
 
 export function WorkspacePanel() {
@@ -69,7 +68,6 @@ export function WorkspacePanel() {
         return (
           <Activity key={tab.id} mode={tab.id === activeTabId ? 'visible' : 'hidden'}>
             <div className="absolute inset-0">
-              {tab.type === 'note' && <NoteEditor tab={tab} />}
               {tab.type === 'terminal' && <TerminalView tab={tab} />}
               {tab.type === 'browser' && (() => {
                 const isActiveComputed = tab.id === activeTabId;
@@ -193,22 +191,6 @@ function AgentPlaceholder({ tab }: { tab: Tab }) {
         <p className="text-sm mb-2">{!segment && tab.title}</p>
         <p className="text-xs text-muted-foreground">AI Agent integration coming in Phase 2</p>
       </div>
-    </motion.div>
-  );
-}
-
-function NoteEditor({ tab }: { tab: Tab }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="w-full h-full flex flex-col"
-    >
-      <NotesView
-        spaceId={tab.spaceId}
-        noteId={tab.noteState?.noteId}
-        viewMode={tab.noteState?.viewMode || 'panel'}
-      />
     </motion.div>
   );
 }

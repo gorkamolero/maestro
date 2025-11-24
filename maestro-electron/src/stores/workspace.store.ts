@@ -2,7 +2,7 @@ import { persist } from 'valtio-persist';
 import { IndexedDBStrategy } from 'valtio-persist/indexed-db';
 import type { LaunchConfig, SavedState } from '@/types/launcher';
 
-export type TabType = 'terminal' | 'browser' | 'note' | 'agent' | 'app-launcher' | 'tasks';
+export type TabType = 'terminal' | 'browser' | 'agent' | 'app-launcher' | 'tasks';
 export type TabStatus = 'active' | 'idle' | 'running';
 
 export interface Tab {
@@ -28,14 +28,10 @@ export interface Tab {
     launchConfig: LaunchConfig;
     savedState: SavedState | null;
   };
-  // For note tabs
-  noteState?: {
-    noteId: string;
-    viewMode: 'tab' | 'panel';
-  };
 }
 
 export type ViewMode = 'timeline' | 'workspace' | 'split';
+export type WorkspaceViewMode = 'notes' | 'tabs';
 
 export interface WorkspaceLayout {
   timelineHeight: number; // Percentage (20-50)
@@ -49,6 +45,7 @@ interface WorkspaceState {
   tabs: Tab[];
   layout: WorkspaceLayout;
   viewMode: ViewMode;
+  workspaceViewMode: WorkspaceViewMode; // Notes view or Tabs view
 }
 
 const { store } = await persist<WorkspaceState>(
@@ -62,6 +59,7 @@ const { store } = await persist<WorkspaceState>(
       dockHeight: 48,
     },
     viewMode: 'split',
+    workspaceViewMode: 'tabs', // Default to tabs view
   },
   'maestro-workspace',
   {
@@ -136,6 +134,10 @@ export const workspaceActions = {
 
   setViewMode: (mode: ViewMode) => {
     workspaceStore.viewMode = mode;
+  },
+
+  setWorkspaceViewMode: (mode: WorkspaceViewMode) => {
+    workspaceStore.workspaceViewMode = mode;
   },
 
   renameTab: (tabId: string, newTitle: string) => {
