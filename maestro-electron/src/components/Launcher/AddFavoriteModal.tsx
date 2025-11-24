@@ -1,32 +1,27 @@
 import { useState } from 'react';
 import { useSnapshot } from 'valtio';
 import { launcherStore, launcherActions } from '@/stores/launcher.store';
+import { workspaceActions } from '@/stores/workspace.store';
 import type { ConnectedApp } from '@/types/launcher';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ModalContent, ModalHeader, ModalTitle } from '@/components/ui/modal-content';
-import { PortalWindow } from '@/components/PortalWindow';
+import { PortalWindow, usePortalAnimation } from '@/components/PortalWindow';
 import { View } from '@/components/View';
 
 interface AddFavoriteModalProps {
   workspaceId: string;
 }
 
-export function AddFavoriteModal({ workspaceId }: AddFavoriteModalProps) {
-  const snap = useSnapshot(launcherStore);
+function AddFavoriteModalContent({ workspaceId, onClose }: { workspaceId: string; onClose: () => void }) {
+  const { isExiting } = usePortalAnimation();
   const [selectedAppPath, setSelectedAppPath] = useState('');
   const [appInfo, setAppInfo] = useState<ConnectedApp | null>(null);
   const [name, setName] = useState('');
   const [filePath, setFilePath] = useState('');
   const [deepLink, setDeepLink] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-
-  const handleClose = () => {
-    // eslint-disable-next-line react-hooks/immutability
-    launcherStore.isAddModalOpen = false;
-    resetForm();
-  };
 
   const resetForm = () => {
     setSelectedAppPath('');
@@ -73,43 +68,50 @@ export function AddFavoriteModal({ workspaceId }: AddFavoriteModalProps) {
   };
 
   const handleSubmit = async () => {
-    if (!selectedAppPath || !name) return;
+    if (!selectedAppPath || !name || !appInfo) return;
 
     try {
-      await launcherActions.addFavorite(
-        workspaceId,
-        selectedAppPath,
-        name,
-        filePath || null,
-        deepLink || null
-      );
-      handleClose();
+      // Determine launch method
+      let launchMethod: 'file' | 'deeplink' | 'app-only' = 'app-only';
+      if (deepLink) {
+        launchMethod = 'deeplink';
+      } else if (filePath) {
+        launchMethod = 'file';
+      }
+
+      // Create a tab with app-launcher type
+      workspaceActions.openTab(workspaceId, 'app-launcher', name, {
+        isFavorite: true,
+        appLauncherConfig: {
+          connectedAppId: appInfo.id,
+          icon: appInfo.icon,
+          color: null,
+          launchConfig: {
+            filePath: filePath || null,
+            deepLink: deepLink || null,
+            launchMethod,
+          },
+          savedState: null,
+        },
+      });
+
+      onClose();
+      resetForm();
     } catch (error) {
       console.error('Failed to add favorite:', error);
     }
   };
 
-  if (!snap.isAddModalOpen) {
-    return null;
-  }
-
   return (
-    <View style={{
-      width: '100%',
-      height: '100%',
-      flexDirection: 'row',
-      justifyContent: 'center',
-      alignItems: 'center'
-    }}>
-      <View style={{ width: 440, height: 320 }}>
-        <PortalWindow onClose={handleClose}>
-          <ModalContent
-            className="w-full h-full relative overflow-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
+    <ModalContent
+      className={`w-full h-full relative overflow-auto transition-all duration-200 ${
+        isExiting ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
+      }`}
+      onClick={(e) => e.stopPropagation()}
+    >
               {/* Close button */}
               <button
-                onClick={handleClose}
+                onClick={onClose}
                 className="absolute top-4 right-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
               >
                 <svg
@@ -200,7 +202,7 @@ export function AddFavoriteModal({ workspaceId }: AddFavoriteModalProps) {
               )}
 
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={handleClose}>
+                <Button variant="outline" onClick={onClose}>
                   Cancel
                 </Button>
                 <Button onClick={handleSubmit} disabled={!name}>
@@ -214,7 +216,33 @@ export function AddFavoriteModal({ workspaceId }: AddFavoriteModalProps) {
               <Button onClick={handlePickApplication}>Choose Application</Button>
             </div>
           )}
-          </ModalContent>
+    </ModalContent>
+  );
+}
+
+export function AddFavoriteModal({ workspaceId }: AddFavoriteModalProps) {
+  const snap = useSnapshot(launcherStore);
+
+  const handleClose = () => {
+    // eslint-disable-next-line react-hooks/immutability
+    launcherStore.isAddModalOpen = false;
+  };
+
+  if (!snap.isAddModalOpen) {
+    return null;
+  }
+
+  return (
+    <View style={{
+      width: '100%',
+      height: '100%',
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center'
+    }}>
+      <View style={{ width: 440, height: 320 }}>
+        <PortalWindow onClose={handleClose}>
+          <AddFavoriteModalContent workspaceId={workspaceId} onClose={handleClose} />
         </PortalWindow>
       </View>
     </View>

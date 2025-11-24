@@ -2,10 +2,7 @@ import { persist } from 'valtio-persist';
 import { IndexedDBStrategy } from 'valtio-persist/indexed-db';
 import type {
   ConnectedApp,
-  Favorite,
   RunningApp,
-  LaunchResult,
-  SavedState,
 } from '../types/launcher';
 
 // Electron IPC helper
@@ -15,25 +12,21 @@ const invoke = (channel: string, ...args: unknown[]) => {
 
 interface LauncherState {
   connectedApps: ConnectedApp[];
-  favoritesByWorkspace: Record<string, Favorite[]>;
   runningApps: Set<string>; // bundle IDs
   isAddModalOpen: boolean;
-  editingFavoriteId: string | null;
 }
 
 const { store } = await persist<LauncherState>(
   {
     connectedApps: [],
-    favoritesByWorkspace: {},
     runningApps: new Set(),
     isAddModalOpen: false,
-    editingFavoriteId: null,
   },
   'maestro-launcher',
   {
     storageStrategy: IndexedDBStrategy,
     debounceTime: 1000,
-    omit: ['isAddModalOpen', 'editingFavoriteId'], // Don't persist UI state
+    omit: ['isAddModalOpen'], // Don't persist UI state
   }
 );
 
@@ -43,11 +36,6 @@ export const launcherActions = {
   async loadConnectedApps() {
     const apps = await invoke('launcher:get-connected-apps') as ConnectedApp[];
     launcherStore.connectedApps = apps;
-  },
-
-  async loadFavorites(workspaceId: string) {
-    const favorites = await invoke('launcher:get-favorites', workspaceId) as Favorite[];
-    launcherStore.favoritesByWorkspace[workspaceId] = favorites;
   },
 
   async registerApp(appPath: string): Promise<ConnectedApp> {
@@ -67,58 +55,43 @@ export const launcherActions = {
     return app;
   },
 
-  async addFavorite(
-    workspaceId: string,
-    appPath: string,
-    name: string,
-    filePath: string | null = null,
-    deepLink: string | null = null
-  ) {
-    // Register app if not already registered
-    let connectedApp = launcherStore.connectedApps.find(
-      (a) => a.path === appPath
-    );
-
+  async launchApp(connectedAppId: string, launchConfig: { filePath: string | null; deepLink: string | null; launchMethod: 'file' | 'deeplink' | 'app-only' }) {
+    const connectedApp = launcherActions.getConnectedApp(connectedAppId);
     if (!connectedApp) {
-      connectedApp = await launcherActions.registerApp(appPath);
+      throw new Error(`Connected app not found: ${connectedAppId}`);
     }
 
-    // Determine launch method
-    let launchMethod: 'file' | 'deeplink' | 'app-only' = 'app-only';
-    if (deepLink) {
-      launchMethod = 'deeplink';
-    } else if (filePath) {
-      launchMethod = 'file';
+    try {
+      // Use macOS utilities directly via IPC
+      if (launchConfig.deepLink) {
+        await invoke('launcher:launch-deeplink', launchConfig.deepLink);
+      } else if (launchConfig.filePath) {
+        await invoke('launcher:launch-with-file', connectedApp.path, launchConfig.filePath);
+      } else {
+        await invoke('launcher:launch-app-only', connectedApp.path);
+      }
+
+      // Update running apps list
+      await launcherActions.updateRunningApps();
+
+      return {
+        success: true,
+        method: launchConfig.launchMethod,
+        warnings: [],
+        error: null,
+      } as LaunchResult;
+    } catch (error) {
+      return {
+        success: false,
+        method: launchConfig.launchMethod,
+        warnings: [],
+        error: {
+          code: 'launch_failed',
+          message: error instanceof Error ? error.message : String(error),
+          recoverable: true,
+        },
+      } as LaunchResult;
     }
-
-    // Create favorite via IPC
-    const favorite = await invoke('launcher:create-favorite', {
-      workspaceId,
-      connectedAppId: connectedApp.id,
-      name,
-      icon: null,
-      color: null,
-      position: launcherStore.favoritesByWorkspace[workspaceId]?.length || 0,
-      launchConfig: {
-        filePath,
-        deepLink,
-        launchMethod,
-      },
-      savedState: null,
-    }) as Favorite;
-
-    if (!launcherStore.favoritesByWorkspace[workspaceId]) {
-      launcherStore.favoritesByWorkspace[workspaceId] = [];
-    }
-
-    launcherStore.favoritesByWorkspace[workspaceId].push(favorite);
-
-    return favorite;
-  },
-
-  async launchFavorite(favoriteId: string, restoreState = true) {
-    const result = await invoke('launcher:launch-favorite', favoriteId, restoreState) as LaunchResult;
-    return result;
   },
 
   async updateRunningApps() {
@@ -130,53 +103,6 @@ export const launcherActions = {
     await invoke('launcher:bring-to-front', bundleId);
   },
 
-  async saveState(favoriteId: string) {
-    const state = await invoke('launcher:save-favorite-state', favoriteId) as SavedState;
-
-    const favorite = launcherActions.findFavorite(favoriteId);
-    if (favorite) {
-      favorite.savedState = state;
-      favorite.updatedAt = new Date().toISOString();
-    }
-
-    return state;
-  },
-
-  async clearState(favoriteId: string) {
-    await invoke('launcher:clear-favorite-state', favoriteId);
-
-    const favorite = launcherActions.findFavorite(favoriteId);
-    if (favorite) {
-      favorite.savedState = null;
-      favorite.updatedAt = new Date().toISOString();
-    }
-  },
-
-  async deleteFavorite(favoriteId: string) {
-    await invoke('launcher:delete-favorite', favoriteId);
-
-    for (const workspaceId in launcherStore.favoritesByWorkspace) {
-      const index = launcherStore.favoritesByWorkspace[workspaceId].findIndex(
-        (f) => f.id === favoriteId
-      );
-      if (index >= 0) {
-        launcherStore.favoritesByWorkspace[workspaceId].splice(index, 1);
-        break;
-      }
-    }
-  },
-
-  async updateFavorite(favoriteId: string, updates: Partial<Favorite>) {
-    const updated = await invoke('launcher:update-favorite', { favoriteId, updates }) as Favorite;
-
-    const favorite = launcherActions.findFavorite(favoriteId);
-    if (favorite) {
-      Object.assign(favorite, updated);
-    }
-
-    return updated;
-  },
-
   async pickApp(): Promise<string | null> {
     return await invoke('launcher:pick-app') as string | null;
   },
@@ -185,35 +111,8 @@ export const launcherActions = {
     return await invoke('launcher:pick-file', appId) as string | null;
   },
 
-  findFavorite(favoriteId: string): Favorite | undefined {
-    for (const workspaceId in launcherStore.favoritesByWorkspace) {
-      const favorite = launcherStore.favoritesByWorkspace[workspaceId].find(
-        (f) => f.id === favoriteId
-      );
-      if (favorite) {
-        return favorite;
-      }
-    }
-    return undefined;
-  },
-
   getConnectedApp(appId: string): ConnectedApp | undefined {
     return launcherStore.connectedApps.find((a) => a.id === appId);
-  },
-
-  reorderFavorites(workspaceId: string, favoriteIds: string[]) {
-    const favorites = launcherStore.favoritesByWorkspace[workspaceId];
-    if (!favorites) return;
-
-    const reordered = favoriteIds
-      .map((id) => favorites.find((f) => f.id === id))
-      .filter((f): f is Favorite => f !== undefined);
-
-    reordered.forEach((favorite, index) => {
-      favorite.position = index;
-    });
-
-    launcherStore.favoritesByWorkspace[workspaceId] = reordered;
   },
 };
 

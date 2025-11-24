@@ -1,26 +1,22 @@
 import { useSnapshot } from 'valtio';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { workspaceActions, workspaceStore, type Tab } from '@/stores/workspace.store';
+import { workspaceStore, type Tab } from '@/stores/workspace.store';
 import { cn } from '@/lib/utils';
 import type { TabDropZone } from '@/types';
-
-interface ReorderItem {
-  id: string;
-  itemType: 'tab' | 'app';
-}
+import { useTabClick } from '@/hooks/useTabClick';
 
 interface SortableGridTabProps {
-  item: ReorderItem;
   tab: Tab;
   zone: TabDropZone;
   index: number;
   spaceId: string;
 }
 
-export function SortableGridTab({ item, tab }: SortableGridTabProps) {
+export function SortableGridTab({ tab }: SortableGridTabProps) {
   const { activeTabId } = useSnapshot(workspaceStore);
   const isActive = activeTabId === tab.id;
+  const handleClick = useTabClick(tab);
 
   const {
     attributes,
@@ -29,7 +25,7 @@ export function SortableGridTab({ item, tab }: SortableGridTabProps) {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: item.id });
+  } = useSortable({ id: tab.id });
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -47,6 +43,17 @@ export function SortableGridTab({ item, tab }: SortableGridTabProps) {
         return <span className="text-xl">🌐</span>;
       case 'note':
         return <span className="text-xl">📝</span>;
+      case 'app-launcher':
+        if (tab.appLauncherConfig?.icon) {
+          return (
+            <img
+              src={tab.appLauncherConfig.icon}
+              alt={tab.title}
+              className="w-8 h-8 rounded"
+            />
+          );
+        }
+        return <span className="text-xl">🚀</span>;
       default:
         return <span className="text-xl">📄</span>;
     }
@@ -59,7 +66,7 @@ export function SortableGridTab({ item, tab }: SortableGridTabProps) {
       {...attributes}
       {...listeners}
       data-draggable="true"
-      onClick={() => workspaceActions.setActiveTab(tab.id)}
+      onClick={handleClick}
       className={cn(
         'w-12 h-12 rounded-xl flex items-center justify-center transition-colors cursor-grab active:cursor-grabbing',
         isActive ? 'bg-white/15 hover:bg-white/20' : 'bg-white/5 hover:bg-white/10',

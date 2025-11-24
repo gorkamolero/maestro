@@ -270,25 +270,3 @@ export async function captureWindowState(bundleId: string): Promise<WindowState[
   }
 }
 
-/**
- * Restore window positions using AppleScript
- */
-export async function restoreWindowPositions(
-  bundleId: string,
-  states: WindowState[]
-): Promise<void> {
-  try {
-    for (const state of states) {
-      // AppleScript to set window bounds
-      const script = `
-        tell application id "${bundleId}"
-          set bounds of window "${state.windowTitle}" to {${state.x}, ${state.y}, ${state.x + state.width}, ${state.y + state.height}}
-        end tell
-      `;
-      await execAsync(`osascript -e '${script.replace(/\n/g, ' ')}'`);
-    }
-  } catch (error) {
-    console.warn('Failed to restore window positions:', error);
-    // Don't throw - window restoration is best-effort
-  }
-}

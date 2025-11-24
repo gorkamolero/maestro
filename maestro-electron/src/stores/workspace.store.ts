@@ -1,7 +1,8 @@
 import { persist } from 'valtio-persist';
 import { IndexedDBStrategy } from 'valtio-persist/indexed-db';
+import type { LaunchConfig, SavedState } from '@/types/launcher';
 
-export type TabType = 'terminal' | 'browser' | 'note' | 'agent';
+export type TabType = 'terminal' | 'browser' | 'note' | 'agent' | 'app-launcher';
 export type TabStatus = 'active' | 'idle' | 'running';
 
 export interface Tab {
@@ -18,6 +19,14 @@ export interface Tab {
     workingDir: string | null;
     scrollPosition: number;
     theme: 'termius-dark' | 'dracula' | 'nord';
+  };
+  // For app launcher items
+  appLauncherConfig?: {
+    connectedAppId: string;
+    icon: string | null;
+    color: string | null;
+    launchConfig: LaunchConfig;
+    savedState: SavedState | null;
   };
 }
 
@@ -70,14 +79,14 @@ export const workspaceActions = {
     }
   },
 
-  openTab: (spaceId: string, type: TabType, title: string, segmentId?: string) => {
+  openTab: (spaceId: string, type: TabType, title: string, config?: Partial<Tab>) => {
     const newTab: Tab = {
       id: crypto.randomUUID(),
       spaceId,
       type,
       title,
       status: 'active',
-      segmentId,
+      ...config,
     };
 
     workspaceStore.tabs.push(newTab);
@@ -102,7 +111,6 @@ export const workspaceActions = {
   },
 
   setActiveTab: (tabId: string) => {
-    console.log(`[WORKSPACE] setActiveTab called with:`, tabId, new Error().stack);
     const tab = workspaceStore.tabs.find((t) => t.id === tabId);
     if (tab) {
       workspaceStore.activeTabId = tabId;

@@ -28,48 +28,10 @@ export interface WindowState {
   windowIndex: number;
 }
 
-export interface SavedState {
-  windows: WindowState[];
-  capturedAt: string;
-  capturedFromFile: string | null;
-}
-
 export interface LaunchConfig {
   filePath: string | null;
   deepLink: string | null;
   launchMethod: 'file' | 'deeplink' | 'app-only';
-}
-
-export interface Favorite {
-  id: string;
-  workspaceId: string;
-  connectedAppId: string;
-  name: string;
-  icon: string | null;
-  color: string | null;
-  position: number;
-  launchConfig: LaunchConfig;
-  savedState: SavedState | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface LaunchResult {
-  success: boolean;
-  method: 'file' | 'deeplink' | 'app-only';
-  warnings: LaunchWarning[];
-  error: LaunchError | null;
-}
-
-export interface LaunchWarning {
-  code: string;
-  message: string;
-}
-
-export interface LaunchError {
-  code: string;
-  message: string;
-  recoverable: boolean;
 }
 
 export interface RunningApp {

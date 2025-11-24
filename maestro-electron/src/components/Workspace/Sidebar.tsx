@@ -1,6 +1,7 @@
 import { useSnapshot } from 'valtio';
 import { workspaceStore, workspaceActions, type TabType } from '@/stores/workspace.store';
 import { spacesStore } from '@/stores/spaces.store';
+import { launcherStore } from '@/stores/launcher.store';
 import { Terminal, Globe, FileText, Plus, Command } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -12,7 +13,6 @@ import {
 } from '@/components/ui/carousel';
 import { useEffect, useState } from 'react';
 import { TabDropZone } from './TabDropZone';
-import { launcherStore, launcherActions } from '@/stores/launcher.store';
 import { DraggableWorkspace } from './DraggableWorkspace';
 
 const TAB_LABELS: Record<TabType, string> = {
@@ -29,7 +29,6 @@ interface SidebarContentProps {
 function SidebarContent({ onCommandPalette }: SidebarContentProps) {
   const { tabs, activeSpaceId } = useSnapshot(workspaceStore);
   const { spaces } = useSnapshot(spacesStore);
-  const launcherSnap = useSnapshot(launcherStore);
   const [api, setApi] = useState<CarouselApi>();
 
   const currentSpaceIndex = spaces.findIndex((s) => s.id === activeSpaceId);
@@ -57,7 +56,6 @@ function SidebarContent({ onCommandPalette }: SidebarContentProps) {
 
 
   const handleAddApp = () => {
-    // eslint-disable-next-line react-hooks/immutability
     launcherStore.isAddModalOpen = true;
   };
 
@@ -168,7 +166,6 @@ function SidebarContent({ onCommandPalette }: SidebarContentProps) {
             const spaceTabs = tabs.filter((t) => t.spaceId === space.id);
             const favoriteTabs = spaceTabs.filter((t) => t.isFavorite);
             const regularTabs = spaceTabs.filter((t) => !t.isFavorite);
-            const appFavorites = launcherSnap.favoritesByWorkspace[space.id] || [];
 
             return (
               <CarouselItem key={space.id} className="pl-0 h-full">
@@ -181,8 +178,6 @@ function SidebarContent({ onCommandPalette }: SidebarContentProps) {
                       spaceId={space.id}
                       title="Favorites"
                       emptyMessage="No favorites yet"
-                      appFavorites={appFavorites}
-                      getConnectedApp={launcherActions.getConnectedApp}
                     />
                   </div>
 

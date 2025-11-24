@@ -72,7 +72,11 @@ export function CommandPalette({ onClose, isExiting = false }: CommandPalettePro
   }, [onClose]);
 
   const handleLaunchApp = useCallback((appId: string) => {
-    launcherActions.launchFavorite(appId, true);
+    launcherActions.launchApp(appId, {
+      filePath: null,
+      deepLink: null,
+      launchMethod: 'app-only'
+    });
     onClose();
   }, [onClose]);
 

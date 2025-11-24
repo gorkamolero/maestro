@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useContext, type ReactNode } from 'react';
+import { useEffect, useRef, useState, useContext, createContext, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { platform } from '@/lib/platform';
 import { ViewContext } from '@/components/View';
@@ -8,12 +8,26 @@ interface PortalWindowProps {
   onClose?: () => void;
 }
 
+interface PortalAnimationContextValue {
+  isExiting: boolean;
+}
+
+export const PortalAnimationContext = createContext<PortalAnimationContextValue>({
+  isExiting: false,
+});
+
+export function usePortalAnimation() {
+  return useContext(PortalAnimationContext);
+}
+
 export function PortalWindow({ children, onClose }: PortalWindowProps) {
   const [containerEl, setContainerEl] = useState<HTMLElement | null>(null);
+  const [isExiting, setIsExiting] = useState(false);
   const windowRef = useRef<Window | null>(null);
   const mountCountRef = useRef(0);
   const viewContext = useContext(ViewContext);
   const viewBounds = viewContext?.bounds;
+  const closeRequestedRef = useRef(false);
 
   useEffect(() => {
     const currentMount = ++mountCountRef.current;
@@ -103,18 +117,32 @@ export function PortalWindow({ children, onClose }: PortalWindowProps) {
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Handle close with exit animation
+  const handleCloseWithAnimation = () => {
+    if (closeRequestedRef.current || !onClose) return;
+    closeRequestedRef.current = true;
+
+    // Start exit animation
+    setIsExiting(true);
+
+    // Wait for animation to complete before calling onClose
+    setTimeout(() => {
+      onClose();
+    }, 200); // Match animation duration
+  };
+
   // Handle ESC key to close portal
   useEffect(() => {
-    if (!windowRef.current || windowRef.current.closed || !onClose) {
+    if (!windowRef.current || windowRef.current.closed) {
       return;
     }
 
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         try {
-          onClose();
+          handleCloseWithAnimation();
         } catch (error) {
-          console.error('[PortalWindow] Error in onClose:', error);
+          console.error('[PortalWindow] Error in handleCloseWithAnimation:', error);
         }
       }
     };
@@ -135,7 +163,7 @@ export function PortalWindow({ children, onClose }: PortalWindowProps) {
     } catch (error) {
       console.error('[PortalWindow] Error setting up escape handler:', error);
     }
-  }, [onClose]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Send View bounds to main process following the Stack Browser pattern
   useEffect(() => {
@@ -181,5 +209,10 @@ export function PortalWindow({ children, onClose }: PortalWindowProps) {
 
   if (!containerEl) return null;
 
-  return createPortal(children, containerEl);
+  return createPortal(
+    <PortalAnimationContext.Provider value={{ isExiting }}>
+      {children}
+    </PortalAnimationContext.Provider>,
+    containerEl
+  );
 }

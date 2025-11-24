@@ -6,18 +6,14 @@
 import { ipcMain, dialog } from 'electron';
 import type {
   ConnectedApp,
-  Favorite,
-  LaunchResult,
   RunningApp,
-  SavedState,
   WindowState,
 } from '../types/launcher';
 import * as macosUtils from '../lib/macos-utils';
 
-// In-memory storage for connected apps and favorites
-// In production, these would be persisted to a database
+// In-memory storage for connected apps
+// In production, this would be persisted to a database
 const connectedApps = new Map<string, ConnectedApp>();
-const favorites = new Map<string, Favorite>();
 
 export function registerLauncherHandlers() {
   /**
@@ -55,157 +51,6 @@ export function registerLauncherHandlers() {
     }
   );
 
-  /**
-   * Create a new favorite
-   */
-  ipcMain.handle(
-    'launcher:create-favorite',
-    async (_event, favoriteData: Omit<Favorite, 'id' | 'createdAt' | 'updatedAt'>): Promise<Favorite> => {
-      const favorite: Favorite = {
-        ...favoriteData,
-        id: crypto.randomUUID(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      favorites.set(favorite.id, favorite);
-      return favorite;
-    }
-  );
-
-  /**
-   * Get all favorites for a workspace
-   */
-  ipcMain.handle(
-    'launcher:get-favorites',
-    async (_event, workspaceId: string): Promise<Favorite[]> => {
-      return Array.from(favorites.values()).filter(
-        (f) => f.workspaceId === workspaceId
-      );
-    }
-  );
-
-  /**
-   * Update a favorite
-   */
-  ipcMain.handle(
-    'launcher:update-favorite',
-    async (_event, favoriteId: string, updates: Partial<Favorite>): Promise<Favorite> => {
-      const favorite = favorites.get(favoriteId);
-      if (!favorite) {
-        throw new Error(`Favorite not found: ${favoriteId}`);
-      }
-
-      const updated = {
-        ...favorite,
-        ...updates,
-        updatedAt: new Date().toISOString(),
-      };
-
-      favorites.set(favoriteId, updated);
-      return updated;
-    }
-  );
-
-  /**
-   * Delete a favorite
-   */
-  ipcMain.handle('launcher:delete-favorite', async (_event, favoriteId: string): Promise<void> => {
-    favorites.delete(favoriteId);
-  });
-
-  /**
-   * Launch a favorite
-   */
-  ipcMain.handle(
-    'launcher:launch-favorite',
-    async (
-      _event,
-      favoriteId: string,
-      restoreState = true
-    ): Promise<LaunchResult> => {
-      const favorite = favorites.get(favoriteId);
-      if (!favorite) {
-        return {
-          success: false,
-          method: 'app-only',
-          warnings: [],
-          error: {
-            code: 'favorite_not_found',
-            message: 'Favorite not found',
-            recoverable: false,
-          },
-        };
-      }
-
-      const app = connectedApps.get(favorite.connectedAppId);
-      if (!app) {
-        return {
-          success: false,
-          method: 'app-only',
-          warnings: [],
-          error: {
-            code: 'app_not_found',
-            message: 'Connected app not found',
-            recoverable: false,
-          },
-        };
-      }
-
-      try {
-        const warnings: LaunchResult['warnings'] = [];
-        let method: LaunchResult['method'] = 'app-only';
-
-        // Determine launch method
-        if (favorite.launchConfig.deepLink) {
-          method = 'deeplink';
-          await macosUtils.launchDeepLink(favorite.launchConfig.deepLink);
-        } else if (favorite.launchConfig.filePath) {
-          method = 'file';
-          await macosUtils.launchApp(app.path, favorite.launchConfig.filePath);
-        } else {
-          method = 'app-only';
-          await macosUtils.launchApp(app.path);
-        }
-
-        // Wait a bit for app to launch
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        // Restore window state if requested and available
-        if (restoreState && favorite.savedState) {
-          try {
-            await macosUtils.restoreWindowPositions(
-              app.bundleId,
-              favorite.savedState.windows
-            );
-          } catch (error) {
-            warnings.push({
-              code: 'state_not_restored',
-              message: 'Failed to restore window positions',
-            });
-          }
-        }
-
-        return {
-          success: true,
-          method,
-          warnings,
-          error: null,
-        };
-      } catch (error) {
-        return {
-          success: false,
-          method: 'app-only',
-          warnings: [],
-          error: {
-            code: 'launch_failed',
-            message: error instanceof Error ? error.message : String(error),
-            recoverable: true,
-          },
-        };
-      }
-    }
-  );
 
   /**
    * Get list of running applications
@@ -240,66 +85,6 @@ export function registerLauncherHandlers() {
       return await macosUtils.captureWindowState(bundleId);
     }
   );
-
-  /**
-   * Save window state to a favorite
-   */
-  ipcMain.handle(
-    'launcher:save-favorite-state',
-    async (_event, favoriteId: string): Promise<SavedState> => {
-      const favorite = favorites.get(favoriteId);
-      if (!favorite) {
-        throw new Error('Favorite not found');
-      }
-
-      const app = connectedApps.get(favorite.connectedAppId);
-      if (!app) {
-        throw new Error('Connected app not found');
-      }
-
-      // Check if app is running
-      const isRunning = await macosUtils.isAppRunning(app.bundleId);
-      if (!isRunning) {
-        throw new Error(`${app.name} is not running`);
-      }
-
-      // Capture window state
-      const windows = await macosUtils.captureWindowState(app.bundleId);
-
-      const savedState: SavedState = {
-        windows,
-        capturedAt: new Date().toISOString(),
-        capturedFromFile: favorite.launchConfig.filePath,
-      };
-
-      // Update favorite with saved state
-      const updated = {
-        ...favorite,
-        savedState,
-        updatedAt: new Date().toISOString(),
-      };
-      favorites.set(favoriteId, updated);
-
-      return savedState;
-    }
-  );
-
-  /**
-   * Clear saved state from a favorite
-   */
-  ipcMain.handle('launcher:clear-favorite-state', async (_event, favoriteId: string): Promise<void> => {
-    const favorite = favorites.get(favoriteId);
-    if (!favorite) {
-      throw new Error('Favorite not found');
-    }
-
-    const updated = {
-      ...favorite,
-      savedState: null,
-      updatedAt: new Date().toISOString(),
-    };
-    favorites.set(favoriteId, updated);
-  });
 
   /**
    * Open native file picker to select an app
@@ -344,4 +129,25 @@ export function registerLauncherHandlers() {
       return result.canceled ? null : result.filePaths[0];
     }
   );
+
+  /**
+   * Launch app with deep link
+   */
+  ipcMain.handle('launcher:launch-deeplink', async (_event, deepLink: string): Promise<void> => {
+    await macosUtils.launchDeepLink(deepLink);
+  });
+
+  /**
+   * Launch app with file
+   */
+  ipcMain.handle('launcher:launch-with-file', async (_event, appPath: string, filePath: string): Promise<void> => {
+    await macosUtils.launchApp(appPath, filePath);
+  });
+
+  /**
+   * Launch app only
+   */
+  ipcMain.handle('launcher:launch-app-only', async (_event, appPath: string): Promise<void> => {
+    await macosUtils.launchApp(appPath);
+  });
 }
