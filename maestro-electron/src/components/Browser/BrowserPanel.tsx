@@ -19,10 +19,30 @@ export function BrowserPanel({ tab, isActive }: BrowserPanelProps) {
 
   // Get reactive snapshot of browser state
   const browserSnap = useSnapshot(browserStore);
-  const initialUrl = normalizeUrl('https://www.google.com');
 
-  // Initialize browser state for this tab
-  getBrowserState(tab.id, initialUrl);
+  // Determine initial URL: use tab title if it's a URL, or check existing browser state, or use empty
+  const getInitialUrl = () => {
+    // First check if browser state already exists (set from command palette)
+    const existingState = browserSnap.browsers[tab.id];
+    if (existingState?.url) {
+      return existingState.url;
+    }
+
+    // Then check if tab title looks like a URL
+    if (tab.title && (tab.title.startsWith('http://') || tab.title.startsWith('https://'))) {
+      return tab.title;
+    }
+
+    // Otherwise use empty string (no default URL)
+    return '';
+  };
+
+  const initialUrl = getInitialUrl();
+
+  // Initialize browser state for this tab only if it doesn't exist
+  if (!browserSnap.browsers[tab.id]) {
+    getBrowserState(tab.id, initialUrl);
+  }
 
   const currentUrl = browserSnap.browsers[tab.id]?.url || initialUrl;
 

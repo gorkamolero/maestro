@@ -93,25 +93,28 @@ export function TaskCard({ task }: TaskCardProps) {
         {/* Collapsed view - task card */}
         {!isEditing && (
           <div className="p-3">
-            {/* Priority dots */}
-            <div className="flex gap-1 mb-2">
-              {[...Array(task.priority)].map((_, i) => (
-                <div
-                  key={i}
-                  className="w-2 h-2 rounded-full bg-primary opacity-60"
-                />
-              ))}
-            </div>
+            {/* Title with priority dots */}
+            <div className="flex items-start gap-2">
+              {/* Priority dots */}
+              <div className="flex flex-col gap-1 pt-1">
+                {[...Array(task.priority)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="w-2 h-2 rounded-full bg-primary opacity-60"
+                  />
+                ))}
+              </div>
 
-            {/* Title */}
-            <h4
-              className={cn(
-                'text-sm font-medium text-foreground',
-                isDone && 'line-through text-muted-foreground'
-              )}
-            >
-              {task.title}
-            </h4>
+              {/* Title */}
+              <h4
+                className={cn(
+                  'text-sm font-medium text-foreground flex-1',
+                  isDone && 'line-through text-muted-foreground'
+                )}
+              >
+                {task.title}
+              </h4>
+            </div>
 
             {/* Description */}
             {task.description && (

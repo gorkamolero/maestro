@@ -6,6 +6,7 @@ import { WorkspacePanel } from '@/components/Workspace/WorkspacePanel';
 import { NotesEditor } from '@/components/Notes/NotesEditor';
 import { AddFavoriteModal } from '@/components/Launcher';
 import { CommandPalettePortal } from '@/components/CommandPalettePortal';
+import { StatusBar } from '@/components/StatusBar';
 import { workspaceStore } from '@/stores/workspace.store';
 import { spacesStore } from '@/stores/spaces.store';
 import { notesStore } from '@/stores/notes.store';
@@ -35,10 +36,10 @@ function App() {
     }
   }, [darkMode]);
 
-  // Cmd+K keyboard shortcut
+  // Cmd+K and Cmd+T keyboard shortcuts
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
-      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+      if ((e.key === 'k' || e.key === 't') && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         setCommandPaletteOpen((open) => !open);
       }
@@ -54,13 +55,6 @@ function App() {
 
   return (
     <div className="h-screen bg-background text-foreground flex flex-col">
-      {/* Thin space name bar at the very top */}
-      <div className="h-4 flex items-center px-4 bg-muted/30 border-b border-border/50">
-        <span className="text-[9px] text-muted-foreground font-medium uppercase tracking-wider">
-          {activeSpace?.name || ''}
-        </span>
-      </div>
-
       {/* Main content area */}
       <div className="flex-1 flex overflow-hidden">
         {/* Arc-style left sidebar - now resizable */}
@@ -101,6 +95,9 @@ function App() {
         {/* Command Palette */}
         <CommandPalettePortal isOpen={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} />
       </div>
+
+      {/* Status Bar */}
+      <StatusBar />
     </div>
   );
 }

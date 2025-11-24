@@ -15,6 +15,8 @@ import {
 import { workspaceStore, workspaceActions } from '@/stores/workspace.store';
 import { spacesStore, spacesActions } from '@/stores/spaces.store';
 import { launcherStore, launcherActions } from '@/stores/launcher.store';
+import { getBrowserState } from '@/stores/browser.store';
+import { urlHistoryActions } from '@/stores/url-history.store';
 
 // Keyboard shortcut display component
 function CommandShortcut({ children }: { children: string }) {
@@ -79,13 +81,24 @@ export function CommandPalette({ onClose, isExiting = false }: CommandPalettePro
     onClose();
   }, [onClose]);
 
-  const handleGoToUrl = useCallback(() => {
-    if (!activeSpaceId || !activeTab || activeTab.type !== 'browser') {
-      // Create new browser tab if no browser tab is active
-      workspaceActions.openTab(activeSpaceId || spaces[0]?.id, 'browser', 'Browser');
+  const handleGoToUrl = useCallback((url?: string) => {
+    const spaceId = activeSpaceId || spaces[0]?.id;
+    if (!spaceId) return;
+
+    // If URL is provided, create a browser tab and navigate to it
+    if (url) {
+      const newTab = workspaceActions.openTab(spaceId, 'browser', url);
+      // Initialize browser state with the URL
+      getBrowserState(newTab.id, url);
+      // Add to URL history
+      urlHistoryActions.addUrl(url);
+    } else {
+      // Just create a browser tab if no URL provided
+      if (!activeTab || activeTab.type !== 'browser') {
+        workspaceActions.openTab(spaceId, 'browser', 'Browser');
+      }
     }
     onClose();
-    // Focus will be on address bar naturally
   }, [activeSpaceId, activeTab, spaces, onClose]);
 
   const handleDuplicateTab = useCallback(() => {
@@ -103,18 +116,37 @@ export function CommandPalette({ onClose, isExiting = false }: CommandPalettePro
     app.name.toLowerCase().includes(search.toLowerCase())
   );
 
+  // Get URL history suggestions
+  const urlSuggestions = urlHistoryActions.searchHistory(search);
+
   // Search everything results
   const searchResults = {
     tabs: tabs.filter((t) => t.title.toLowerCase().includes(search.toLowerCase())),
     spaces: spaces.filter((s) => s.name.toLowerCase().includes(search.toLowerCase())),
     apps: filteredApps,
+    urls: urlSuggestions,
   };
 
   const hasSearchResults = search.length > 0 && (
     searchResults.tabs.length > 0 ||
     searchResults.spaces.length > 0 ||
-    searchResults.apps.length > 0
+    searchResults.apps.length > 0 ||
+    searchResults.urls.length > 0
   );
+
+  // Normalize URL - add protocol if missing
+  const normalizeUrl = (input: string): string => {
+    const trimmed = input.trim();
+    if (!trimmed) return '';
+
+    // Check if it already has a protocol
+    if (trimmed.match(/^https?:\/\//i)) {
+      return trimmed;
+    }
+
+    // Add https:// by default
+    return `https://${trimmed}`;
+  };
 
   return (
     <Command
@@ -122,6 +154,13 @@ export function CommandPalette({ onClose, isExiting = false }: CommandPalettePro
         isExiting ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
       }`}
       loop
+      onKeyDown={(e) => {
+        // Handle Enter key when there's search text but no results
+        if (e.key === 'Enter' && search.length > 0 && !hasSearchResults) {
+          e.preventDefault();
+          handleGoToUrl(normalizeUrl(search));
+        }
+      }}
     >
         <div className="flex items-center border-b border-border px-3">
           <Search className="w-4 h-4 text-muted-foreground mr-2" />
@@ -135,13 +174,49 @@ export function CommandPalette({ onClose, isExiting = false }: CommandPalettePro
         </div>
 
         <Command.List className="flex-1 overflow-y-auto p-2">
-          <Command.Empty className="py-6 text-center text-sm text-muted-foreground">
-            No results found.
-          </Command.Empty>
+          {/* Show "Go to URL" when there's search text but no results */}
+          {search.length > 0 && !hasSearchResults ? (
+            <Command.Item
+              onSelect={() => handleGoToUrl(normalizeUrl(search))}
+              className="flex items-center gap-3 px-3 py-2 rounded cursor-pointer aria-selected:bg-accent"
+            >
+              <Globe className="w-4 h-4" />
+              <span className="flex-1">Go to {normalizeUrl(search)}</span>
+              <ArrowRight className="w-3 h-3 text-muted-foreground" />
+            </Command.Item>
+          ) : (
+            <Command.Empty className="py-6 text-center text-sm text-muted-foreground">
+              Type to search or enter a URL...
+            </Command.Empty>
+          )}
 
           {/* Search Everything - show when there's a search query */}
           {hasSearchResults && (
             <>
+              {/* URL History Suggestions - show first */}
+              {searchResults.urls.length > 0 && (
+                <Command.Group heading="Recent URLs" className="mb-2">
+                  {searchResults.urls.map((urlEntry) => (
+                    <Command.Item
+                      key={urlEntry.url}
+                      onSelect={() => handleGoToUrl(urlEntry.url)}
+                      className="flex items-center gap-3 px-3 py-2 rounded cursor-pointer aria-selected:bg-accent"
+                    >
+                      <Globe className="w-4 h-4" />
+                      <div className="flex-1 flex flex-col gap-0.5">
+                        <span className="text-sm">{urlEntry.title || urlEntry.url}</span>
+                        {urlEntry.title && (
+                          <span className="text-xs text-muted-foreground truncate">
+                            {urlEntry.url}
+                          </span>
+                        )}
+                      </div>
+                      <ArrowRight className="w-3 h-3 text-muted-foreground" />
+                    </Command.Item>
+                  ))}
+                </Command.Group>
+              )}
+
               {searchResults.tabs.length > 0 && (
                 <Command.Group heading="Tabs" className="mb-2">
                   {searchResults.tabs.map((tab) => (
