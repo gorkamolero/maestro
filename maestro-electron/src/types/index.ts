@@ -27,14 +27,14 @@ export interface Space {
 
 // Color palette for spaces - 8 professional color pairs
 export const SPACE_COLOR_PALETTE = [
-  { name: 'Ocean Blue', primary: '#3b82f6', secondary: '#1e40af' },
-  { name: 'Forest Green', primary: '#22c55e', secondary: '#15803d' },
-  { name: 'Sunset Orange', primary: '#f97316', secondary: '#c2410c' },
-  { name: 'Royal Purple', primary: '#a855f7', secondary: '#7e22ce' },
-  { name: 'Cherry Red', primary: '#ef4444', secondary: '#b91c1c' },
-  { name: 'Teal Cyan', primary: '#14b8a6', secondary: '#0f766e' },
-  { name: 'Rose Pink', primary: '#ec4899', secondary: '#be185d' },
-  { name: 'Slate Gray', primary: '#64748b', secondary: '#475569' },
+  { name: 'Indigo', primary: '#6366f1', secondary: '#4338ca' },
+  { name: 'Emerald', primary: '#10b981', secondary: '#047857' },
+  { name: 'Amber', primary: '#f59e0b', secondary: '#d97706' },
+  { name: 'Rose', primary: '#f43f5e', secondary: '#e11d48' },
+  { name: 'Violet', primary: '#8b5cf6', secondary: '#7c3aed' },
+  { name: 'Cyan', primary: '#06b6d4', secondary: '#0891b2' },
+  { name: 'Coral', primary: '#fb7185', secondary: '#f472b6' },
+  { name: 'Sage', primary: '#84cc16', secondary: '#65a30d' },
 ] as const;
 
 export interface Segment {
