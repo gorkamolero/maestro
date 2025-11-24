@@ -68,7 +68,7 @@ export function BrowserPanel({ tab, isActive }: BrowserPanelProps) {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="flex-1 flex flex-col bg-background"
+      className="flex-1 flex flex-col bg-background pt-4 pr-4"
     >
       {/* Toolbar with URL bar */}
       <BrowserToolbar

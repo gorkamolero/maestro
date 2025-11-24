@@ -182,4 +182,21 @@ export const workspaceActions = {
       tab.terminalState = state;
     }
   },
+
+  moveTabToSpace: (tabId: string, targetSpaceId: string) => {
+    const tab = workspaceStore.tabs.find((t) => t.id === tabId);
+    if (!tab) return;
+
+    // Update the tab's spaceId
+    tab.spaceId = targetSpaceId;
+
+    // If this was the active tab, clear it since it's moved to another space
+    if (workspaceStore.activeTabId === tabId) {
+      // Find another tab in the current space
+      const remainingTab = workspaceStore.tabs.find(
+        (t) => t.spaceId === workspaceStore.activeSpaceId && t.id !== tabId
+      );
+      workspaceStore.activeTabId = remainingTab?.id || null;
+    }
+  },
 };

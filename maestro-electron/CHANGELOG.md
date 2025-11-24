@@ -6,6 +6,34 @@ All notable changes to Maestro will be documented in this file.
 
 ### Added
 
+#### Tab Context Menu for Moving Between Spaces (2025-01-24)
+- Added right-click context menu to tab components (both grid and list views)
+  - "Move to Space" submenu shows all other available spaces
+  - Space icons displayed in submenu for visual clarity
+  - "Close Tab" option with destructive styling
+  - Context menu filters out current space (only shows valid targets)
+- Created shared `TabContextMenu` component
+  - Single source of truth for context menu logic
+  - Works consistently across GridTab and ListTab
+  - Uses Radix UI ContextMenu with proper ContextMenuTrigger pattern
+- Added `moveTabToSpace(tabId, targetSpaceId)` action to workspace store
+  - Updates tab's spaceId to move it to target space
+  - Handles active tab switching automatically
+  - Clears active tab if moved tab was currently active
+
+**Technical Details:**
+- TabContextMenu wraps tab content as children (not anti-pattern wrapper)
+- Uses `useSnapshot` to filter spaces reactively
+- ContextMenuSub and ContextMenuSubContent for nested space selection
+- FolderInput and Trash2 icons from lucide-react
+- Properly stops propagation to prevent conflicts with drag/click
+
+**Benefits:**
+- Unified experience across both tab view modes
+- Quick tab organization without drag-and-drop
+- Clean separation of concerns (component vs logic)
+- Extensible for future context menu items
+
 #### Replace DnD Kit with react-easy-sort for Tab Reordering (2025-01-24)
 - Migrated tabs system from @dnd-kit to react-easy-sort for smoother drag-and-drop
   - Grid view now supports true 2D dragging (horizontal and vertical)

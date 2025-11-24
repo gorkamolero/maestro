@@ -36,7 +36,7 @@ export function StatusBar() {
   }).length;
 
   return (
-    <div className="h-6 bg-background border-t border-border flex items-center justify-between px-3 text-[10px] text-muted-foreground">
+    <div className="h-6 glass-bg border-t border-border flex items-center justify-between px-3 text-[10px] text-muted-foreground">
       {/* Left side - Context */}
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-1.5">

@@ -92,7 +92,7 @@ function TerminalView({ tab }: { tab: Tab }) {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="w-full h-full flex flex-col"
+      className="w-full h-full flex flex-col pt-4 pr-4"
     >
       {/* Terminal header */}
       {segment && (

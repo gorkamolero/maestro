@@ -6,6 +6,7 @@ import { getTabIcon } from '@/lib/tab-utils';
 import { useSnapshot } from 'valtio';
 import { useTabClick } from '@/hooks/useTabClick';
 import { useMorphingEdit } from '@/hooks/useMorphingEdit';
+import { TabContextMenu } from './TabContextMenu';
 
 interface ListTabProps {
   tab: Tab;
@@ -34,8 +35,9 @@ export function ListTab({ tab }: ListTabProps) {
   };
 
   return (
-    <motion.div
-      data-draggable="true"
+    <TabContextMenu tab={tab}>
+      <motion.div
+        data-draggable="true"
       onDoubleClick={() => {
         if (!isEditing) {
           setIsEditing(true);
@@ -132,6 +134,7 @@ export function ListTab({ tab }: ListTabProps) {
           </motion.form>
         )}
       </AnimatePresence>
-    </motion.div>
+      </motion.div>
+    </TabContextMenu>
   );
 }

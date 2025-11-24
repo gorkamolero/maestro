@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { getTabIcon } from '@/lib/tab-utils';
 import { useTabClick } from '@/hooks/useTabClick';
 import { useMorphingEdit } from '@/hooks/useMorphingEdit';
+import { TabContextMenu } from './TabContextMenu';
 
 interface GridTabProps {
   tab: Tab;
@@ -33,7 +34,8 @@ export function GridTab({ tab }: GridTabProps) {
   };
 
   return (
-    <motion.div
+    <TabContextMenu tab={tab}>
+      <motion.div
       style={{
         width: isEditing ? '200px' : '72px',
       }}
@@ -121,6 +123,7 @@ export function GridTab({ tab }: GridTabProps) {
           </motion.form>
         )}
       </AnimatePresence>
-    </motion.div>
+      </motion.div>
+    </TabContextMenu>
   );
 }
