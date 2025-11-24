@@ -20,9 +20,10 @@ interface ViewContextValue {
   node: Yoga.YogaNode;
   bounds: ViewBounds | null;
   layoutReady: boolean;
+  backdrop?: boolean;
 }
 
-const ViewContext = createContext<ViewContextValue | null>(null);
+export const ViewContext = createContext<ViewContextValue | null>(null);
 
 export function useViewBounds(): ViewBounds | null {
   const context = useContext(ViewContext);
@@ -32,6 +33,7 @@ export function useViewBounds(): ViewBounds | null {
 
 interface ViewProps {
   children: ReactNode;
+  backdrop?: boolean;
   style?: {
     flex?: number;
     flexDirection?: 'row' | 'column';
@@ -46,10 +48,12 @@ interface ViewProps {
   };
 }
 
-export function View({ children, style = {} }: ViewProps) {
+export function View({ children, backdrop = false, style = {} }: ViewProps) {
   const parentContext = useContext(ViewContext);
   const [layoutReady, setLayoutReady] = useState(false);
   const nodeRef = useRef<Yoga.YogaNode>();
+
+  console.log('[View] Rendering, backdrop:', backdrop, 'style:', style);
 
   // Create yoga node once
   if (!nodeRef.current) {
@@ -156,18 +160,23 @@ export function View({ children, style = {} }: ViewProps) {
       y += parentContext.bounds.y;
     }
 
-    return {
+    const computedBounds = {
       x: Math.round(x),
       y: Math.round(y),
       width: Math.round(layout.width),
       height: Math.round(layout.height),
     };
-  }, [layoutReady, node, parentContext]);
+
+    console.log('[View] Computed bounds:', computedBounds, 'backdrop:', backdrop);
+
+    return computedBounds;
+  }, [layoutReady, node, parentContext, backdrop]);
 
   const contextValue: ViewContextValue = {
     node,
     bounds,
     layoutReady,
+    backdrop,
   };
 
   return <ViewContext.Provider value={contextValue}>{children}</ViewContext.Provider>;

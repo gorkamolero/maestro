@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, useContext, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { platform } from '@/lib/platform';
-import { useViewBounds } from '@/components/View';
+import { ViewContext } from '@/components/View';
 
 interface PortalWindowProps {
   children: ReactNode;
@@ -12,7 +12,8 @@ export function PortalWindow({ children, onClose }: PortalWindowProps) {
   const [containerEl, setContainerEl] = useState<HTMLElement | null>(null);
   const windowRef = useRef<Window | null>(null);
   const mountCountRef = useRef(0);
-  const viewBounds = useViewBounds();
+  const viewContext = useContext(ViewContext);
+  const viewBounds = viewContext?.bounds;
 
   useEffect(() => {
     const currentMount = ++mountCountRef.current;

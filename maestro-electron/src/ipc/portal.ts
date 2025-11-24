@@ -58,16 +58,23 @@ export function registerPortalHandler(getMainWindow: () => BrowserWindow | null)
 
       // Listen for body bounds from renderer
       const handleBodyBounds = (_event: unknown, portalId: number, bounds: { x: number, y: number, width: number, height: number }) => {
-        if (portalId !== webContents.id) return;
+        console.log('[PORTAL-MAIN] Received bounds for portal', portalId, ':', bounds);
+
+        if (portalId !== webContents.id) {
+          console.log('[PORTAL-MAIN] Portal ID mismatch, ignoring');
+          return;
+        }
 
         // Check if the portal was destroyed before we got the bounds
         if (!portalViews.has(webContents.id)) {
+          console.log('[PORTAL-MAIN] Portal already destroyed, removing listener');
           ipcMain.removeListener('portal-body-bounds', handleBodyBounds);
           return;
         }
 
         // Check if WebContents or BrowserView was destroyed
         if (portalView.webContents.isDestroyed()) {
+          console.log('[PORTAL-MAIN] WebContents destroyed, cleaning up');
           portalViews.delete(webContents.id);
           ipcMain.removeListener('portal-body-bounds', handleBodyBounds);
           return;
@@ -76,9 +83,11 @@ export function registerPortalHandler(getMainWindow: () => BrowserWindow | null)
         // Remove the listener after successful validation
         ipcMain.removeListener('portal-body-bounds', handleBodyBounds);
 
+        console.log('[PORTAL-MAIN] Adding BrowserView to window');
         // Add the portal to the window
         win.addBrowserView(portalView);
 
+        console.log('[PORTAL-MAIN] Setting bounds:', bounds);
         // Position it to match the body element
         portalView.setBounds({
           x: Math.round(bounds.x),
@@ -93,11 +102,13 @@ export function registerPortalHandler(getMainWindow: () => BrowserWindow | null)
           height: true,
         });
 
+        console.log('[PORTAL-MAIN] Setting as top view');
         // Set it as the top view so it appears above browser views
         win.setTopBrowserView(portalView);
 
         // Give the portal WebContents focus so it receives input events
         webContents.focus();
+        console.log('[PORTAL-MAIN] Portal setup complete');
       };
 
       ipcMain.on('portal-body-bounds', handleBodyBounds);

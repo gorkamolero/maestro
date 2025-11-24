@@ -1,8 +1,7 @@
 import { useSnapshot } from 'valtio';
-import { DragDropContext, DropResult, type DragUpdate } from '@hello-pangea/dnd';
 import { workspaceStore, workspaceActions, type TabType } from '@/stores/workspace.store';
 import { spacesStore } from '@/stores/spaces.store';
-import { Terminal, Globe, FileText, Plus } from 'lucide-react';
+import { Terminal, Globe, FileText, Plus, Command } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
@@ -13,8 +12,8 @@ import {
 } from '@/components/ui/carousel';
 import { useEffect, useState } from 'react';
 import { TabDropZone } from './TabDropZone';
-import { DragProvider, useDragContext } from './DragContext';
 import { launcherStore, launcherActions } from '@/stores/launcher.store';
+import { DraggableWorkspace } from './DraggableWorkspace';
 
 const TAB_LABELS: Record<TabType, string> = {
   terminal: 'Terminal',
@@ -23,48 +22,15 @@ const TAB_LABELS: Record<TabType, string> = {
   agent: 'Agent',
 };
 
-function SidebarContent() {
+interface SidebarContentProps {
+  onCommandPalette?: () => void;
+}
+
+function SidebarContent({ onCommandPalette }: SidebarContentProps) {
   const { tabs, activeSpaceId } = useSnapshot(workspaceStore);
   const { spaces } = useSnapshot(spacesStore);
   const launcherSnap = useSnapshot(launcherStore);
   const [api, setApi] = useState<CarouselApi>();
-  const { setTargetZone } = useDragContext();
-  const handleDragUpdate = (result: DragUpdate) => {
-    if (result.destination) {
-      const targetZone = result.destination.droppableId.split('-')[0] as 'favorites' | 'tabs';
-      setTargetZone(targetZone);
-    } else {
-      setTargetZone(null);
-    }
-  };
-
-  const handleDragEnd = (result: DropResult) => {
-    setTargetZone(null);
-    const { source, destination, draggableId } = result;
-
-    // Dropped outside of any droppable
-    if (!destination) return;
-
-    // Parse the zone and tabId from the draggableId (format: "zone-tabId")
-    const tabId = draggableId.split('-').slice(1).join('-');
-
-    // Parse source and destination zones from droppableId (format: "zone-spaceId")
-    const sourceZone = source.droppableId.split('-')[0] as 'favorites' | 'tabs';
-    const targetZone = destination.droppableId.split('-')[0] as 'favorites' | 'tabs';
-
-    if (sourceZone === targetZone && source.index === destination.index) {
-      // No change
-      return;
-    }
-
-    if (sourceZone === targetZone) {
-      // Reordering within the same zone
-      workspaceActions.reorderTabInZone(tabId, targetZone, destination.index);
-    } else {
-      // Moving between zones
-      workspaceActions.moveTabToZone(tabId, targetZone, destination.index);
-    }
-  };
 
   const currentSpaceIndex = spaces.findIndex((s) => s.id === activeSpaceId);
 
@@ -106,8 +72,7 @@ function SidebarContent() {
   }
 
   return (
-    <DragDropContext onDragUpdate={handleDragUpdate} onDragEnd={handleDragEnd}>
-      <div className="w-full h-full flex flex-col">
+    <div className="w-full h-full flex flex-col">
         {/* Quick actions dock - Arc style */}
         <div className="h-14 p-3 flex items-center justify-center gap-2 border-b border-border/50">
         <TooltipProvider delayDuration={0}>
@@ -150,6 +115,20 @@ function SidebarContent() {
             </TooltipTrigger>
             <TooltipContent side="right">
               <p className="text-xs">New Note</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={onCommandPalette}
+                className="w-10 h-10 rounded-lg bg-background/50 hover:bg-background flex items-center justify-center transition-colors shadow-sm"
+              >
+                <Command className="w-4 h-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <p className="text-xs">Command Palette (⌘K)</p>
             </TooltipContent>
           </Tooltip>
 
@@ -225,15 +204,30 @@ function SidebarContent() {
           })}
         </CarouselContent>
       </Carousel>
-      </div>
-    </DragDropContext>
+    </div>
   );
 }
 
-export function Sidebar() {
+interface SidebarProps {
+  onCommandPalette?: () => void;
+}
+
+export function Sidebar({ onCommandPalette }: SidebarProps) {
+  const { activeSpaceId } = useSnapshot(workspaceStore);
+
+  if (!activeSpaceId) {
+    return (
+      <div className="w-full h-full flex items-center justify-center p-4">
+        <p className="text-xs text-muted-foreground text-center">
+          Select a space below to get started
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <DragProvider>
-      <SidebarContent />
-    </DragProvider>
+    <DraggableWorkspace spaceId={activeSpaceId}>
+      <SidebarContent onCommandPalette={onCommandPalette} />
+    </DraggableWorkspace>
   );
 }
