@@ -14,7 +14,7 @@ export interface TaskSession {
 
 export interface Task {
   id: string;
-  spaceId: string;
+  boardTabId: string; // The tasks tab this task belongs to
   title: string;
   description?: string;
 
@@ -32,6 +32,7 @@ export interface Task {
   // Workspace integration
   linkedTabIds: string[];
   linkedAppIds: string[];
+  linkedNoteIds: string[]; // Linked notes from notes system
 
   // Organization
   labels: string[];
@@ -40,7 +41,7 @@ export interface Task {
 }
 
 export interface TaskFilter {
-  spaceId: string | null;
+  boardTabId: string | null;
   status: TaskStatus | null;
   search: string;
 }
@@ -78,10 +79,10 @@ export const tasksStore = store;
 
 // Computed values
 export const tasksComputed = {
-  get tasksBySpace(): Record<string, Task[]> {
+  get tasksByBoard(): Record<string, Task[]> {
     return tasksStore.tasks.reduce((acc, task) => {
-      if (!acc[task.spaceId]) acc[task.spaceId] = [];
-      acc[task.spaceId].push(task);
+      if (!acc[task.boardTabId]) acc[task.boardTabId] = [];
+      acc[task.boardTabId].push(task);
       return acc;
     }, {} as Record<string, Task[]>);
   },
@@ -103,23 +104,23 @@ export const tasksComputed = {
     };
   },
 
-  getTasksBySpace(spaceId: string): Task[] {
-    return tasksStore.tasks.filter((t) => t.spaceId === spaceId);
+  getTasksByBoard(boardTabId: string): Task[] {
+    return tasksStore.tasks.filter((t) => t.boardTabId === boardTabId);
   },
 
-  getTasksByStatus(spaceId: string, status: TaskStatus): Task[] {
+  getTasksByStatus(boardTabId: string, status: TaskStatus): Task[] {
     return tasksStore.tasks.filter(
-      (t) => t.spaceId === spaceId && t.status === status
+      (t) => t.boardTabId === boardTabId && t.status === status
     );
   },
 };
 
 // Actions
 export const tasksActions = {
-  addTask(spaceId: string, title: string, status: TaskStatus = 'inbox'): Task {
+  addTask(boardTabId: string, title: string, status: TaskStatus = 'inbox'): Task {
     const task: Task = {
       id: crypto.randomUUID(),
-      spaceId,
+      boardTabId,
       title,
       status,
       priority: 1,
@@ -128,6 +129,7 @@ export const tasksActions = {
       sessions: [],
       linkedTabIds: [],
       linkedAppIds: [],
+      linkedNoteIds: [],
       labels: [],
     };
 
@@ -216,9 +218,9 @@ export const tasksActions = {
     Object.assign(task, updates);
   },
 
-  archiveCompleted(spaceId: string) {
+  archiveCompleted(boardTabId: string) {
     tasksStore.tasks.forEach((task) => {
-      if (task.spaceId === spaceId && task.status === 'done') {
+      if (task.boardTabId === boardTabId && task.status === 'done') {
         task.status = 'archived';
       }
     });

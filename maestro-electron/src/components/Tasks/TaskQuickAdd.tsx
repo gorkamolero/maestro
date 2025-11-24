@@ -3,10 +3,10 @@ import { TaskStatus, tasksActions } from '@/stores/tasks.store';
 
 interface TaskQuickAddProps {
   column: TaskStatus;
-  spaceId: string;
+  boardTabId: string;
 }
 
-export function TaskQuickAdd({ column, spaceId }: TaskQuickAddProps) {
+export function TaskQuickAdd({ column, boardTabId }: TaskQuickAddProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [title, setTitle] = useState('');
 
@@ -14,7 +14,7 @@ export function TaskQuickAdd({ column, spaceId }: TaskQuickAddProps) {
     e.preventDefault();
     if (!title.trim()) return;
 
-    const task = tasksActions.addTask(spaceId, title, 'inbox');
+    const task = tasksActions.addTask(boardTabId, title, 'inbox');
     if (column !== 'inbox') {
       tasksActions.moveTask(task.id, column);
     }

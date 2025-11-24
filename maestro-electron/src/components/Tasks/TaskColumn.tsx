@@ -1,7 +1,5 @@
 import { useDroppable } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Task, TaskStatus, tasksActions } from '@/stores/tasks.store';
-import { TaskCard } from './TaskCard';
 import { TaskQuickAdd } from './TaskQuickAdd';
 import { SortableTaskCard } from './SortableTaskCard';
 import { cn } from '@/lib/utils';
@@ -10,15 +8,15 @@ interface TaskColumnProps {
   id: TaskStatus;
   title: string;
   tasks: Task[];
-  spaceId: string;
+  boardTabId: string;
 }
 
-export function TaskColumn({ id, title, tasks, spaceId }: TaskColumnProps) {
+export function TaskColumn({ id, title, tasks, boardTabId }: TaskColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id });
 
   const handleArchive = () => {
     if (id === 'done') {
-      tasksActions.archiveCompleted(spaceId);
+      tasksActions.archiveCompleted(boardTabId);
     }
   };
 
@@ -38,16 +36,14 @@ export function TaskColumn({ id, title, tasks, spaceId }: TaskColumnProps) {
 
       {/* Tasks list */}
       <div className="flex-1 overflow-y-auto space-y-1">
-        <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-          {tasks.map((task) => (
-            <SortableTaskCard key={task.id} task={task} />
-          ))}
-        </SortableContext>
+        {tasks.map((task) => (
+          <SortableTaskCard key={task.id} task={task} />
+        ))}
       </div>
 
       {/* Quick add */}
       <div className="mt-2">
-        <TaskQuickAdd column={id} spaceId={spaceId} />
+        <TaskQuickAdd column={id} boardTabId={boardTabId} />
       </div>
 
       {/* Archive button for Done column */}

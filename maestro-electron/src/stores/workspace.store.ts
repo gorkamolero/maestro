@@ -2,7 +2,7 @@ import { persist } from 'valtio-persist';
 import { IndexedDBStrategy } from 'valtio-persist/indexed-db';
 import type { LaunchConfig, SavedState } from '@/types/launcher';
 
-export type TabType = 'terminal' | 'browser' | 'note' | 'agent' | 'app-launcher';
+export type TabType = 'terminal' | 'browser' | 'note' | 'agent' | 'app-launcher' | 'tasks';
 export type TabStatus = 'active' | 'idle' | 'running';
 
 export interface Tab {
@@ -28,9 +28,14 @@ export interface Tab {
     launchConfig: LaunchConfig;
     savedState: SavedState | null;
   };
+  // For note tabs
+  noteState?: {
+    noteId: string;
+    viewMode: 'tab' | 'panel';
+  };
 }
 
-export type ViewMode = 'timeline' | 'workspace' | 'split' | 'tasks';
+export type ViewMode = 'timeline' | 'workspace' | 'split';
 
 export interface WorkspaceLayout {
   timelineHeight: number; // Percentage (20-50)

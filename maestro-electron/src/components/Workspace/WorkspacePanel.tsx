@@ -1,11 +1,13 @@
 import React, { Activity } from 'react';
 import { useSnapshot } from 'valtio';
 import { workspaceStore, workspaceActions, type Tab } from '@/stores/workspace.store';
-import { Terminal, Globe, Bot } from 'lucide-react';
+import { Terminal, Globe, Bot, ListTodo } from 'lucide-react';
 import { motion } from 'motion/react';
 import { segmentsStore } from '@/stores/segments.store';
 import { TerminalPanel } from '@/components/Terminal/TerminalPanel';
 import { BrowserPanel } from '@/components/Browser/BrowserPanel';
+import { TasksView } from '@/components/Tasks/TasksView';
+import { NotesView } from '@/components/Notes/NotesView';
 import type { TerminalState } from '@/components/Terminal/terminal.utils';
 
 export function WorkspacePanel() {
@@ -74,6 +76,7 @@ export function WorkspacePanel() {
                 return <BrowserView tab={tab} isActive={isActiveComputed} />;
               })()}
               {tab.type === 'agent' && <AgentPlaceholder tab={tab} />}
+              {tab.type === 'tasks' && <TasksTabView tab={tab} />}
             </div>
           </Activity>
         );
@@ -199,9 +202,25 @@ function NoteEditor({ tab }: { tab: Tab }) {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="flex-1 p-6"
+      className="w-full h-full flex flex-col"
     >
-      <p className="text-sm text-muted-foreground">Note editor for {tab.title}</p>
+      <NotesView
+        spaceId={tab.spaceId}
+        noteId={tab.noteState?.noteId}
+        viewMode={tab.noteState?.viewMode || 'panel'}
+      />
+    </motion.div>
+  );
+}
+
+function TasksTabView({ tab }: { tab: Tab }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="w-full h-full flex flex-col"
+    >
+      <TasksView boardTabId={tab.id} />
     </motion.div>
   );
 }

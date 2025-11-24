@@ -5,14 +5,14 @@ import { Sidebar } from '@/components/Workspace/Sidebar';
 import { WorkspacePanel } from '@/components/Workspace/WorkspacePanel';
 import { AddFavoriteModal } from '@/components/Launcher';
 import { CommandPalettePortal } from '@/components/CommandPalettePortal';
-import { TasksView } from '@/components/Tasks';
 import { workspaceStore } from '@/stores/workspace.store';
 import { ResizablePanel } from '@/components/ui/resizable-panel';
+import '@/components/editor/themes/editor-theme.css';
 
 function App() {
   const [darkMode] = useState(true);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
-  const { activeSpaceId, layout, viewMode } = useSnapshot(workspaceStore);
+  const { activeSpaceId, layout } = useSnapshot(workspaceStore);
 
   useEffect(() => {
     // Active space changed
@@ -69,11 +69,7 @@ function App() {
       {/* Main workspace area */}
       <div className="flex-1 pt-4 bg-muted/20">
         <div className="h-full flex flex-col rounded-lg overflow-hidden bg-background">
-          {viewMode === 'tasks' && activeSpaceId ? (
-            <TasksView spaceId={activeSpaceId} />
-          ) : (
-            <WorkspacePanel />
-          )}
+          <WorkspacePanel />
         </div>
       </div>
 

@@ -3,17 +3,17 @@ import { tasksStore, tasksComputed } from '@/stores/tasks.store';
 import { TaskBoard } from './TaskBoard';
 
 interface TasksViewProps {
-  spaceId: string;
+  boardTabId: string;
 }
 
-export function TasksView({ spaceId }: TasksViewProps) {
+export function TasksView({ boardTabId }: TasksViewProps) {
   const snap = useSnapshot(tasksStore);
   const stats = tasksComputed.stats;
 
   return (
     <div className="tasks-view flex flex-col h-full">
       {/* Header with stats */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
+      <div className="h-14 flex items-center justify-between px-4 border-b border-border">
         <h2 className="text-lg font-semibold">Tasks</h2>
         <div className="flex gap-4 text-sm text-muted-foreground">
           <span>Active: {stats.active}</span>
@@ -23,7 +23,7 @@ export function TasksView({ spaceId }: TasksViewProps) {
 
       {/* Board */}
       <div className="flex-1 overflow-hidden">
-        <TaskBoard spaceId={spaceId} />
+        <TaskBoard boardTabId={boardTabId} />
       </div>
     </div>
   );
