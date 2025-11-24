@@ -16,9 +16,11 @@ interface DraggableTabProps {
 
 export function DraggableTab({ tab }: DraggableTabProps) {
   const { activeTabId } = useSnapshot(workspaceStore);
-  const [isEditing, setIsEditing] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
   const handleTabClick = useTabClick(tab);
+  const { isEditing, setIsEditing, containerRef, morphingProps, formProps } = useMorphingEdit({
+    collapsedHeight: 50,
+    expandedHeight: 150,
+  });
 
   const {
     attributes,
@@ -31,25 +33,6 @@ export function DraggableTab({ tab }: DraggableTabProps) {
 
   const isActive = activeTabId === tab.id;
 
-  const collapsedHeight = 50;
-  const expandedHeight = 150;
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsEditing(false);
-      }
-    };
-
-    if (isEditing) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isEditing]);
-
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -58,31 +41,6 @@ export function DraggableTab({ tab }: DraggableTabProps) {
     if (title?.trim()) {
       workspaceActions.renameTab(tab.id, title.trim());
       setIsEditing(false);
-    }
-  };
-
-  const getTabIcon = () => {
-    switch (tab.type) {
-      case 'terminal':
-        return <span className="text-xl">{'>'}</span>;
-      case 'browser':
-        return <span className="text-xl">🌐</span>;
-      case 'note':
-        return <span className="text-xl">📝</span>;
-      case 'app-launcher':
-        // Use the app icon if available
-        if (tab.appLauncherConfig?.icon) {
-          return (
-            <img
-              src={tab.appLauncherConfig.icon}
-              alt={tab.title}
-              className="w-6 h-6 rounded"
-            />
-          );
-        }
-        return <span className="text-xl">🚀</span>;
-      default:
-        return <span className="text-xl">📄</span>;
     }
   };
 
@@ -114,18 +72,7 @@ export function DraggableTab({ tab }: DraggableTabProps) {
         isActive && !isEditing && 'border-l-2 border-primary',
         isDragging && 'opacity-50'
       )}
-      initial={false}
-      animate={{
-        height: isEditing ? expandedHeight : collapsedHeight,
-        borderRadius: isEditing ? 10 : 8,
-      }}
-      transition={{
-        type: 'spring',
-        stiffness: 550,
-        damping: 45,
-        mass: 0.7,
-        delay: isEditing ? 0 : 0.08,
-      }}
+      {...morphingProps}
     >
       {/* Collapsed view */}
       {!isEditing && (
@@ -160,15 +107,7 @@ export function DraggableTab({ tab }: DraggableTabProps) {
         {isEditing && (
           <motion.form
             ref={containerRef}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{
-              type: 'spring',
-              stiffness: 550,
-              damping: 45,
-              mass: 0.7,
-            }}
+            {...formProps}
             onSubmit={handleSubmit}
             className="absolute inset-0 flex flex-col p-3 gap-2"
             onClick={(e) => e.stopPropagation()}

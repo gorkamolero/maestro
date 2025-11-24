@@ -1,6 +1,5 @@
 import { useSnapshot } from 'valtio';
-import { workspaceStore, workspaceActions, type TabType } from '@/stores/workspace.store';
-import { launcherStore } from '@/stores/launcher.store';
+import { workspaceStore, workspaceActions } from '@/stores/workspace.store';
 import { FileText, LayoutGrid } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { TabsSidebar } from './TabsSidebar';
@@ -17,22 +16,6 @@ export function Sidebar({ onCommandPalette }: SidebarProps) {
 
   const handleViewModeSwitch = (mode: 'notes' | 'tabs') => {
     workspaceActions.setWorkspaceViewMode(mode);
-  };
-
-  const handleNewTab = (type: TabType) => {
-    if (!activeSpaceId) return;
-    // First switch to tabs view, then open the tab
-    workspaceActions.setWorkspaceViewMode('tabs');
-    const title = type === 'terminal' ? 'New Terminal'
-      : type === 'browser' ? 'New Browser'
-      : type === 'tasks' ? 'New Tasks Board'
-      : type === 'agent' ? 'New Agent'
-      : 'New App';
-    workspaceActions.openTab(activeSpaceId, type, title);
-  };
-
-  const handleAddApp = () => {
-    launcherStore.isAddModalOpen = true;
   };
 
   if (!activeSpaceId) {

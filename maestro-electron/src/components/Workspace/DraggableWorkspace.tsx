@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSnapshot } from 'valtio';
-import { workspaceStore, workspaceActions } from '@/stores/workspace.store';
+import { workspaceStore } from '@/stores/workspace.store';
 import {
   DndContext,
   closestCenter,
@@ -18,7 +18,6 @@ import {
   UniqueIdentifier,
 } from '@dnd-kit/core';
 import { TabDragGhost } from './TabDragGhost';
-import type { Tab } from '@/stores/workspace.store';
 
 interface DraggableWorkspaceProps {
   children: React.ReactNode;
@@ -69,8 +68,6 @@ export function DraggableWorkspace({ children, spaceId }: DraggableWorkspaceProp
   // Custom collision detection strategy optimized for multiple containers
   const collisionDetectionStrategy: CollisionDetection = useCallback(
     (args) => {
-      const activeContainer = activeId ? findContainer(activeId) : null;
-
       // If dragging a container itself, use closestCenter for container reordering
       if (activeId && (activeId === 'favorites' || activeId === 'tabs')) {
         return closestCenter({
@@ -151,9 +148,7 @@ export function DraggableWorkspace({ children, spaceId }: DraggableWorkspaceProp
 
     // If moving to different container, update immediately
     if (activeContainer !== overContainer) {
-      const activeItems = items[activeContainer];
       const overItems = items[overContainer];
-      const activeIndex = activeItems.indexOf(active.id as string);
       const overIndex = overItems.indexOf(overId as string);
 
       let newIndex: number;
@@ -230,7 +225,6 @@ export function DraggableWorkspace({ children, spaceId }: DraggableWorkspaceProp
         const overTab = containerTabs[newIndex];
 
         const activeGlobalIndex = allTabs.indexOf(activeTab);
-        const overGlobalIndex = allTabs.indexOf(overTab);
 
         allTabs.splice(activeGlobalIndex, 1);
         const newGlobalIndex = allTabs.indexOf(overTab);

@@ -2,8 +2,6 @@ import { useState, useRef, useEffect } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Clock, Play, Trash2 } from 'lucide-react';
 import { Task, tasksActions } from '@/stores/tasks.store';
-import { workspaceActions } from '@/stores/workspace.store';
-import { launcherActions } from '@/stores/launcher.store';
 import { cn } from '@/lib/utils';
 import { formatDuration } from '@/lib/time-utils';
 import {
@@ -41,27 +39,6 @@ export function TaskCard({ task }: TaskCardProps) {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isEditing]);
-
-  const handleStart = () => {
-    if (task.status === 'inbox' || task.status === 'next') {
-      tasksActions.startTask(task.id);
-
-      task.linkedTabIds.forEach((tabId) => {
-        workspaceActions.setActiveTab(tabId);
-      });
-
-      task.linkedAppIds.forEach((appId) => {
-        const connectedApp = launcherActions.getConnectedApp(appId);
-        if (connectedApp) {
-          launcherActions.launchApp(appId, {
-            filePath: null,
-            deepLink: null,
-            launchMethod: 'app-only',
-          });
-        }
-      });
-    }
-  };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

@@ -41,7 +41,7 @@ export function registerBrowserHandlers(getMainWindow: () => BrowserWindow | nul
     creatingViews.add(label);
 
     // Remove all existing browser views before adding new one
-    for (const [otherLabel, otherView] of browserViews.entries()) {
+    for (const otherView of browserViews.values()) {
       mainWindow.removeBrowserView(otherView);
     }
 

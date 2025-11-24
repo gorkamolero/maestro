@@ -12,7 +12,6 @@ import {
 } from '@/components/ui/carousel';
 import { useEffect, useState } from 'react';
 import { TabDropZone } from './TabDropZone';
-import { DraggableWorkspace } from './DraggableWorkspace';
 
 const TAB_LABELS: Record<TabType, string> = {
   terminal: 'Terminal',

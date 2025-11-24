@@ -1,4 +1,3 @@
-import { proxy } from 'valtio';
 import { persist } from 'valtio-persist';
 import { IndexedDBStrategy } from 'valtio-persist/indexed-db';
 

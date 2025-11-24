@@ -1,7 +1,7 @@
 import React, { Activity } from 'react';
 import { useSnapshot } from 'valtio';
 import { workspaceStore, workspaceActions, type Tab } from '@/stores/workspace.store';
-import { Terminal, Globe, Bot, ListTodo } from 'lucide-react';
+import { Terminal, Globe, Bot } from 'lucide-react';
 import { motion } from 'motion/react';
 import { segmentsStore } from '@/stores/segments.store';
 import { TerminalPanel } from '@/components/Terminal/TerminalPanel';

@@ -6,12 +6,11 @@ import {
   closestCenter,
   DragEndEvent,
   DragStartEvent,
-  DragOverEvent,
   PointerSensor,
   useSensor,
   useSensors
 } from '@dnd-kit/core';
-import { TaskStatus, tasksStore, tasksComputed, tasksActions } from '@/stores/tasks.store';
+import { TaskStatus, tasksStore, tasksActions } from '@/stores/tasks.store';
 import { TaskColumn } from './TaskColumn';
 import { TaskCard } from './TaskCard';
 
@@ -29,7 +28,6 @@ const COLUMNS: Array<{ id: TaskStatus; title: string }> = [
 export function TaskBoard({ boardTabId }: TaskBoardProps) {
   const snap = useSnapshot(tasksStore);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [overId, setOverId] = useState<string | null>(null);
 
   // Configure sensors for better drag experience
   const sensors = useSensors(
@@ -54,15 +52,9 @@ export function TaskBoard({ boardTabId }: TaskBoardProps) {
     setActiveId(event.active.id as string);
   };
 
-  const handleDragOver = (event: DragOverEvent) => {
-    const { over } = event;
-    setOverId(over ? (over.id as string) : null);
-  };
-
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveId(null);
-    setOverId(null);
 
     if (!over) return;
 
@@ -91,7 +83,6 @@ export function TaskBoard({ boardTabId }: TaskBoardProps) {
 
   const handleDragCancel = () => {
     setActiveId(null);
-    setOverId(null);
   };
 
   const activeTask = activeId ? tasks.find((t) => t.id === activeId) : null;
@@ -101,7 +92,6 @@ export function TaskBoard({ boardTabId }: TaskBoardProps) {
       sensors={sensors}
       collisionDetection={closestCenter}
       onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >

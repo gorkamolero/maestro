@@ -30,7 +30,7 @@ export function PortalWindow({ children, onClose }: PortalWindowProps) {
   const closeRequestedRef = useRef(false);
 
   useEffect(() => {
-    const currentMount = ++mountCountRef.current;
+    ++mountCountRef.current;
 
     // Helper function to set up portal in a window
     const setupPortal = (externalWindow: Window) => {

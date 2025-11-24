@@ -30,7 +30,6 @@ interface NotesSidebarProps {
 }
 
 export function NotesSidebar({ spaceId }: NotesSidebarProps) {
-  const snap = useSnapshot(notesStore);
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreatingNote, setIsCreatingNote] = useState(false);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);

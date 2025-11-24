@@ -1,5 +1,4 @@
-import { useSnapshot } from 'valtio';
-import { tasksStore, tasksComputed } from '@/stores/tasks.store';
+import { tasksComputed } from '@/stores/tasks.store';
 import { TaskBoard } from './TaskBoard';
 
 interface TasksViewProps {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useSnapshot } from 'valtio';
 import { Command } from 'cmdk';
 import {
@@ -15,7 +15,6 @@ import {
 import { workspaceStore, workspaceActions } from '@/stores/workspace.store';
 import { spacesStore, spacesActions } from '@/stores/spaces.store';
 import { launcherStore, launcherActions } from '@/stores/launcher.store';
-import { browserStore } from '@/stores/browser.store';
 
 // Keyboard shortcut display component
 function CommandShortcut({ children }: { children: string }) {
