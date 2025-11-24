@@ -1,6 +1,7 @@
 import { useSnapshot } from 'valtio';
 import { persistWithHistory } from '@/lib/persist-with-history';
 import type { Space, Segment } from '@/types';
+import { SPACE_COLOR_PALETTE } from '@/types';
 
 interface SpacesState {
   spaces: Space[];
@@ -17,10 +18,44 @@ const { history: spacesHistory } = await persistWithHistory<SpacesState>(
   }
 );
 
+// Migrate old spaces that have `color` instead of `primaryColor`/`secondaryColor`
+const migrateSpaceColors = () => {
+  const store = spacesHistory.value;
+  let needsMigration = false;
+
+  store.spaces.forEach((space, index) => {
+    // Check if space has old `color` field but not new color fields
+    const spaceAny = space as Space & { color?: string };
+    if (spaceAny.color && !space.primaryColor) {
+      needsMigration = true;
+      const palette = SPACE_COLOR_PALETTE[index % SPACE_COLOR_PALETTE.length];
+      space.primaryColor = palette.primary;
+      space.secondaryColor = palette.secondary;
+      delete spaceAny.color;
+    }
+  });
+
+  if (needsMigration) {
+    spacesHistory.saveHistory();
+  }
+};
+
+// Run migration on load
+migrateSpaceColors();
+
 export { spacesHistory };
 
 // Getter that always returns current value (important after undo/redo which replaces .value)
 export const getSpacesStore = () => spacesHistory.value;
+
+/**
+ * Get next color pair for a new space (cycles through palette)
+ */
+export const getNextColorPair = () => {
+  const store = getSpacesStore();
+  const index = store.spaces.length % SPACE_COLOR_PALETTE.length;
+  return SPACE_COLOR_PALETTE[index];
+};
 
 /**
  * Hook to get reactive spaces state. Use this instead of useSnapshot(spacesStore).
@@ -33,11 +68,13 @@ export function useSpacesStore() {
 export const spacesActions = {
   addSpace: (name: string): Space => {
     const store = getSpacesStore();
+    const colorPair = getNextColorPair();
     const newSpace: Space = {
       id: crypto.randomUUID(),
       name,
       position: store.spaces.length,
-      color: '#64748b', // slate-500
+      primaryColor: colorPair.primary,
+      secondaryColor: colorPair.secondary,
       segments: [],
       markers: [],
     };

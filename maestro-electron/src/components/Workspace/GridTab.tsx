@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { X } from 'lucide-react';
 import { useWorkspaceStore, workspaceActions, type Tab } from '@/stores/workspace.store';
+import { useSpacesStore } from '@/stores/spaces.store';
 import { cn } from '@/lib/utils';
 import { getTabIcon } from '@/lib/tab-utils';
 import { useTabClick } from '@/hooks/useTabClick';
@@ -12,8 +13,10 @@ interface GridTabProps {
   spaceId: string;
 }
 
-export function GridTab({ tab }: GridTabProps) {
+export function GridTab({ tab, spaceId }: GridTabProps) {
   const { activeTabId } = useWorkspaceStore();
+  const { spaces } = useSpacesStore();
+  const space = spaces.find((s) => s.id === spaceId);
   const isActive = activeTabId === tab.id;
   const handleClick = useTabClick(tab);
   const { isEditing, setIsEditing, containerRef, morphingProps, formProps } = useMorphingEdit({
@@ -37,6 +40,8 @@ export function GridTab({ tab }: GridTabProps) {
       <motion.div
       style={{
         width: isEditing ? '200px' : '72px',
+        borderBottomColor: isActive && !isEditing && space ? space.primaryColor : undefined,
+        borderBottomWidth: isActive && !isEditing ? '2px' : undefined,
       }}
       data-draggable="true"
       onDoubleClick={() => {
@@ -53,7 +58,6 @@ export function GridTab({ tab }: GridTabProps) {
         'group relative overflow-hidden',
         'bg-background/50 border border-border',
         !isEditing && 'cursor-grab active:cursor-grabbing hover:border-border/80 hover:bg-background/80',
-        isActive && !isEditing && 'border-b-2 border-primary',
       )}
       {...morphingProps}
     >

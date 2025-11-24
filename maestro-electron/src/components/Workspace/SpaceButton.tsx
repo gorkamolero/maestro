@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { useMorphingEdit } from '@/hooks/useMorphingEdit';
 import { spacesActions } from '@/stores/spaces.store';
 import { EmojiPickerComponent } from '@/components/ui/emoji-picker';
+import { SPACE_COLOR_PALETTE } from '@/types';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,6 +26,8 @@ interface SpaceButtonProps {
     id: string;
     name: string;
     icon?: string;
+    primaryColor: string;
+    secondaryColor: string;
     segments: Array<{ status: string }>;
   };
   isActive: boolean;
@@ -34,11 +37,15 @@ interface SpaceButtonProps {
 
 export function SpaceButton({ space, isActive, onSwitch, onDelete }: SpaceButtonProps) {
   const [icon, setIcon] = useState(space.icon || '');
+  const [selectedColors, setSelectedColors] = useState({
+    primary: space.primaryColor,
+    secondary: space.secondaryColor,
+  });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const { isEditing, setIsEditing, containerRef, morphingProps, formProps } = useMorphingEdit({
     collapsedHeight: 32,
-    expandedHeight: 180,
+    expandedHeight: 240,
   });
 
   const Icon = SPACE_ICONS[space.icon || 'home'] || Home;
@@ -52,7 +59,9 @@ export function SpaceButton({ space, isActive, onSwitch, onDelete }: SpaceButton
     if (name?.trim()) {
       spacesActions.updateSpace(space.id, {
         name: name.trim(),
-        icon: icon || undefined
+        icon: icon || undefined,
+        primaryColor: selectedColors.primary,
+        secondaryColor: selectedColors.secondary,
       });
       setIsEditing(false);
     }
@@ -70,9 +79,12 @@ export function SpaceButton({ space, isActive, onSwitch, onDelete }: SpaceButton
   };
 
   return (
-    <motion.button
+    <motion.div
+      role={!isEditing ? 'button' : undefined}
+      tabIndex={!isEditing ? 0 : undefined}
       style={{
         width: isEditing ? '180px' : '32px',
+        backgroundColor: !isEditing && isActive ? `${space.primaryColor}20` : undefined,
       }}
       onDoubleClick={() => {
         if (!isEditing) {
@@ -84,10 +96,16 @@ export function SpaceButton({ space, isActive, onSwitch, onDelete }: SpaceButton
           onSwitch();
         }
       }}
+      onKeyDown={(e) => {
+        if (!isEditing && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          onSwitch();
+        }
+      }}
       className={cn(
-        'group relative overflow-hidden transition-all',
+        'group relative overflow-hidden transition-all cursor-pointer',
         'hover:bg-background/80',
-        isActive ? 'bg-background shadow-sm' : 'bg-muted/50',
+        isActive ? 'shadow-sm' : 'bg-muted/50',
         !isEditing && 'rounded-lg flex items-center justify-center'
       )}
       {...morphingProps}
@@ -101,10 +119,16 @@ export function SpaceButton({ space, isActive, onSwitch, onDelete }: SpaceButton
             <Icon className="w-4 h-4" />
           )}
           {hasActiveSegments && (
-            <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-primary" />
+            <div
+              className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full"
+              style={{ backgroundColor: space.primaryColor }}
+            />
           )}
           {isActive && (
-            <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-1 h-4 bg-primary rounded-r-full" />
+            <div
+              className="absolute -left-1 top-1/2 -translate-y-1/2 w-1 h-4 rounded-r-full"
+              style={{ backgroundColor: space.primaryColor }}
+            />
           )}
         </div>
       )}
@@ -116,12 +140,12 @@ export function SpaceButton({ space, isActive, onSwitch, onDelete }: SpaceButton
             ref={containerRef}
             {...formProps}
             onSubmit={handleSubmit}
-            className="absolute inset-0 flex flex-col p-2 gap-2"
+            className="absolute inset-0 flex flex-col p-2 gap-1.5"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex flex-col gap-1.5 flex-1">
+            <div className="flex flex-col gap-1 flex-1">
               <label htmlFor={`name-${space.id}`} className="text-xs font-medium">
-                Space Name
+                Name
               </label>
               <input
                 id={`name-${space.id}`}
@@ -133,17 +157,38 @@ export function SpaceButton({ space, isActive, onSwitch, onDelete }: SpaceButton
                 placeholder="Space name..."
               />
 
-              <label className="text-xs font-medium mt-1">
-                Icon
-              </label>
-              <EmojiPickerComponent value={icon} onChange={setIcon}>
-                <button
-                  type="button"
-                  className="w-full h-10 border border-dashed border-border rounded-md hover:bg-muted/50 transition-colors flex items-center justify-center text-lg"
-                >
-                  {icon || '+'}
-                </button>
-              </EmojiPickerComponent>
+              <div className="flex gap-2 items-center mt-1">
+                <div className="flex-1">
+                  <label className="text-xs font-medium">Icon</label>
+                  <EmojiPickerComponent value={icon} onChange={setIcon}>
+                    <button
+                      type="button"
+                      className="w-full h-8 border border-dashed border-border rounded-md hover:bg-muted/50 transition-colors flex items-center justify-center text-base"
+                    >
+                      {icon || '+'}
+                    </button>
+                  </EmojiPickerComponent>
+                </div>
+              </div>
+
+              <label className="text-xs font-medium mt-1">Color</label>
+              <div className="flex gap-1 flex-wrap">
+                {SPACE_COLOR_PALETTE.map((palette) => (
+                  <button
+                    key={palette.name}
+                    type="button"
+                    onClick={() => setSelectedColors({ primary: palette.primary, secondary: palette.secondary })}
+                    className={cn(
+                      'w-5 h-5 rounded-full border-2 transition-all',
+                      selectedColors.primary === palette.primary
+                        ? 'border-white scale-110'
+                        : 'border-transparent hover:scale-105'
+                    )}
+                    style={{ backgroundColor: palette.primary }}
+                    title={palette.name}
+                  />
+                ))}
+              </div>
             </div>
             <div className="flex gap-1.5">
               <button
@@ -191,6 +236,6 @@ export function SpaceButton({ space, isActive, onSwitch, onDelete }: SpaceButton
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </motion.button>
+    </motion.div>
   );
 }

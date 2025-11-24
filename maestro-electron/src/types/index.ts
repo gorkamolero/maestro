@@ -13,7 +13,8 @@ export interface Space {
   id: string;
   name: string;
   position: number;
-  color: string;
+  primaryColor: string;
+  secondaryColor: string;
   icon?: string;
   segments: Segment[];
   markers: Marker[];
@@ -23,6 +24,18 @@ export interface Space {
     editor?: string;
   };
 }
+
+// Color palette for spaces - 8 professional color pairs
+export const SPACE_COLOR_PALETTE = [
+  { name: 'Ocean Blue', primary: '#3b82f6', secondary: '#1e40af' },
+  { name: 'Forest Green', primary: '#22c55e', secondary: '#15803d' },
+  { name: 'Sunset Orange', primary: '#f97316', secondary: '#c2410c' },
+  { name: 'Royal Purple', primary: '#a855f7', secondary: '#7e22ce' },
+  { name: 'Cherry Red', primary: '#ef4444', secondary: '#b91c1c' },
+  { name: 'Teal Cyan', primary: '#14b8a6', secondary: '#0f766e' },
+  { name: 'Rose Pink', primary: '#ec4899', secondary: '#be185d' },
+  { name: 'Slate Gray', primary: '#64748b', secondary: '#475569' },
+] as const;
 
 export interface Segment {
   id: string;

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSnapshot } from 'valtio';
 import { Dock } from '@/components/Workspace/Dock';
 import { Sidebar } from '@/components/Workspace/Sidebar';
 import { WorkspacePanel } from '@/components/Workspace/WorkspacePanel';
@@ -14,6 +15,7 @@ import { ResizablePanel } from '@/components/ui/resizable-panel';
 import { FileText, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { notesActions } from '@/stores/notes.store';
+import { applySpaceTheme, resetSpaceTheme } from '@/lib/space-theme';
 import '@/components/editor/themes/editor-theme.css';
 
 function App() {
@@ -25,8 +27,13 @@ function App() {
   const activeSpace = spaces.find((s) => s.id === activeSpaceId);
 
   useEffect(() => {
-    // Active space changed
-  }, [activeSpaceId]);
+    // Apply space theme when active space changes
+    if (activeSpace) {
+      applySpaceTheme(activeSpace.primaryColor, activeSpace.secondaryColor);
+    } else {
+      resetSpaceTheme();
+    }
+  }, [activeSpace]);
 
   useEffect(() => {
     if (darkMode) {

@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { X } from 'lucide-react';
 import { Tab, workspaceActions, useWorkspaceStore } from '@/stores/workspace.store';
+import { useSpacesStore } from '@/stores/spaces.store';
 import { cn } from '@/lib/utils';
 import { getTabIcon } from '@/lib/tab-utils';
 import { useTabClick } from '@/hooks/useTabClick';
@@ -12,8 +13,10 @@ interface ListTabProps {
   spaceId: string;
 }
 
-export function ListTab({ tab }: ListTabProps) {
+export function ListTab({ tab, spaceId }: ListTabProps) {
   const { activeTabId } = useWorkspaceStore();
+  const { spaces } = useSpacesStore();
+  const space = spaces.find((s) => s.id === spaceId);
   const handleTabClick = useTabClick(tab);
   const { isEditing, setIsEditing, containerRef, morphingProps, formProps } = useMorphingEdit({
     collapsedHeight: 50,
@@ -37,6 +40,10 @@ export function ListTab({ tab }: ListTabProps) {
     <TabContextMenu tab={tab}>
       <motion.div
         data-draggable="true"
+        style={{
+          borderLeftColor: isActive && !isEditing && space ? space.primaryColor : undefined,
+          borderLeftWidth: isActive && !isEditing ? '2px' : undefined,
+        }}
       onDoubleClick={() => {
         if (!isEditing) {
           setIsEditing(true);
@@ -51,7 +58,6 @@ export function ListTab({ tab }: ListTabProps) {
         'group relative overflow-hidden',
         'bg-background/50 border border-border',
         !isEditing && 'cursor-grab active:cursor-grabbing hover:border-border/80 hover:bg-background/80',
-        isActive && !isEditing && 'border-l-2 border-primary',
       )}
       {...morphingProps}
     >

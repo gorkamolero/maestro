@@ -6,6 +6,42 @@ All notable changes to Maestro will be documented in this file.
 
 ### Added
 
+#### Dynamic App Theme from Space Color (2025-01-24)
+- Space primary color now becomes the app's accent color when space is active
+  - CSS custom properties updated at runtime: `--primary`, `--primary-foreground`, `--ring`, etc.
+  - shadcn/ui components automatically use the space's color
+  - Full OKLCH color conversion for modern CSS compatibility
+- Automatic contrast calculation for foreground colors
+  - White text on dark colors, dark text on light colors
+  - Adapts to both light and dark mode
+
+**Technical Details:**
+- `src/lib/space-theme.ts` - Hex to OKLCH conversion utilities
+- `applySpaceTheme()` / `resetSpaceTheme()` functions for CSS variable management
+- Uses `document.documentElement.style.setProperty()` for dynamic updates
+- Integrated in `App.tsx` via useEffect watching active space
+
+**Files Created/Modified:**
+- `src/lib/space-theme.ts` - NEW: Color conversion and theme application utilities
+- `src/App.tsx` - Added theme application on space change
+
+#### Space Color Customization (2025-01-24)
+- Added 2-color system (primary + secondary) for spaces
+  - 8 professional preset color pairs (Ocean Blue, Forest Green, Sunset Orange, etc.)
+  - Color swatches in SpaceButton edit form for quick selection
+  - Automatic color assignment cycles through palette for new spaces
+- Applied space colors throughout the UI
+  - SpaceButton: Primary color background tint when active, colored indicator
+  - ListTab: Left border uses space primary color when active
+  - GridTab: Bottom border uses space primary color when active
+- Migration support for existing spaces with old single-color format
+
+**Technical Details:**
+- `SPACE_COLOR_PALETTE` constant with 8 color pairs in `src/types/index.ts`
+- Space interface changed: `color` → `primaryColor` + `secondaryColor`
+- Auto-migration runs on store initialization for legacy data
+- Colors stored as hex strings for simplicity
+
 #### Undo/Redo and Recently Closed Tabs (2025-01-24)
 - Implemented global undo/redo system with Cmd+Z / Cmd+Shift+Z
   - Created `persistWithHistory` utility combining valtio-history with IndexedDB persistence
