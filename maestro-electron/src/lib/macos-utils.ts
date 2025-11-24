@@ -60,6 +60,7 @@ export async function getAppInfo(appPath: string): Promise<ConnectedApp> {
 
 /**
  * Extract app icon as base64 data URL
+ * Icons are cached in userData directory to avoid reconverting every time
  */
 async function extractAppIcon(
   appPath: string,
@@ -78,9 +79,31 @@ async function extractAppIcon(
       : `${iconFileName}.icns`;
     const iconPath = path.join(appPath, 'Contents', 'Resources', iconName);
 
-    // Read icon file and convert to base64
-    const iconData = await fs.readFile(iconPath);
-    return `data:image/icns;base64,${iconData.toString('base64')}`;
+    // Create cache directory in userData
+    const { app } = require('electron');
+    const cacheDir = path.join(app.getPath('userData'), 'app-icons');
+    await fs.mkdir(cacheDir, { recursive: true });
+
+    // Use bundle ID or app name as cache key
+    const bundleId = (info.CFBundleIdentifier as string) || path.basename(appPath, '.app');
+    const cacheKey = bundleId.replace(/[^a-zA-Z0-9]/g, '_');
+    const cachedPngPath = path.join(cacheDir, `${cacheKey}.png`);
+
+    // Check if cached PNG exists
+    try {
+      const cachedData = await fs.readFile(cachedPngPath);
+      return `data:image/png;base64,${cachedData.toString('base64')}`;
+    } catch {
+      // Cache miss, need to convert
+    }
+
+    // Convert ICNS to PNG using macOS sips command
+    // ICNS cannot be displayed in browsers, so we convert to PNG first
+    await execAsync(`sips -s format png "${iconPath}" --out "${cachedPngPath}" --resampleHeightWidth 64 64`);
+
+    // Read converted PNG and return as base64
+    const pngData = await fs.readFile(cachedPngPath);
+    return `data:image/png;base64,${pngData.toString('base64')}`;
   } catch (error) {
     console.warn(`Could not extract icon for ${appPath}:`, error);
     return ''; // Return empty string if icon extraction fails
