@@ -56,12 +56,12 @@ export function AppFavoriteGridItem({ favorite, connectedApp }: AppFavoriteGridI
 
   return (
     <ContextMenu>
-      <ContextMenuTrigger>
-        <button
+      <ContextMenuTrigger asChild>
+        <div
           onClick={handleClick}
           className={cn(
             'w-12 h-12 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center',
-            'relative group transition-colors',
+            'relative group transition-colors cursor-inherit',
             isRunning && 'ring-1 ring-green-500/50'
           )}
           title={favorite.name}
@@ -70,14 +70,14 @@ export function AppFavoriteGridItem({ favorite, connectedApp }: AppFavoriteGridI
           <img
             src={connectedApp.icon}
             alt={connectedApp.name}
-            className="w-7 h-7 rounded-md"
+            className="w-7 h-7 rounded-md pointer-events-none"
           />
 
           {/* Running indicator */}
           {isRunning && (
-            <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-500 border border-background animate-pulse" />
+            <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-500 border border-background animate-pulse pointer-events-none" />
           )}
-        </button>
+        </div>
       </ContextMenuTrigger>
 
       <ContextMenuContent>
