@@ -6,6 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { TabsSidebar } from './TabsSidebar';
 import { NotesSidebar } from '@/components/Notes/NotesSidebar';
 import { DraggableWorkspace } from './DraggableWorkspace';
+import { TabsViewModeSelector } from './TabsViewModeSelector';
 
 interface SidebarProps {
   onCommandPalette?: () => void;
@@ -86,6 +87,13 @@ export function Sidebar({ onCommandPalette }: SidebarProps) {
               <p className="text-xs">Notes View</p>
             </TooltipContent>
           </Tooltip>
+
+          {/* Tabs View Mode Selector - Only show when in tabs view */}
+          {workspaceViewMode === 'tabs' && (
+            <div className="ml-auto">
+              <TabsViewModeSelector />
+            </div>
+          )}
         </TooltipProvider>
       </div>
 

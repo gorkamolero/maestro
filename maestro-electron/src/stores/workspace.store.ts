@@ -4,6 +4,7 @@ import type { LaunchConfig, SavedState } from '@/types/launcher';
 
 export type TabType = 'terminal' | 'browser' | 'agent' | 'app-launcher' | 'tasks';
 export type TabStatus = 'active' | 'idle' | 'running';
+export type TabsViewMode = 'grid' | 'list';
 
 export interface Tab {
   id: string;
@@ -13,7 +14,6 @@ export interface Tab {
   status: TabStatus;
   segmentId?: string; // Link to timeline segment
   content?: unknown; // Type-specific content
-  isFavorite?: boolean; // Whether this tab is favorited
   terminalState?: {
     buffer: string;
     workingDir: string | null;
@@ -46,6 +46,7 @@ interface WorkspaceState {
   layout: WorkspaceLayout;
   viewMode: ViewMode;
   workspaceViewMode: WorkspaceViewMode; // Notes view or Tabs view
+  tabsViewMode: TabsViewMode; // Grid or List view for tabs
 }
 
 const { store } = await persist<WorkspaceState>(
@@ -60,6 +61,7 @@ const { store } = await persist<WorkspaceState>(
     },
     viewMode: 'split',
     workspaceViewMode: 'tabs', // Default to tabs view
+    tabsViewMode: 'grid', // Default to grid view
   },
   'maestro-workspace',
   {
@@ -140,6 +142,10 @@ export const workspaceActions = {
     workspaceStore.workspaceViewMode = mode;
   },
 
+  setTabsViewMode: (mode: TabsViewMode) => {
+    workspaceStore.tabsViewMode = mode;
+  },
+
   renameTab: (tabId: string, newTitle: string) => {
     const tab = workspaceStore.tabs.find((t) => t.id === tabId);
     if (tab) {
@@ -147,84 +153,27 @@ export const workspaceActions = {
     }
   },
 
-  toggleTabFavorite: (tabId: string) => {
-    const tab = workspaceStore.tabs.find((t) => t.id === tabId);
-    if (!tab) return;
-
-    const newIsFavorite = !tab.isFavorite;
-    const targetZone = newIsFavorite ? 'favorites' : 'tabs';
-
-    // Use moveTabToZone with index 0 (insert at beginning)
-    workspaceActions.moveTabToZone(tabId, targetZone, 0);
-  },
-
   /**
-   * Move tab from one zone to another at specific index
+   * Reorder tab within space
    */
-  moveTabToZone(
-    tabId: string,
-    targetZone: 'favorites' | 'tabs',
-    targetIndex: number
-  ) {
+  reorderTab(tabId: string, newIndex: number) {
     const tab = workspaceStore.tabs.find((t) => t.id === tabId);
     if (!tab) return;
 
-    // Update favorite status
-    const shouldBeFavorite = targetZone === 'favorites';
-    tab.isFavorite = shouldBeFavorite;
-
-    // Remove tab from current position
-    const currentIndex = workspaceStore.tabs.findIndex((t) => t.id === tabId);
-    workspaceStore.tabs.splice(currentIndex, 1);
-
-    // Get tabs in target zone
-    const targetZoneTabs = workspaceStore.tabs.filter((t) =>
-      targetZone === 'favorites' ? t.isFavorite : !t.isFavorite
-    );
-
-    // Calculate safe insertion index
-    const safeIndex = Math.min(targetIndex, targetZoneTabs.length);
-
-    // Insert tab at target position
-    // Find global index for insertion
-    if (targetZone === 'favorites') {
-      // Insert at beginning of favorites
-      workspaceStore.tabs.splice(safeIndex, 0, tab);
-    } else {
-      // Insert after all favorites
-      const favCount = workspaceStore.tabs.filter((t) => t.isFavorite).length;
-      workspaceStore.tabs.splice(favCount + safeIndex, 0, tab);
-    }
-  },
-
-  /**
-   * Reorder tab within same zone
-   */
-  reorderTabInZone(
-    tabId: string,
-    zone: 'favorites' | 'tabs',
-    newIndex: number
-  ) {
-    const tab = workspaceStore.tabs.find((t) => t.id === tabId);
-    if (!tab) return;
+    // Get tabs in same space
+    const spaceTabs = workspaceStore.tabs.filter((t) => t.spaceId === tab.spaceId);
+    const safeIndex = Math.min(newIndex, spaceTabs.length - 1);
 
     // Remove from current position
     const currentIndex = workspaceStore.tabs.findIndex((t) => t.id === tabId);
     workspaceStore.tabs.splice(currentIndex, 1);
 
-    // Calculate new global index
-    if (zone === 'favorites') {
-      const safeIndex = Math.min(
-        newIndex,
-        workspaceStore.tabs.filter((t) => t.isFavorite).length
-      );
-      workspaceStore.tabs.splice(safeIndex, 0, tab);
-    } else {
-      const favCount = workspaceStore.tabs.filter((t) => t.isFavorite).length;
-      const zoneTabs = workspaceStore.tabs.filter((t) => !t.isFavorite);
-      const safeIndex = Math.min(newIndex, zoneTabs.length);
-      workspaceStore.tabs.splice(favCount + safeIndex, 0, tab);
-    }
+    // Calculate global index for insertion (considering tabs from other spaces)
+    const tabsBeforeSpace = workspaceStore.tabs.filter(
+      (t, idx) => idx < currentIndex && t.spaceId !== tab.spaceId
+    ).length;
+
+    workspaceStore.tabs.splice(tabsBeforeSpace + safeIndex, 0, tab);
   },
 
   updateTabTerminalState: (tabId: string, state: Tab['terminalState']) => {

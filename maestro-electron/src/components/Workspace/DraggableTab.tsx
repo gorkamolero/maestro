@@ -3,18 +3,17 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { X, Edit2 } from 'lucide-react';
 import { Tab, workspaceActions, workspaceStore } from '@/stores/workspace.store';
-import { TabDropZone } from '@/types';
 import { cn } from '@/lib/utils';
 import { useSnapshot } from 'valtio';
 import { useTabClick } from '@/hooks/useTabClick';
 
 interface DraggableTabProps {
   tab: Tab;
-  zone: TabDropZone;
+  index: number;
   spaceId: string;
 }
 
-export function DraggableTab({ tab, zone }: DraggableTabProps) {
+export function DraggableTab({ tab }: DraggableTabProps) {
   const { activeTabId } = useSnapshot(workspaceStore);
   const [isRenaming, setIsRenaming] = useState(false);
   const [editedTitle, setEditedTitle] = useState(tab.title);
@@ -63,8 +62,6 @@ export function DraggableTab({ tab, zone }: DraggableTabProps) {
     }
   };
 
-  const isFavoriteZone = zone === 'favorites';
-
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -85,30 +82,19 @@ export function DraggableTab({ tab, zone }: DraggableTabProps) {
       }}
       className={cn(
         'group relative transition-colors',
-        isFavoriteZone
-          ? 'w-12 h-12 rounded-xl flex items-center justify-center'
-          : 'flex items-center gap-2 rounded-lg px-3 py-2',
+        'flex items-center gap-2 rounded-lg px-3 py-2',
         // Background colors
         isActive
           ? 'bg-white/15 hover:bg-white/20'
           : 'bg-white/5 hover:bg-white/10',
         // Active state border
-        isActive && !isFavoriteZone && 'border-l-2 border-primary',
+        isActive && 'border-l-2 border-primary',
         'cursor-grab active:cursor-grabbing',
         isDragging && 'opacity-50'
       )}
     >
-      {isFavoriteZone ? (
-        // Favorites: Icon only with active indicator
-        <>
-          {getTabIcon()}
-          {isActive && (
-            <div className="absolute bottom-1 w-6 h-0.5 bg-primary rounded-full" />
-          )}
-        </>
-      ) : (
-        // Tabs: Full layout with status, title, actions
-        <>
+      {/* Full layout with status, title, actions */}
+      <>
             {/* Status Indicator */}
             {tab.status === 'running' && (
               <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
@@ -174,7 +160,6 @@ export function DraggableTab({ tab, zone }: DraggableTabProps) {
               </button>
             </div>
           </>
-        )}
     </div>
   );
 }

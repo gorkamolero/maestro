@@ -15,14 +15,13 @@ export function FavoritesGrid({ tabs, spaceId }: FavoritesGridProps) {
     <SortableContext
       items={tabs.map(tab => tab.id)}
       strategy={rectSortingStrategy}
-      id="favorites"
+      id="grid"
     >
       <div className="flex flex-wrap gap-4 w-full">
         {tabs.map((tab, index) => (
           <SortableGridTab
             key={tab.id}
             tab={tab}
-            zone="favorites"
             index={index}
             spaceId={spaceId}
           />

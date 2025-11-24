@@ -3,7 +3,6 @@ import { workspaceStore, workspaceActions, type TabType } from '@/stores/workspa
 import { spacesStore } from '@/stores/spaces.store';
 import { launcherStore } from '@/stores/launcher.store';
 import { Terminal, Globe, ListTodo, Plus, Command } from 'lucide-react';
-import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Carousel,
@@ -28,7 +27,7 @@ interface TabsSidebarProps {
 }
 
 export function TabsSidebar({ onCommandPalette }: TabsSidebarProps) {
-  const { tabs, activeSpaceId } = useSnapshot(workspaceStore);
+  const { tabs, activeSpaceId, tabsViewMode } = useSnapshot(workspaceStore);
   const { spaces } = useSnapshot(spacesStore);
   const [api, setApi] = useState<CarouselApi>();
 
@@ -164,32 +163,16 @@ export function TabsSidebar({ onCommandPalette }: TabsSidebarProps) {
         <CarouselContent className="h-full ml-0">
           {spaces.map((space) => {
             const spaceTabs = tabs.filter((t) => t.spaceId === space.id);
-            const favoriteTabs = spaceTabs.filter((t) => t.isFavorite);
-            const regularTabs = spaceTabs.filter((t) => !t.isFavorite);
 
             return (
               <CarouselItem key={space.id} className="pl-0 h-full">
                 <div className="h-full flex flex-col">
-                  {/* Favorites Section */}
-                  <div className="p-3 flex-shrink-0">
-                    <TabDropZone
-                      zone="favorites"
-                      tabs={favoriteTabs}
-                      spaceId={space.id}
-                      title="Favorites"
-                      emptyMessage="No favorites yet"
-                    />
-                  </div>
-
-                  <Separator />
-
-                  {/* Tabs Section */}
+                  {/* Single Tabs Section */}
                   <div className="flex-1 px-3 py-2 overflow-y-auto min-h-0">
                     <TabDropZone
-                      zone="tabs"
-                      tabs={regularTabs}
+                      tabs={spaceTabs}
                       spaceId={space.id}
-                      title="Tabs"
+                      viewMode={tabsViewMode}
                       emptyMessage="No tabs yet"
                     />
                   </div>
