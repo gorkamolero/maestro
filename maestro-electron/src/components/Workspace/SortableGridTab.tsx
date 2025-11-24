@@ -3,13 +3,10 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { workspaceStore, type Tab } from '@/stores/workspace.store';
 import { cn } from '@/lib/utils';
-import type { TabDropZone } from '@/types';
 import { useTabClick } from '@/hooks/useTabClick';
 
 interface SortableGridTabProps {
   tab: Tab;
-  zone: TabDropZone;
-  index: number;
   spaceId: string;
 }
 

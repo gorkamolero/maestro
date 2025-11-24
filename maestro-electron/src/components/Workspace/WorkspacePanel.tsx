@@ -13,7 +13,6 @@ export function WorkspacePanel() {
 
   // Log activeTabId changes
   React.useEffect(() => {
-    console.log('[WORKSPACE] activeTabId changed to:', activeTabId);
   }, [activeTabId]);
 
   // Hooks must be called before any early returns
@@ -72,7 +71,6 @@ export function WorkspacePanel() {
               {tab.type === 'terminal' && <TerminalView tab={tab} />}
               {tab.type === 'browser' && (() => {
                 const isActiveComputed = tab.id === activeTabId;
-                console.log(`[WORKSPACE] Computing isActive for browser tab ${tab.id}: tab.id === ${activeTabId} = ${isActiveComputed}`);
                 return <BrowserView tab={tab} isActive={isActiveComputed} />;
               })()}
               {tab.type === 'agent' && <AgentPlaceholder tab={tab} />}
@@ -132,7 +130,6 @@ function TerminalView({ tab }: { tab: Tab }) {
 // Browser component - now with BrowserPanel!
 function BrowserView({ tab, isActive }: { tab: Tab; isActive: boolean }) {
   React.useEffect(() => {
-    console.log(`[BROWSERVIEW] Rendered with isActive=${isActive} for tab ${tab.id}`);
   }, [isActive, tab.id]);
 
   const { activeSegments } = useSnapshot(segmentsStore);

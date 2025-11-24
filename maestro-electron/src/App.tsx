@@ -14,7 +14,7 @@ function App() {
   const { activeSpaceId, layout } = useSnapshot(workspaceStore);
 
   useEffect(() => {
-    console.log('[App] activeSpaceId changed:', activeSpaceId);
+    // Active space changed
   }, [activeSpaceId]);
 
   useEffect(() => {
@@ -28,14 +28,9 @@ function App() {
   // Cmd+K keyboard shortcut
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
-      console.log('[App] Keydown event:', e.key, 'metaKey:', e.metaKey, 'ctrlKey:', e.ctrlKey);
       if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
-        console.log('[App] Opening command palette');
         e.preventDefault();
-        setCommandPaletteOpen((open) => {
-          console.log('[App] Command palette state:', open, '-> ', !open);
-          return !open;
-        });
+        setCommandPaletteOpen((open) => !open);
       }
     };
 

@@ -9,7 +9,6 @@ export function getWebviewPosition(element: HTMLElement) {
   // Use getBoundingClientRect for viewport-relative position
   const rect = element.getBoundingClientRect();
 
-  console.log('[getWebviewPosition] rect:', rect);
 
   // Use clientWidth/clientHeight which excludes scrollbars
   const contentWidth = element.clientWidth;
@@ -22,7 +21,6 @@ export function getWebviewPosition(element: HTMLElement) {
     height: contentHeight,
   };
 
-  console.log('[getWebviewPosition] returning:', position);
 
   return position;
 }
@@ -43,7 +41,6 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
   const prevActiveRef = useRef(isActive);
   useEffect(() => {
     if (prevActiveRef.current !== isActive) {
-      console.log(`[WEBVIEW] isActive changed for tab ${tabId}: ${prevActiveRef.current} -> ${isActive}`);
       prevActiveRef.current = isActive;
     }
   }, [isActive, tabId]);
@@ -106,10 +103,8 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
 
   // Create webview ONCE per tab.id, but only when active
   useEffect(() => {
-    console.log(`[WEBVIEW] Effect running for tab ${tabId}, isActive=${isActive}`);
 
     if (!isActive) {
-      console.log(`[WEBVIEW] Tab ${tabId} is inactive, skipping view creation`);
       return; // Don't create view if tab is not active
     }
 
@@ -175,10 +170,8 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
 
     // Cleanup webview on unmount or when isActive changes
     return () => {
-      console.log(`[WEBVIEW] Cleanup running for tab ${tabId}, label=${webviewLabelRef.current}`);
       mounted = false;
       if (webviewLabelRef.current) {
-        console.log(`[WEBVIEW] Calling closeBrowserView for ${webviewLabelRef.current}`);
         platform.closeBrowserView(webviewLabelRef.current).catch((err) => {
           console.error('Error closing webview:', err);
         });
@@ -199,20 +192,16 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
           activeIndex: number;
         };
       }>('browser-navigation-updated', (payload) => {
-        console.log('[FRONTEND] Received navigation update:', payload);
 
         if (!payload || !payload.label || !payload.url || !payload.history) {
-          console.log('[FRONTEND] Missing payload data, ignoring');
           return;
         }
 
         // Only handle events for this webview
         if (payload.label !== webviewLabelRef.current) {
-          console.log('[FRONTEND] Label mismatch, ignoring:', payload.label, 'vs', webviewLabelRef.current);
           return;
         }
 
-        console.log('[FRONTEND] Updating browser navigation for tab:', tabId);
         // Update browser store with URL and full navigation history
         updateBrowserNavigation(tabId, payload.url, payload.history);
       });

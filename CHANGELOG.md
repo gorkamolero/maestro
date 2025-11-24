@@ -2,6 +2,70 @@
 
 All notable changes to Maestro will be documented in this file.
 
+## [Unreleased] - 2025-11-24
+
+### Code Cleanup & Type Fixes ✅ COMPLETE
+
+#### Type System
+- ✅ Added missing `LaunchResult`, `LaunchError`, and `SavedState` type definitions to `launcher.ts`
+- ✅ Properly typed launch function return values in launcher store
+
+#### Code Quality
+- ✅ Removed 35+ `console.log` debug statements from:
+  - App.tsx - Command palette and activeSpaceId logging
+  - browser.store.ts - Navigation state logging
+  - ipc/portal.ts - Portal lifecycle logging
+  - components/PortalWindow.tsx - Bounds and state logging
+  - components/View.tsx - Layout calculation logging
+  - components/Browser/useWebview.ts - Navigation event logging
+  - components/Workspace/WorkspacePanel.tsx - Tab switching logging
+- ✅ Cleaned up unused component props:
+  - Removed unused `index` prop from DraggableTab
+  - Removed unused `zone` and `index` props from SortableGridTab
+  - Kept `spaceId` props for future cross-space moves
+
+#### Notes
+- Pre-existing TypeScript type definition issues in @types/node (unrelated to our code)
+- Kept all UI components, IPC handlers, and WindowState types for future features
+- Kept Agent tab type for next feature implementation
+- Kept framer-motion dependency for planned animations
+
+### Unified Tab & App Launcher Architecture with Cross-Zone Drag-and-Drop ✅ COMPLETE
+
+#### Architecture Unification
+- ✅ Unified tab and app-launcher into single Tab type with optional `appLauncherConfig`
+- ✅ Removed duplicate favorite management system - favorites are now tabs with `isFavorite: true`
+- ✅ Simplified launcher store to focus only on app discovery, registration, and launching
+- ✅ Single source of truth in workspace store for all tabs (including app launchers)
+
+#### @dnd-kit Drag-and-Drop System
+- ✅ Implemented cross-zone dragging between favorites (grid) and tabs (list)
+- ✅ Dynamic ghost element that transforms based on target zone (grid ↔ list)
+- ✅ Custom collision detection using pointerWithin and rectIntersection strategies
+- ✅ Smooth reordering within zones with proper container awareness
+- ✅ Real-time favorite status updates when dragging between zones
+
+**Key Components**:
+- `src/components/Workspace/DraggableWorkspace.tsx` - Centralized drag logic with custom collision detection
+- `src/components/Workspace/TabDragGhost.tsx` - Dynamic ghost element with grid/list variants
+- `src/hooks/useTabClick.ts` - Reusable hook for tab/launcher click handling
+
+**New IPC Handlers**:
+- `launcher:launch-app-only` - Launch app without file or deep link
+- `launcher:launch-with-file` - Launch app with specific file
+- `launcher:launch-deeplink` - Launch app via deep link
+
+**Removed**:
+- Framer Motion dependency (replaced with @dnd-kit)
+- Old Favorite type and favorite-specific IPC handlers
+- Unused timeline components (base-node, base-handle, timeline hooks and utils)
+- `restoreWindowPositions` and deprecated launcher functions
+- 7 unused component files, 5 unused hook files, 1 unused utility file
+
+**Dependencies**: @dnd-kit/core@^6.3.1, @dnd-kit/sortable@^9.0.0, @dnd-kit/utilities@^3.2.2
+
+**Files**: Added DraggableWorkspace.tsx, TabDragGhost.tsx, useTabClick.ts; Removed 13 unused files; Modified workspace.store.ts, launcher.store.ts, launcher.ts IPC handlers
+
 ## [Unreleased] - 2025-11-23
 
 ### Stack Browser Pattern Implementation ✅ COMPLETE

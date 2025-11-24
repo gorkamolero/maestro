@@ -53,7 +53,6 @@ export function View({ children, backdrop = false, style = {} }: ViewProps) {
   const [layoutReady, setLayoutReady] = useState(false);
   const nodeRef = useRef<Yoga.YogaNode>();
 
-  console.log('[View] Rendering, backdrop:', backdrop, 'style:', style);
 
   // Create yoga node once
   if (!nodeRef.current) {
@@ -167,7 +166,6 @@ export function View({ children, backdrop = false, style = {} }: ViewProps) {
       height: Math.round(layout.height),
     };
 
-    console.log('[View] Computed bounds:', computedBounds, 'backdrop:', backdrop);
 
     return computedBounds;
   }, [layoutReady, node, parentContext, backdrop]);

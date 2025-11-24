@@ -88,13 +88,11 @@ export function PortalWindow({ children, onClose }: PortalWindowProps) {
 
     // Check if we already have a window from a previous mount (React StrictMode)
     if (windowRef.current && !windowRef.current.closed) {
-      console.log('[PortalWindow] Reusing existing window from previous mount (StrictMode)');
       setupPortal(windowRef.current);
       return; // Don't create a new window
     }
 
     // Open a blank window - will be intercepted by -add-new-contents and turned into a BrowserView
-    console.log('[PortalWindow] Opening new portal window');
     const externalWindow = window.open('', '');
 
     if (!externalWindow) {
@@ -107,7 +105,6 @@ export function PortalWindow({ children, onClose }: PortalWindowProps) {
 
     // Cleanup: close the portal BrowserView when component unmounts
     return () => {
-      console.log('[PortalWindow] Cleanup called, currentMount:', currentMount, 'mountCount:', mountCountRef.current);
 
       // Close the portal immediately - don't wait or check mount count
       platform.closeAllPortals().catch((err) => {
@@ -157,7 +154,6 @@ export function PortalWindow({ children, onClose }: PortalWindowProps) {
             portalWindow.removeEventListener('keydown', handleEscape);
           }
         } catch (error) {
-          console.log('[PortalWindow] Error removing event listener:', error);
         }
       };
     } catch (error) {
@@ -168,7 +164,6 @@ export function PortalWindow({ children, onClose }: PortalWindowProps) {
   // Send View bounds to main process following the Stack Browser pattern
   useEffect(() => {
     if (!viewBounds || !windowRef.current) {
-      console.log('[PortalWindow] Not sending bounds - viewBounds:', viewBounds, 'windowRef:', !!windowRef.current);
       return;
     }
 
@@ -192,17 +187,12 @@ export function PortalWindow({ children, onClose }: PortalWindowProps) {
 
     // Send bounds once ID is available
     waitForWebContentsId().then((webContentsId) => {
-      console.log('[PortalWindow] Sending View bounds to main process:', viewBounds);
-      console.log('[PortalWindow] __WEBCONTENTS_ID__:', webContentsId);
 
       // @ts-expect-error - window.opener exists on child windows
       if (portalWindow.opener && !portalWindow.opener.closed) {
-        console.log('[PortalWindow] Sending via window.opener.electron.send');
         // @ts-expect-error - window.electron is added by preload
         portalWindow.opener.electron.send('portal-body-bounds', webContentsId, viewBounds);
-        console.log('[PortalWindow] Bounds sent successfully');
       } else {
-        console.log('[PortalWindow] No opener or opener closed');
       }
     });
   }, [viewBounds]);

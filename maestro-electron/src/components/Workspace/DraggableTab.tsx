@@ -11,7 +11,6 @@ import { useTabClick } from '@/hooks/useTabClick';
 interface DraggableTabProps {
   tab: Tab;
   zone: TabDropZone;
-  index: number;
   spaceId: string;
 }
 

@@ -54,14 +54,10 @@ export function updateBrowserNavigation(
   url: string,
   history: NavigationHistory
 ) {
-  console.log('[STORE] Updating browser navigation:', { tabId, url, history });
   const browser = browserStore.browsers[tabId];
   if (browser) {
     browser.url = url;
     browser.history = history;
-    console.log('[STORE] Updated successfully');
-  } else {
-    console.log('[STORE] Browser not found for tab:', tabId);
   }
 }
 

@@ -39,3 +39,22 @@ export interface RunningApp {
   name: string;
   pid: number;
 }
+
+export interface LaunchError {
+  code: string;
+  message: string;
+  recoverable: boolean;
+}
+
+export interface LaunchResult {
+  success: boolean;
+  method: 'file' | 'deeplink' | 'app-only';
+  warnings: string[];
+  error: LaunchError | null;
+}
+
+export interface SavedState {
+  windowPositions?: WindowState[];
+  lastAccessedAt?: string;
+  customData?: Record<string, unknown>;
+}
