@@ -1,0 +1,30 @@
+import { useSnapshot } from 'valtio';
+import { tasksStore, tasksComputed } from '@/stores/tasks.store';
+import { TaskBoard } from './TaskBoard';
+
+interface TasksViewProps {
+  spaceId: string;
+}
+
+export function TasksView({ spaceId }: TasksViewProps) {
+  const snap = useSnapshot(tasksStore);
+  const stats = tasksComputed.stats;
+
+  return (
+    <div className="tasks-view flex flex-col h-full">
+      {/* Header with stats */}
+      <div className="flex items-center justify-between p-4 border-b border-border">
+        <h2 className="text-lg font-semibold">Tasks</h2>
+        <div className="flex gap-4 text-sm text-muted-foreground">
+          <span>Active: {stats.active}</span>
+          <span>Today: {stats.completedToday}</span>
+        </div>
+      </div>
+
+      {/* Board */}
+      <div className="flex-1 overflow-hidden">
+        <TaskBoard spaceId={spaceId} />
+      </div>
+    </div>
+  );
+}

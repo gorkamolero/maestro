@@ -2,7 +2,7 @@ import { useSnapshot } from 'valtio';
 import { workspaceStore, workspaceActions, type TabType } from '@/stores/workspace.store';
 import { spacesStore } from '@/stores/spaces.store';
 import { launcherStore } from '@/stores/launcher.store';
-import { Terminal, Globe, FileText, Plus, Command } from 'lucide-react';
+import { Terminal, Globe, FileText, Plus, Command, ListTodo } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
@@ -113,6 +113,23 @@ function SidebarContent({ onCommandPalette }: SidebarContentProps) {
             </TooltipTrigger>
             <TooltipContent side="right">
               <p className="text-xs">New Note</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => {
+                  workspaceStore.viewMode = workspaceStore.viewMode === 'tasks' ? 'workspace' : 'tasks';
+                }}
+                className="w-10 h-10 rounded-lg bg-background/50 hover:bg-background flex items-center justify-center transition-colors shadow-sm data-[active=true]:bg-primary data-[active=true]:text-primary-foreground"
+                data-active={workspaceStore.viewMode === 'tasks'}
+              >
+                <ListTodo className="w-4 h-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <p className="text-xs">Tasks</p>
             </TooltipContent>
           </Tooltip>
 

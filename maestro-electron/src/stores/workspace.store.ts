@@ -30,7 +30,7 @@ export interface Tab {
   };
 }
 
-export type ViewMode = 'timeline' | 'workspace' | 'split';
+export type ViewMode = 'timeline' | 'workspace' | 'split' | 'tasks';
 
 export interface WorkspaceLayout {
   timelineHeight: number; // Percentage (20-50)
