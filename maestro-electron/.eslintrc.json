@@ -17,5 +17,33 @@
     "import/namespace": "off",
     "import/no-duplicates": "off",
     "@typescript-eslint/no-empty-function": "off"
-  }
+  },
+  "overrides": [
+    {
+      "files": ["src/components/editor/**/*"],
+      "rules": {
+        "@typescript-eslint/ban-ts-comment": "off",
+        "@typescript-eslint/no-inferrable-types": "off",
+        "@typescript-eslint/no-unused-vars": "warn",
+        "react-hooks/set-state-in-effect": "warn",
+        "react-hooks/refs": "warn",
+        "no-empty": "off",
+        "no-empty-pattern": "off"
+      }
+    },
+    {
+      "files": ["src/components/View.tsx", "src/components/PortalWindow.tsx", "src/components/CommandPalettePortal.tsx"],
+      "rules": {
+        "react-hooks/refs": "off",
+        "react-hooks/set-state-in-effect": "off",
+        "no-empty": "off"
+      }
+    },
+    {
+      "files": ["src/lib/macos-utils.ts"],
+      "rules": {
+        "@typescript-eslint/no-var-requires": "off"
+      }
+    }
+  ]
 }

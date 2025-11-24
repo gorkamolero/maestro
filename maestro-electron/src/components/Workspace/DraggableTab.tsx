@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { X, Edit2 } from 'lucide-react';
+import { X } from 'lucide-react';
 import { Tab, workspaceActions, workspaceStore } from '@/stores/workspace.store';
 import { cn } from '@/lib/utils';
 import { useSnapshot } from 'valtio';
 import { useTabClick } from '@/hooks/useTabClick';
+import { useMorphingEdit } from '@/hooks/useMorphingEdit';
 
 interface DraggableTabProps {
   tab: Tab;
@@ -15,8 +16,8 @@ interface DraggableTabProps {
 
 export function DraggableTab({ tab }: DraggableTabProps) {
   const { activeTabId } = useSnapshot(workspaceStore);
-  const [isRenaming, setIsRenaming] = useState(false);
-  const [editedTitle, setEditedTitle] = useState(tab.title);
+  const [isEditing, setIsEditing] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const handleTabClick = useTabClick(tab);
 
   const {
@@ -30,11 +31,34 @@ export function DraggableTab({ tab }: DraggableTabProps) {
 
   const isActive = activeTabId === tab.id;
 
-  const handleRename = () => {
-    if (editedTitle.trim() && editedTitle !== tab.title) {
-      workspaceActions.renameTab(tab.id, editedTitle);
+  const collapsedHeight = 50;
+  const expandedHeight = 150;
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsEditing(false);
+      }
+    };
+
+    if (isEditing) {
+      document.addEventListener('mousedown', handleClickOutside);
     }
-    setIsRenaming(false);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isEditing]);
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const title = formData.get('title') as string;
+
+    if (title?.trim()) {
+      workspaceActions.renameTab(tab.id, title.trim());
+      setIsEditing(false);
+    }
   };
 
   const getTabIcon = () => {
@@ -62,104 +86,128 @@ export function DraggableTab({ tab }: DraggableTabProps) {
     }
   };
 
-  const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    zIndex: isDragging ? 1000 : 'auto',
-  };
-
   return (
-    <div
+    <motion.div
       ref={setNodeRef}
-      style={style}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 1000 : 'auto',
+      }}
       {...attributes}
-      {...listeners}
+      {...(!isEditing && listeners)}
       data-draggable="true"
+      onDoubleClick={() => {
+        if (!isEditing) {
+          setIsEditing(true);
+        }
+      }}
       onClick={() => {
-        if (!isRenaming) {
+        if (!isEditing) {
           handleTabClick();
         }
       }}
       className={cn(
-        'group relative transition-colors',
-        'flex items-center gap-2 rounded-lg px-3 py-2',
-        // Background colors
-        isActive
-          ? 'bg-white/15 hover:bg-white/20'
-          : 'bg-white/5 hover:bg-white/10',
-        // Active state border
-        isActive && 'border-l-2 border-primary',
-        'cursor-grab active:cursor-grabbing',
+        'group relative overflow-hidden',
+        'bg-background/50 border border-border',
+        !isEditing && 'cursor-pointer hover:border-border/80 hover:bg-background/80',
+        isActive && !isEditing && 'border-l-2 border-primary',
         isDragging && 'opacity-50'
       )}
+      initial={false}
+      animate={{
+        height: isEditing ? expandedHeight : collapsedHeight,
+        borderRadius: isEditing ? 10 : 8,
+      }}
+      transition={{
+        type: 'spring',
+        stiffness: 550,
+        damping: 45,
+        mass: 0.7,
+        delay: isEditing ? 0 : 0.08,
+      }}
     >
-      {/* Full layout with status, title, actions */}
-      <>
-            {/* Status Indicator */}
-            {tab.status === 'running' && (
-              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-            )}
-            {tab.status === 'idle' && (
-              <div className="w-2 h-2 rounded-full bg-gray-400" />
-            )}
+      {/* Collapsed view */}
+      {!isEditing && (
+        <div className="flex items-center gap-2 px-3 h-full">
+          {/* Status Indicator */}
+          {tab.status === 'running' && (
+            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+          )}
+          {tab.status === 'idle' && (
+            <div className="w-2 h-2 rounded-full bg-gray-400" />
+          )}
 
-            {/* Title or Input */}
-            <div className="flex-1 min-w-0">
-              {isRenaming ? (
-                <input
-                  type="text"
-                  value={editedTitle}
-                  onChange={(e) => setEditedTitle(e.target.value)}
-                  onBlur={handleRename}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleRename();
-                    if (e.key === 'Escape') {
-                      setEditedTitle(tab.title);
-                      setIsRenaming(false);
-                    }
-                    e.stopPropagation();
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  autoFocus
-                  className="w-full bg-white/10 rounded px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-blue-400"
-                />
-              ) : (
-                <span className="text-sm truncate block">{tab.title}</span>
-              )}
+          {/* Title */}
+          <span className="text-sm truncate flex-1">{tab.title}</span>
+
+          {/* Close Button - only show on hover */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              workspaceActions.closeTab(tab.id);
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="p-1 hover:bg-white/10 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+      )}
+
+      {/* Expanded view - edit form */}
+      <AnimatePresence>
+        {isEditing && (
+          <motion.form
+            ref={containerRef}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{
+              type: 'spring',
+              stiffness: 550,
+              damping: 45,
+              mass: 0.7,
+            }}
+            onSubmit={handleSubmit}
+            className="absolute inset-0 flex flex-col p-3 gap-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex flex-col gap-2 flex-1">
+              <label htmlFor={`title-${tab.id}`} className="text-xs font-medium">
+                Tab Name
+              </label>
+              <input
+                id={`title-${tab.id}`}
+                name="title"
+                type="text"
+                defaultValue={tab.title}
+                autoFocus
+                className="px-2 py-1.5 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="Tab name..."
+              />
             </div>
-
-            {/* Actions - only show on hover */}
-            <div
-              className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-              onPointerDown={(e) => {
-                // Prevent drag from starting when clicking buttons
-                e.stopPropagation();
-              }}
-            >
-              {/* Edit Button */}
+            <div className="flex justify-end gap-2">
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setIsRenaming(true);
+                  setIsEditing(false);
                 }}
-                className="p-1 hover:bg-white/10 rounded"
+                className="px-2 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
-                <Edit2 className="w-3 h-3" />
+                Cancel
               </button>
-
-              {/* Close Button */}
               <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  workspaceActions.closeTab(tab.id);
-                }}
-                className="p-1 hover:bg-white/10 rounded"
+                type="submit"
+                className="px-2 py-1 text-xs bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
               >
-                <X className="w-4 h-4" />
+                Save
               </button>
             </div>
-          </>
-    </div>
+          </motion.form>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }
