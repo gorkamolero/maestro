@@ -1,35 +1,24 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import { X } from 'lucide-react';
 import { Tab, workspaceActions, workspaceStore } from '@/stores/workspace.store';
 import { cn } from '@/lib/utils';
+import { getTabIcon } from '@/lib/tab-utils';
 import { useSnapshot } from 'valtio';
 import { useTabClick } from '@/hooks/useTabClick';
 import { useMorphingEdit } from '@/hooks/useMorphingEdit';
 
-interface DraggableTabProps {
+interface ListTabProps {
   tab: Tab;
-  index: number;
   spaceId: string;
 }
 
-export function DraggableTab({ tab }: DraggableTabProps) {
+export function ListTab({ tab }: ListTabProps) {
   const { activeTabId } = useSnapshot(workspaceStore);
   const handleTabClick = useTabClick(tab);
   const { isEditing, setIsEditing, containerRef, morphingProps, formProps } = useMorphingEdit({
     collapsedHeight: 50,
     expandedHeight: 150,
   });
-
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: tab.id });
 
   const isActive = activeTabId === tab.id;
 
@@ -46,14 +35,6 @@ export function DraggableTab({ tab }: DraggableTabProps) {
 
   return (
     <motion.div
-      ref={setNodeRef}
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-        zIndex: isDragging ? 1000 : 'auto',
-      }}
-      {...attributes}
-      {...(!isEditing && listeners)}
       data-draggable="true"
       onDoubleClick={() => {
         if (!isEditing) {
@@ -68,15 +49,19 @@ export function DraggableTab({ tab }: DraggableTabProps) {
       className={cn(
         'group relative overflow-hidden',
         'bg-background/50 border border-border',
-        !isEditing && 'cursor-pointer hover:border-border/80 hover:bg-background/80',
+        !isEditing && 'cursor-grab active:cursor-grabbing hover:border-border/80 hover:bg-background/80',
         isActive && !isEditing && 'border-l-2 border-primary',
-        isDragging && 'opacity-50'
       )}
       {...morphingProps}
     >
       {/* Collapsed view */}
       {!isEditing && (
         <div className="flex items-center gap-2 px-3 h-full">
+          {/* Icon */}
+          <div className="flex-shrink-0">
+            {getTabIcon(tab, 'sm')}
+          </div>
+
           {/* Status Indicator */}
           {tab.status === 'running' && (
             <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />

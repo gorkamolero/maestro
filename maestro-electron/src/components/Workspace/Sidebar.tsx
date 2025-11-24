@@ -4,7 +4,6 @@ import { FileText, LayoutGrid } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { TabsSidebar } from './TabsSidebar';
 import { NotesSidebar } from '@/components/Notes/NotesSidebar';
-import { DraggableWorkspace } from './DraggableWorkspace';
 import { TabsViewModeSelector } from './TabsViewModeSelector';
 
 interface SidebarProps {
@@ -83,9 +82,7 @@ export function Sidebar({ onCommandPalette }: SidebarProps) {
       {/* Conditional Sidebar Content */}
       <div className="flex-1 overflow-hidden">
         {workspaceViewMode === 'tabs' ? (
-          <DraggableWorkspace spaceId={activeSpaceId}>
-            <TabsSidebar onCommandPalette={onCommandPalette} />
-          </DraggableWorkspace>
+          <TabsSidebar onCommandPalette={onCommandPalette} />
         ) : (
           <NotesSidebar spaceId={activeSpaceId} />
         )}

@@ -1,7 +1,7 @@
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { useDroppable } from '@dnd-kit/core';
-import { Tab, type TabsViewMode } from '@/stores/workspace.store';
-import { DraggableTab } from './DraggableTab';
+import SortableList, { SortableItem } from 'react-easy-sort';
+import { arrayMoveImmutable } from 'array-move';
+import { Tab, type TabsViewMode, workspaceStore } from '@/stores/workspace.store';
+import { ListTab } from './ListTab';
 import { FavoritesGrid } from './FavoritesGrid';
 
 interface TabDropZoneProps {
@@ -17,26 +17,17 @@ export function TabDropZone({
   viewMode,
   emptyMessage = 'No tabs yet',
 }: TabDropZoneProps) {
-  // All drag logic is now handled by the parent DndContext in DraggableWorkspace.tsx
-  // This component just renders the sortable items and provides a droppable zone
-  const { setNodeRef, isOver } = useDroppable({
-    id: 'tabs',
-    data: {
-      type: 'container',
-      children: tabs.map(t => t.id),
-    },
-  });
+  const handleSortEnd = (oldIndex: number, newIndex: number) => {
+    // Reorder tabs array
+    const newTabs = arrayMoveImmutable(tabs, oldIndex, newIndex);
+
+    // Update store with new order
+    const allTabs = workspaceStore.tabs.filter(t => t.spaceId !== spaceId);
+    workspaceStore.tabs = [...allTabs, ...newTabs];
+  };
 
   return (
-    <div
-      ref={setNodeRef}
-      className="relative flex flex-col h-full"
-    >
-      {/* Drop zone highlight */}
-      {isOver && (
-        <div className="absolute inset-0 border-2 border-blue-400/50 rounded-lg pointer-events-none z-10" />
-      )}
-
+    <div className="relative flex flex-col h-full">
       {/* Reorderable List or Grid */}
       {tabs.length === 0 ? (
         <div className="px-2 py-4 text-center text-sm text-white/40 rounded-lg">
@@ -48,22 +39,20 @@ export function TabDropZone({
           spaceId={spaceId}
         />
       ) : (
-        <SortableContext
-          items={tabs.map(tab => tab.id)}
-          strategy={verticalListSortingStrategy}
-          id="tabs"
+        <SortableList
+          onSortEnd={handleSortEnd}
+          className="space-y-1"
+          draggedItemClassName="opacity-50"
+          lockAxis="y"
         >
-          <div className="space-y-1">
-            {tabs.map((tab, index) => (
-              <DraggableTab
-                key={tab.id}
-                tab={tab}
-                index={index}
-                spaceId={spaceId}
-              />
-            ))}
-          </div>
-        </SortableContext>
+          {tabs.map((tab) => (
+            <SortableItem key={tab.id}>
+              <div>
+                <ListTab tab={tab} spaceId={spaceId} />
+              </div>
+            </SortableItem>
+          ))}
+        </SortableList>
       )}
     </div>
   );

@@ -1,17 +1,18 @@
+import { AnimatePresence, motion } from 'motion/react';
 import { useSnapshot } from 'valtio';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { X } from 'lucide-react';
 import { workspaceStore, workspaceActions, type Tab } from '@/stores/workspace.store';
 import { cn } from '@/lib/utils';
+import { getTabIcon } from '@/lib/tab-utils';
 import { useTabClick } from '@/hooks/useTabClick';
 import { useMorphingEdit } from '@/hooks/useMorphingEdit';
 
-interface SortableGridTabProps {
+interface GridTabProps {
   tab: Tab;
   spaceId: string;
 }
 
-export function SortableGridTab({ tab }: SortableGridTabProps) {
+export function GridTab({ tab }: GridTabProps) {
   const { activeTabId } = useSnapshot(workspaceStore);
   const isActive = activeTabId === tab.id;
   const handleClick = useTabClick(tab);
@@ -19,15 +20,6 @@ export function SortableGridTab({ tab }: SortableGridTabProps) {
     collapsedHeight: 72,
     expandedHeight: 180,
   });
-
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: tab.id });
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -40,41 +32,11 @@ export function SortableGridTab({ tab }: SortableGridTabProps) {
     }
   };
 
-  const getTabIcon = () => {
-    switch (tab.type) {
-      case 'terminal':
-        return <span className="text-xl">{'>'}</span>;
-      case 'browser':
-        return <span className="text-xl">🌐</span>;
-      case 'note':
-        return <span className="text-xl">📝</span>;
-      case 'app-launcher':
-        if (tab.appLauncherConfig?.icon) {
-          return (
-            <img
-              src={tab.appLauncherConfig.icon}
-              alt={tab.title}
-              className="w-8 h-8 rounded"
-            />
-          );
-        }
-        return <span className="text-xl">🚀</span>;
-      default:
-        return <span className="text-xl">📄</span>;
-    }
-  };
-
   return (
     <motion.div
-      ref={setNodeRef}
       style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-        zIndex: isDragging ? 1000 : 'auto',
         width: isEditing ? '200px' : '72px',
       }}
-      {...attributes}
-      {...(!isEditing && listeners)}
       data-draggable="true"
       onDoubleClick={() => {
         if (!isEditing) {
@@ -89,16 +51,15 @@ export function SortableGridTab({ tab }: SortableGridTabProps) {
       className={cn(
         'group relative overflow-hidden',
         'bg-background/50 border border-border',
-        !isEditing && 'cursor-pointer hover:border-border/80 hover:bg-background/80',
+        !isEditing && 'cursor-grab active:cursor-grabbing hover:border-border/80 hover:bg-background/80',
         isActive && !isEditing && 'border-b-2 border-primary',
-        isDragging && 'opacity-50'
       )}
       {...morphingProps}
     >
       {/* Collapsed view - icon + label */}
       {!isEditing && (
         <div className="flex flex-col items-center justify-center h-full gap-1 p-2">
-          {getTabIcon()}
+          {getTabIcon(tab, 'lg')}
           <span className="text-[10px] truncate w-full text-center">{tab.title}</span>
 
           {/* Close Button - only show on hover */}
