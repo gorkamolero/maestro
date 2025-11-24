@@ -5,6 +5,16 @@ import { cn } from '@/lib/utils';
 import { useMorphingEdit } from '@/hooks/useMorphingEdit';
 import { spacesActions } from '@/stores/spaces.store';
 import { EmojiPickerComponent } from '@/components/ui/emoji-picker';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const SPACE_ICONS: Record<string, LucideIcon> = {
   home: Home,
@@ -24,6 +34,7 @@ interface SpaceButtonProps {
 
 export function SpaceButton({ space, isActive, onSwitch, onDelete }: SpaceButtonProps) {
   const [icon, setIcon] = useState(space.icon || '');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const { isEditing, setIsEditing, containerRef, morphingProps, formProps } = useMorphingEdit({
     collapsedHeight: 32,
@@ -47,10 +58,15 @@ export function SpaceButton({ space, isActive, onSwitch, onDelete }: SpaceButton
     }
   };
 
-  const handleDelete = (e: React.MouseEvent) => {
+  const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteConfirm = () => {
     onDelete();
     setIsEditing(false);
+    setShowDeleteConfirm(false);
   };
 
   return (
@@ -132,7 +148,7 @@ export function SpaceButton({ space, isActive, onSwitch, onDelete }: SpaceButton
             <div className="flex gap-1.5">
               <button
                 type="button"
-                onClick={handleDelete}
+                onClick={handleDeleteClick}
                 className="flex-1 px-2 py-1 text-xs bg-destructive/20 text-destructive hover:bg-destructive/30 rounded-md transition-colors"
               >
                 Delete
@@ -157,6 +173,24 @@ export function SpaceButton({ space, isActive, onSwitch, onDelete }: SpaceButton
           </motion.form>
         )}
       </AnimatePresence>
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Space?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{space.name}"? This will close all tabs in this space. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.button>
   );
 }
