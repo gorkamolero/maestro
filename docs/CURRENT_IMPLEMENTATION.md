@@ -68,8 +68,9 @@
 - Race condition prevention for React StrictMode double-mounting
 
 **Notes**
-- Placeholder implementation (NoteEditor component exists)
-- State structure defined but not fully implemented
+- Full markdown editor implementation (NoteEditor component)
+- Note content persistence per tab
+- Rich text editing support
 
 **Agent**
 - Placeholder for AI integration (AgentPlaceholder component)
@@ -122,6 +123,7 @@
 - FloatingControls: Quick action buttons
 - SpaceEditor: Space settings modal
 - DraggableTab: Tab item with status indicator, rename, close
+- Tab Context Menu: Right-click menu with rename, duplicate, close, toggle favorite, move to space
 - FavoritesGrid: Grid layout for favorite apps/tabs
 - TabDropZone: Drop indicator for drag operations
 

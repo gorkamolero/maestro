@@ -4,6 +4,19 @@ All notable changes to Maestro will be documented in this file.
 
 ## [Unreleased] - 2025-11-24
 
+### Workspace Features ✅ COMPLETE
+
+#### Notes Panel
+- ✅ Full markdown editor in workspace panel
+- ✅ Note tabs with content persistence
+- ✅ Rich text editing support
+
+#### Tab Context Menu
+- ✅ Right-click context menu on tabs
+- ✅ Rename, duplicate, close actions
+- ✅ Toggle favorite status
+- ✅ Move to different space
+
 ### Code Cleanup & Type Fixes ✅ COMPLETE
 
 #### Type System
@@ -450,12 +463,18 @@ src/components/Browser/
 - Drag to resize panes
 - Multiple panes with different content types
 
-### Phase 3: Integration & Polish (Not Started)
+### Phase 3: Integration & Polish
 
-#### Integration Agent 1: External Apps
-- Launch external apps (VSCode, etc.)
-- App state preservation
-- Window position memory
+#### Integration Agent 1: External Apps (In Progress - Almost Complete)
+- ✅ Launch external apps (VSCode, etc.)
+- ✅ App state preservation
+- ✅ Window position memory
+- ✅ macOS .app bundle registration via file picker
+- ✅ Icon extraction (ICNS→PNG via sips)
+- ✅ Running app detection with visual indicators
+- ✅ Bring to front via AppleScript
+- ✅ Launch methods: app only, with file, deep link (URL scheme)
+- ❌ Cross-platform support (Windows/Linux)
 
 #### Integration Agent 2: Data & Persistence
 - SQLite integration (currently using IndexedDB)
