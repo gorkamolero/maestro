@@ -50,6 +50,7 @@ function MaximizedContentWrapper({
     }
   }
 
+  // Default to full workspace view
   return <MaximizedWorkspace space={space} onBack={handleBack} />;
 }
 
@@ -58,11 +59,18 @@ export function SpaceCardExpandable({ space, tabs }: SpaceCardExpandableProps) {
 
   const handleMaximizeSpace = useCallback(() => {
     setExpandMode({ type: 'space' });
-  }, []);
+    // Set workspace state immediately (will be used when content renders)
+    spacesActions.updateSpaceLastActive(space.id);
+    workspaceActions.maximizeSpace(space.id);
+  }, [space.id]);
 
   const handleMaximizeTab = useCallback((tabId: string) => {
     setExpandMode({ type: 'tab', tabId });
-  }, []);
+    // Set workspace state immediately
+    spacesActions.updateSpaceLastActive(space.id);
+    workspaceActions.maximizeSpace(space.id);
+    workspaceActions.setActiveTab(tabId);
+  }, [space.id]);
 
   const handleModeReset = useCallback(() => {
     setExpandMode({ type: 'none' });
@@ -70,21 +78,11 @@ export function SpaceCardExpandable({ space, tabs }: SpaceCardExpandableProps) {
 
   const handleExpandChange = useCallback(
     (expanded: boolean) => {
-      if (expanded && expandMode.type !== 'none') {
-        // Set this space as active when expanded
-        spacesActions.updateSpaceLastActive(space.id);
-        workspaceActions.maximizeSpace(space.id);
-
-        // If maximizing a specific tab, also set it as active
-        if (expandMode.type === 'tab') {
-          workspaceActions.setActiveTab(expandMode.tabId);
-        }
-      }
       if (!expanded) {
         handleModeReset();
       }
     },
-    [expandMode, space.id, handleModeReset]
+    [handleModeReset]
   );
 
   return (
