@@ -1,6 +1,9 @@
+import { useState } from 'react';
+import { useSnapshot } from 'valtio';
 import { Terminal, Globe, FileText, AppWindow, Bot, Trash2, Settings, Save, CheckSquare, StickyNote } from 'lucide-react';
 import type { Tab } from '@/stores/workspace.store';
 import { workspaceActions } from '@/stores/workspace.store';
+import { agentStore } from '@/stores/agent.store';
 import { cn } from '@/lib/utils';
 import { launchTab } from '@/hooks/useTabClick';
 import {
@@ -11,6 +14,7 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
 import { TerminalStatus } from './TerminalStatus';
+import { AgentStatusBadge, TerminalPreview, AgentDrawer } from '@/components/Agent';
 
 interface TabPreviewProps {
   tab: Tab;
@@ -46,21 +50,76 @@ const TAB_TYPE_LABELS: Record<Tab['type'], string> = {
   agent: 'Agent',
 };
 
-// Icon + label button view (for Control Room cards)
-export function TabPreviewIcon({ tab, onClick }: TabPreviewProps) {
-  // Use app icon for app-launcher tabs if available
+// Shared button component for tab icons
+function TabIconButton({
+  tab,
+  onClick,
+  className,
+}: {
+  tab: Tab;
+  onClick?: (e: React.MouseEvent) => void;
+  className?: string;
+}) {
   const appIcon = tab.type === 'app-launcher' && tab.appLauncherConfig?.icon;
   const label = tab.type === 'app-launcher'
-    ? (tab.appLauncherConfig?.appName || tab.title).split(' ')[0] // First word only
+    ? (tab.appLauncherConfig?.appName || tab.title).split(' ')[0]
     : TAB_TYPE_LABELS[tab.type];
+
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        'flex flex-col items-center gap-1 p-1.5 rounded-lg w-[52px] h-[52px]',
+        'bg-white/[0.04] hover:bg-white/[0.08] transition-colors',
+        'text-muted-foreground hover:text-foreground',
+        tab.disabled && 'opacity-40',
+        className
+      )}
+    >
+      <div className="relative w-7 h-7 rounded-md bg-white/[0.06] flex items-center justify-center">
+        {appIcon ? (
+          <img src={appIcon} alt={tab.title} className="w-5 h-5 rounded" />
+        ) : (
+          <TabTypeIcon type={tab.type} className="w-4 h-4" />
+        )}
+        {/* Status indicator for terminal tabs */}
+        {tab.type === 'terminal' && (
+          <div className="absolute -top-0.5 -right-0.5">
+            <TerminalStatus tabId={tab.id} />
+          </div>
+        )}
+        {/* Status indicator for agent tabs */}
+        {tab.type === 'agent' && (
+          <div className="absolute -top-0.5 -right-0.5">
+            <AgentStatusBadge tabId={tab.id} />
+          </div>
+        )}
+      </div>
+      <span className="text-[10px] leading-tight truncate max-w-[48px]">
+        {label}
+      </span>
+    </button>
+  );
+}
+
+// Icon + label button view (for Control Room cards)
+export function TabPreviewIcon({ tab, onClick }: TabPreviewProps) {
+  const [isHovered, setIsHovered] = useState(false);
+  const { sessions } = useSnapshot(agentStore);
+
+  // Get agent session for hover preview
+  const agentSession = tab.type === 'agent'
+    ? sessions.find(s => s.tabId === tab.id)
+    : null;
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     // For app-launcher tabs, launch the app directly
     if (tab.type === 'app-launcher') {
       launchTab(tab);
-    } else {
-      // For other tabs, use the provided onClick (maximize)
+    } else if (tab.type !== 'agent') {
+      // For non-agent tabs, use the provided onClick (maximize)
+      // Agent tabs are handled by the AgentDrawer
       onClick();
     }
   };
@@ -79,58 +138,91 @@ export function TabPreviewIcon({ tab, onClick }: TabPreviewProps) {
     console.log('Edit tab:', tab.id);
   };
 
-  return (
-    <ContextMenu>
-      <ContextMenuTrigger asChild>
-        <button
-          onClick={handleClick}
-          className={cn(
-            'flex flex-col items-center gap-1 p-1.5 rounded-lg min-w-[52px]',
-            'bg-white/[0.04] hover:bg-white/[0.08] transition-colors',
-            'text-muted-foreground hover:text-foreground',
-            tab.disabled && 'opacity-40'
-          )}
-        >
-          <div className="relative w-7 h-7 rounded-md bg-white/[0.06] flex items-center justify-center">
-            {appIcon ? (
-              <img src={appIcon} alt={tab.title} className="w-5 h-5 rounded" />
-            ) : (
-              <TabTypeIcon type={tab.type} className="w-4 h-4" />
-            )}
-            {/* Status indicator for terminal/agent tabs */}
-            {(tab.type === 'terminal' || tab.type === 'agent') && (
-              <div className="absolute -top-0.5 -right-0.5">
-                <TerminalStatus tabId={tab.id} />
-              </div>
-            )}
+  // For agent tabs, wrap with AgentDrawer
+  if (tab.type === 'agent') {
+    return (
+      <div
+        className="relative"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <ContextMenu>
+          <ContextMenuTrigger asChild>
+            <div>
+              <AgentDrawer
+                tabId={tab.id}
+                spaceId={tab.spaceId}
+                defaultWorkDir={tab.agentConfig?.workDir}
+                onMaximize={onClick}
+              >
+                <TabIconButton tab={tab} onClick={(e) => e.stopPropagation()} />
+              </AgentDrawer>
+            </div>
+          </ContextMenuTrigger>
+          <ContextMenuContent onClick={(e) => e.stopPropagation()}>
+            <ContextMenuItem className="text-xs" disabled>
+              {tab.title}
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+            <ContextMenuItem onClick={handleEdit} className="gap-2">
+              <Settings className="w-3.5 h-3.5" />
+              Edit
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+            <ContextMenuItem onClick={handleRemove} className="gap-2 text-destructive focus:text-destructive">
+              <Trash2 className="w-3.5 h-3.5" />
+              Remove
+            </ContextMenuItem>
+          </ContextMenuContent>
+        </ContextMenu>
+
+        {/* Terminal preview on hover */}
+        {agentSession && agentSession.terminalLines.length > 0 && (
+          <div className="absolute top-full left-0 z-50 w-48">
+            <TerminalPreview
+              lines={agentSession.terminalLines}
+              visible={isHovered}
+            />
           </div>
-          <span className="text-[10px] leading-tight truncate max-w-[48px]">
-            {label}
-          </span>
-        </button>
-      </ContextMenuTrigger>
-      <ContextMenuContent onClick={(e) => e.stopPropagation()}>
-        <ContextMenuItem className="text-xs" disabled>
-          {tab.title}
-        </ContextMenuItem>
-        <ContextMenuSeparator />
-        {tab.type === 'app-launcher' && (
-          <ContextMenuItem onClick={handleSaveContext} className="gap-2">
-            <Save className="w-3.5 h-3.5" />
-            Save Context
-          </ContextMenuItem>
         )}
-        <ContextMenuItem onClick={handleEdit} className="gap-2">
-          <Settings className="w-3.5 h-3.5" />
-          Edit
-        </ContextMenuItem>
-        <ContextMenuSeparator />
-        <ContextMenuItem onClick={handleRemove} className="gap-2 text-destructive focus:text-destructive">
-          <Trash2 className="w-3.5 h-3.5" />
-          Remove
-        </ContextMenuItem>
-      </ContextMenuContent>
-    </ContextMenu>
+      </div>
+    );
+  }
+
+  // For all other tabs
+  return (
+    <div
+      className="relative"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          <TabIconButton tab={tab} onClick={handleClick} />
+        </ContextMenuTrigger>
+        <ContextMenuContent onClick={(e) => e.stopPropagation()}>
+          <ContextMenuItem className="text-xs" disabled>
+            {tab.title}
+          </ContextMenuItem>
+          <ContextMenuSeparator />
+          {tab.type === 'app-launcher' && (
+            <ContextMenuItem onClick={handleSaveContext} className="gap-2">
+              <Save className="w-3.5 h-3.5" />
+              Save Context
+            </ContextMenuItem>
+          )}
+          <ContextMenuItem onClick={handleEdit} className="gap-2">
+            <Settings className="w-3.5 h-3.5" />
+            Edit
+          </ContextMenuItem>
+          <ContextMenuSeparator />
+          <ContextMenuItem onClick={handleRemove} className="gap-2 text-destructive focus:text-destructive">
+            <Trash2 className="w-3.5 h-3.5" />
+            Remove
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
+    </div>
   );
 }
 

@@ -119,6 +119,7 @@
     "valtio": "^2.2.0",
     "valtio-history": "^1.0.0",
     "valtio-persist": "^2.2.4",
+    "vaul": "^1.1.2",
     "yoga-layout": "^3.2.1"
   }
 }

@@ -29,6 +29,13 @@ export interface Tab {
     launchConfig: LaunchConfig;
     savedState: SavedState | null;
   };
+  // For agent tabs
+  agentConfig?: {
+    workDir: string;
+    permissionMode: 'acceptEdits' | 'askUser' | 'planOnly';
+    lastPrompt?: string;
+    sessionId?: string;
+  };
 }
 
 export type ViewMode = 'timeline' | 'workspace' | 'split';

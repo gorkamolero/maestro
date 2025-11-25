@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Terminal, Globe, AppWindow, CheckSquare, StickyNote } from 'lucide-react';
+import { Terminal, Globe, AppWindow, CheckSquare, StickyNote, Bot } from 'lucide-react';
 import { workspaceActions } from '@/stores/workspace.store';
 import { launcherActions } from '@/stores/launcher.store';
 import {
@@ -24,6 +24,11 @@ const TAB_OPTIONS = [
     type: 'browser' as const,
     label: 'Browser',
     icon: Globe,
+  },
+  {
+    type: 'agent' as const,
+    label: 'Agent',
+    icon: Bot,
   },
   {
     type: 'notes' as const,
@@ -81,6 +86,7 @@ export function AddTabPopover({ spaceId, children }: AddTabPopoverProps) {
         browser: 'New Tab',
         notes: 'Notes',
         tasks: 'Tasks',
+        agent: 'Agent',
       };
       workspaceActions.openTab(spaceId, type, titles[type] || type);
     }

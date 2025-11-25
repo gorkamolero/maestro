@@ -236,6 +236,9 @@ importers:
       valtio-persist:
         specifier: ^2.2.4
         version: 2.2.4(react@19.2.0)
+      vaul:
+        specifier: ^1.1.2
+        version: 1.1.2(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       yoga-layout:
         specifier: ^3.2.1
         version: 3.2.1
@@ -4941,6 +4944,12 @@ packages:
         optional: true
       react:
         optional: true
+
+  vaul@1.1.2:
+    resolution: {integrity: sha512-ZFkClGpWyI2WUQjdLJ/BaGuV6AVQiJ3uELGk3OYtP+B6yCO7Cmn9vPFXVJkRaGkOJu3m8bQMgtyzNHixULceQA==}
+    peerDependencies:
+      react: ^16.8 || ^17.0 || ^18.0 || ^19.0.0 || ^19.0.0-rc
+      react-dom: ^16.8 || ^17.0 || ^18.0 || ^19.0.0 || ^19.0.0-rc
 
   vite@5.4.21:
     resolution: {integrity: sha512-o5a9xKjbtuhY6Bi5S3+HvbRERmouabWbyUcpXXUA1u+GNUKoROi9byOJ8M0nHbHYHkYICiMlqxkg1KkYmm25Sw==}
@@ -10348,6 +10357,15 @@ snapshots:
       proxy-compare: 3.0.1
     optionalDependencies:
       react: 19.2.0
+
+  vaul@1.1.2(react-dom@19.2.0(react@19.2.0))(react@19.2.0):
+    dependencies:
+      '@radix-ui/react-dialog': 1.1.15(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      react: 19.2.0
+      react-dom: 19.2.0(react@19.2.0)
+    transitivePeerDependencies:
+      - '@types/react'
+      - '@types/react-dom'
 
   vite@5.4.21(@types/node@24.10.1)(lightningcss@1.30.2)(terser@5.44.1):
     dependencies:

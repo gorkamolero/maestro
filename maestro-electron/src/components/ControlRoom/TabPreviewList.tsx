@@ -16,7 +16,7 @@ export function TabPreviewList({
   spaceId,
   onTabClick,
   showAddButton = true,
-  maxVisible = 6,
+  maxVisible = 12,
 }: TabPreviewListProps) {
   const visibleTabs = tabs.slice(0, maxVisible);
   const hiddenCount = tabs.length - maxVisible;
@@ -32,7 +32,7 @@ export function TabPreviewList({
       ))}
 
       {hiddenCount > 0 && (
-        <div className="flex flex-col items-center gap-1 p-1.5 rounded-lg min-w-[52px] bg-white/[0.04] text-muted-foreground">
+        <div className="flex flex-col items-center gap-1 p-1.5 rounded-lg w-[52px] h-[52px] bg-white/[0.04] text-muted-foreground">
           <div className="w-7 h-7 rounded-md bg-white/[0.06] flex items-center justify-center text-xs font-medium">
             +{hiddenCount}
           </div>
@@ -44,7 +44,7 @@ export function TabPreviewList({
         <AddTabPopover spaceId={spaceId}>
           <button
             onClick={(e) => e.stopPropagation()}
-            className="flex flex-col items-center gap-1 p-1.5 rounded-lg min-w-[52px] bg-white/[0.04] hover:bg-white/[0.08] text-muted-foreground hover:text-foreground transition-colors"
+            className="flex flex-col items-center gap-1 p-1.5 rounded-lg w-[52px] h-[52px] bg-white/[0.04] hover:bg-white/[0.08] text-muted-foreground hover:text-foreground transition-colors"
           >
             <div className="w-7 h-7 rounded-md bg-white/[0.06] flex items-center justify-center">
               <Plus className="w-4 h-4" />

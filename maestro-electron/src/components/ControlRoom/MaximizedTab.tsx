@@ -8,6 +8,7 @@ import { TerminalPanel } from '@/components/Terminal/TerminalPanel';
 import { BrowserPanel } from '@/components/Browser/BrowserPanel';
 import { TasksView } from '@/components/Tasks/TasksView';
 import { NotesView } from '@/components/Notes/NotesView';
+import { AgentPanel } from '@/components/Agent';
 import { NextBubble } from './NextBubble';
 import { TabTypeIcon } from './TabPreview';
 import type { TerminalState } from '@/components/Terminal/terminal.utils';
@@ -128,6 +129,13 @@ function TabContent({ tab }: { tab: Tab }) {
       return (
         <div className="w-full h-full">
           <NotesView spaceId={tab.spaceId} viewMode="panel" />
+        </div>
+      );
+
+    case 'agent':
+      return (
+        <div className="w-full h-full">
+          <AgentPanel tab={tab} />
         </div>
       );
 

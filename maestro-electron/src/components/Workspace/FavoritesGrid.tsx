@@ -22,7 +22,7 @@ export function FavoritesGrid({ tabs, spaceId }: FavoritesGridProps) {
   return (
     <SortableList
       onSortEnd={handleSortEnd}
-      className="flex flex-wrap gap-4 w-full"
+      className="grid grid-cols-2 gap-2 w-full"
       draggedItemClassName="opacity-50"
     >
       {tabs.map((tab) => (

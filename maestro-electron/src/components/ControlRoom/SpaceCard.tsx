@@ -66,7 +66,7 @@ export function SpaceCard({ space, tabs, onMaximize, onMaximizeTab }: SpaceCardP
     <TooltipProvider delayDuration={0}>
       <div
         className={cn(
-          'group flex flex-col p-4 rounded-lg h-[160px]',
+          'group flex flex-col p-4 rounded-lg min-h-[160px]',
           'bg-card hover:bg-accent transition-colors',
           'border border-white/[0.04]',
           !isEditMode && 'cursor-pointer'

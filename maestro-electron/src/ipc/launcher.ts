@@ -157,4 +157,16 @@ export function registerLauncherHandlers() {
   ipcMain.handle('launcher:get-installed-apps', async () => {
     return await macosUtils.getInstalledApps();
   });
+
+  /**
+   * Open native directory picker
+   */
+  ipcMain.handle('dialog:openDirectory', async (): Promise<string | null> => {
+    const result = await dialog.showOpenDialog({
+      title: 'Select Directory',
+      properties: ['openDirectory', 'createDirectory'],
+    });
+
+    return result.canceled ? null : result.filePaths[0];
+  });
 }

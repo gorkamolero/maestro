@@ -5,6 +5,7 @@ import { registerBrowserHandlers } from './ipc/browser';
 import { registerTerminalHandlers } from './ipc/terminal';
 import { registerLauncherHandlers } from './ipc/launcher';
 import { registerPortalHandler } from './ipc/portal';
+import { registerAgentHandlers } from './ipc/agent';
 
 // Handle creating/removing shortcuts on Windows
 if (started) {
@@ -55,6 +56,7 @@ app.on('ready', () => {
   registerBrowserHandlers(getMainWindow);
   registerTerminalHandlers(getMainWindow);
   registerLauncherHandlers();
+  registerAgentHandlers(getMainWindow);
 });
 
 app.on('window-all-closed', () => {

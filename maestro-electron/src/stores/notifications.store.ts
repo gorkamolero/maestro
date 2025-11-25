@@ -2,6 +2,7 @@ import { proxy } from 'valtio';
 
 export type NotificationType =
   | 'agent-done'
+  | 'agent-error'
   | 'build-failed'
   | 'build-success'
   | 'process-crashed'

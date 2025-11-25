@@ -28,6 +28,55 @@ contextBridge.exposeInMainWorld('electron', {
 });
 
 // ============================================================================
+// Expose Agent API for Claude Code integration
+// ============================================================================
+
+type PermissionMode = 'acceptEdits' | 'askUser' | 'planOnly';
+
+interface AgentStartOptions {
+  sessionId: string;
+  workDir: string;
+  prompt: string;
+  permissionMode: PermissionMode;
+}
+
+interface AgentStatusEvent {
+  sessionId: string;
+  status: string;
+  currentTool?: string;
+  currentFile?: string;
+  error?: string;
+}
+
+interface AgentTerminalLineEvent {
+  sessionId: string;
+  line: string;
+}
+
+contextBridge.exposeInMainWorld('agent', {
+  start: (options: AgentStartOptions) =>
+    ipcRenderer.invoke('agent:start', options),
+
+  stop: (sessionId: string) =>
+    ipcRenderer.invoke('agent:stop', { sessionId }),
+
+  isActive: (sessionId: string) =>
+    ipcRenderer.invoke('agent:is-active', { sessionId }),
+
+  onStatus: (callback: (data: AgentStatusEvent) => void) => {
+    const handler = (_: IpcRendererEvent, data: AgentStatusEvent) => callback(data);
+    ipcRenderer.on('agent:status', handler);
+    return () => ipcRenderer.removeListener('agent:status', handler);
+  },
+
+  onTerminalLine: (callback: (data: AgentTerminalLineEvent) => void) => {
+    const handler = (_: IpcRendererEvent, data: AgentTerminalLineEvent) => callback(data);
+    ipcRenderer.on('agent:terminal-line', handler);
+    return () => ipcRenderer.removeListener('agent:terminal-line', handler);
+  },
+});
+
+// ============================================================================
 // Expose PTY API via IPC (node-pty runs in main process)
 // ============================================================================
 
