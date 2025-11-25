@@ -124,7 +124,7 @@ function VisuallyHiddenInput<T = InputValue>(
     previous: isCheckInput ? checked : value,
   })
 
-  // eslint-disable-next-line react-hooks/refs
+  /* eslint-disable react-hooks/refs */
   const prevValue = React.useMemo(() => {
     const currentValue = isCheckInput ? checked : value
     if (prevValueRef.current.value !== currentValue) {
@@ -133,6 +133,7 @@ function VisuallyHiddenInput<T = InputValue>(
     }
     return prevValueRef.current.previous
   }, [isCheckInput, value, checked])
+  /* eslint-enable react-hooks/refs */
 
   const [controlSize, setControlSize] = React.useState<{
     width?: number
@@ -182,6 +183,7 @@ function VisuallyHiddenInput<T = InputValue>(
     }
   }, [control])
 
+  /* eslint-disable react-hooks/refs */
   React.useEffect(() => {
     const input = inputRef.current
     if (!input) return
@@ -207,6 +209,7 @@ function VisuallyHiddenInput<T = InputValue>(
       input.dispatchEvent(event)
     }
   }, [prevValue, value, checked, bubbles, isCheckInput])
+  /* eslint-enable react-hooks/refs */
 
   const composedStyle = React.useMemo<React.CSSProperties>(() => {
     return {
@@ -942,7 +945,7 @@ function ColorPickerRootImpl(props: ColorPickerRootImplProps) {
       store.setOpen(newOpen)
       onOpenChange?.(newOpen)
     },
-    [store.setOpen, onOpenChange]
+    [store, onOpenChange]
   )
 
   const RootPrimitive = asChild ? Slot : "div"

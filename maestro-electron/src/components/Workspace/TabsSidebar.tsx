@@ -1,15 +1,7 @@
 import { useWorkspaceStore, workspaceActions, type TabType } from '@/stores/workspace.store';
-import { useSpacesStore } from '@/stores/spaces.store';
 import { launcherStore } from '@/stores/launcher.store';
 import { Terminal, Globe, ListTodo, Plus, Command } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  type CarouselApi,
-} from '@/components/ui/carousel';
-import { useEffect, useState } from 'react';
 import { TabDropZone } from './TabDropZone';
 
 const TAB_LABELS: Record<TabType, string> = {
@@ -26,25 +18,9 @@ interface TabsSidebarProps {
 
 export function TabsSidebar({ onCommandPalette }: TabsSidebarProps) {
   const { tabs, activeSpaceId, tabsViewMode } = useWorkspaceStore();
-  const { spaces } = useSpacesStore();
-  const [api, setApi] = useState<CarouselApi>();
 
-  const currentSpaceIndex = spaces.findIndex((s) => s.id === activeSpaceId);
-
-  useEffect(() => {
-    if (!api || currentSpaceIndex === -1) return;
-    api.scrollTo(currentSpaceIndex, false);
-  }, [api, currentSpaceIndex]);
-
-  useEffect(() => {
-    if (!api) return;
-    api.on('select', () => {
-      const index = api.selectedScrollSnap();
-      if (spaces[index] && spaces[index].id !== activeSpaceId) {
-        workspaceActions.switchSpace(spaces[index].id);
-      }
-    });
-  }, [api, spaces, activeSpaceId]);
+  // Filter tabs for the active space
+  const spaceTabs = tabs.filter((t) => t.spaceId === activeSpaceId);
 
   const handleNewTab = (type: TabType) => {
     if (!activeSpaceId) return;
@@ -143,43 +119,15 @@ export function TabsSidebar({ onCommandPalette }: TabsSidebarProps) {
         </TooltipProvider>
       </div>
 
-      {/* Entire content area is swipeable */}
-      <Carousel
-        setApi={setApi}
-        className="flex-1"
-        opts={{
-          watchDrag: (_, event) => {
-            const target = event.target as HTMLElement;
-            // Disable carousel drag if interacting with draggable tabs
-            if (target.closest('[data-draggable="true"]')) {
-              return false;
-            }
-            return true;
-          }
-        }}
-      >
-        <CarouselContent className="h-full ml-0">
-          {spaces.map((space) => {
-            const spaceTabs = tabs.filter((t) => t.spaceId === space.id);
-
-            return (
-              <CarouselItem key={space.id} className="pl-0 h-full">
-                <div className="h-full flex flex-col">
-                  {/* Single Tabs Section */}
-                  <div className="flex-1 px-3 py-2 overflow-y-auto min-h-0">
-                    <TabDropZone
-                      tabs={spaceTabs}
-                      spaceId={space.id}
-                      viewMode={tabsViewMode}
-                      emptyMessage="No tabs yet"
-                    />
-                  </div>
-                </div>
-              </CarouselItem>
-            );
-          })}
-        </CarouselContent>
-      </Carousel>
+      {/* Tabs list */}
+      <div className="flex-1 px-3 py-2 overflow-y-auto min-h-0">
+        <TabDropZone
+          tabs={spaceTabs}
+          spaceId={activeSpaceId}
+          viewMode={tabsViewMode}
+          emptyMessage="No tabs yet"
+        />
+      </div>
     </div>
   );
 }

@@ -1,9 +1,10 @@
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+/* eslint-disable @typescript-eslint/no-unused-vars */
 export function invariant(
   cond?: boolean,
   message?: string,
   ..._args: string[]
 ): asserts cond {
+/* eslint-enable @typescript-eslint/no-unused-vars */
   if (cond) {
     return
   }

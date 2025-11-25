@@ -1,21 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useSnapshot } from 'valtio';
-import { Dock } from '@/components/Workspace/Dock';
-import { Sidebar } from '@/components/Workspace/Sidebar';
-import { WorkspacePanel } from '@/components/Workspace/WorkspacePanel';
-import { NotesEditor } from '@/components/Notes/NotesEditor';
-import { AddFavoriteModal } from '@/components/Launcher';
 import { CommandPalettePortal } from '@/components/CommandPalettePortal';
 import { StatusBar } from '@/components/StatusBar';
-import { ControlRoom, FloatingNextBubble } from '@/components/ControlRoom';
-import { useWorkspaceStore, workspaceActions, getWorkspaceStore } from '@/stores/workspace.store';
+import { ControlRoom } from '@/components/ControlRoom';
+import { useWorkspaceStore, workspaceActions } from '@/stores/workspace.store';
 import { historyActions } from '@/stores/history.store';
 import { useSpacesStore, spacesActions } from '@/stores/spaces.store';
-import { notesStore } from '@/stores/notes.store';
-import { ResizablePanel } from '@/components/ui/resizable-panel';
-import { FileText, Plus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { notesActions } from '@/stores/notes.store';
 import { applySpaceTheme, resetSpaceTheme } from '@/lib/space-theme';
 import { startAutoBackup } from '@/lib/backup';
 import '@/components/editor/themes/editor-theme.css';
@@ -26,7 +15,7 @@ startAutoBackup();
 function App() {
   const [darkMode] = useState(true);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
-  const { activeSpaceId, activeTabId, layout, workspaceViewMode, appViewMode } = useWorkspaceStore();
+  const { activeSpaceId, activeTabId, appViewMode } = useWorkspaceStore();
   const { spaces } = useSpacesStore();
 
   const activeSpace = spaces.find((s) => s.id === activeSpaceId);
@@ -38,8 +27,8 @@ function App() {
     }
   }, [activeSpaceId, appViewMode]);
 
+  // Apply space theme when active space changes
   useEffect(() => {
-    // Apply space theme when active space changes
     if (activeSpace) {
       applySpaceTheme(activeSpace.primaryColor, activeSpace.secondaryColor);
     } else {
@@ -47,6 +36,7 @@ function App() {
     }
   }, [activeSpace]);
 
+  // Dark mode
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
@@ -58,13 +48,12 @@ function App() {
   // Global keyboard shortcuts
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isInputField = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+
       // Ctrl/Cmd+Z - Undo
       if (e.key === 'z' && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
-        // Don't intercept if user is in an input field
-        const target = e.target as HTMLElement;
-        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
-          return;
-        }
+        if (isInputField) return;
         e.preventDefault();
         historyActions.undo();
         return;
@@ -72,11 +61,7 @@ function App() {
 
       // Ctrl/Cmd+Shift+Z - Redo
       if (e.key === 'z' && (e.metaKey || e.ctrlKey) && e.shiftKey) {
-        // Don't intercept if user is in an input field
-        const target = e.target as HTMLElement;
-        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
-          return;
-        }
+        if (isInputField) return;
         e.preventDefault();
         historyActions.redo();
         return;
@@ -104,141 +89,20 @@ function App() {
         setCommandPaletteOpen((open) => !open);
         return;
       }
-
-      // Escape - Return to Control Room (when in workspace view and not in input)
-      if (e.key === 'Escape' && appViewMode === 'workspace') {
-        const target = e.target as HTMLElement;
-        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
-          return;
-        }
-        e.preventDefault();
-        workspaceActions.returnToControlRoom();
-        return;
-      }
-
-      // Cmd+Shift+O - Toggle Control Room
-      if (e.key === 'o' && (e.metaKey || e.ctrlKey) && e.shiftKey) {
-        e.preventDefault();
-        if (appViewMode === 'control-room') {
-          // If in control room and there's an active space, maximize it
-          if (activeSpaceId) {
-            workspaceActions.maximizeSpace(activeSpaceId);
-          }
-        } else {
-          workspaceActions.returnToControlRoom();
-        }
-      }
     };
 
     document.addEventListener('keydown', down);
     return () => document.removeEventListener('keydown', down);
-  }, [appViewMode, activeSpaceId, activeTabId]);
+  }, [activeTabId]);
 
-  const handleSidebarResize = (width: number) => {
-    getWorkspaceStore().layout.sidebarWidth = width;
-  };
-
-  // Control Room view
-  if (appViewMode === 'control-room') {
-    return (
-      <div className="h-screen bg-background text-foreground flex flex-col">
-        <div className="flex-1 overflow-hidden">
-          <ControlRoom />
-        </div>
-        <StatusBar />
-        <CommandPalettePortal isOpen={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} />
-      </div>
-    );
-  }
-
-  // Workspace view (existing layout)
+  // ControlRoom is always rendered - ExpandableScreen handles workspace view
   return (
     <div className="h-screen bg-background text-foreground flex flex-col">
-      {/* Main content area */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Arc-style left sidebar - now resizable */}
-        <ResizablePanel
-          defaultWidth={layout.sidebarWidth}
-          minWidth={180}
-          maxWidth={400}
-          onResize={handleSidebarResize}
-          className="bg-muted/20"
-        >
-          <div className="h-full flex flex-col">
-            {/* Sidebar with favorites and tabs */}
-            <div className="flex-1 overflow-hidden">
-              <Sidebar onCommandPalette={() => setCommandPaletteOpen(true)} />
-            </div>
-
-            {/* Space switcher at bottom-left */}
-            <div className="border-t border-border/50 p-2">
-              <Dock />
-            </div>
-          </div>
-        </ResizablePanel>
-
-        {/* Main workspace area */}
-        <div className="flex-1 bg-muted/20">
-          <div className="h-full flex flex-col rounded-lg overflow-hidden bg-background">
-            {workspaceViewMode === 'tabs' ? (
-              <WorkspacePanel />
-            ) : activeSpaceId ? (
-              <NotesMainArea spaceId={activeSpaceId} />
-            ) : null}
-          </div>
-        </div>
-
-        {/* Modals */}
-        {activeSpaceId && <AddFavoriteModal workspaceId={activeSpaceId} />}
-
-        {/* Command Palette */}
-        <CommandPalettePortal isOpen={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} />
+      <div className="flex-1 overflow-hidden">
+        <ControlRoom />
       </div>
-
-      {/* Floating NEXT bubble - fixed position */}
-      <FloatingNextBubble
-        spaceId={activeSpaceId}
-        className="fixed bottom-16 right-4 z-50"
-      />
-
-      {/* Status Bar */}
       <StatusBar />
-    </div>
-  );
-}
-
-// Notes main area - just the editor, no sidebar
-function NotesMainArea({ spaceId }: { spaceId: string }) {
-  const snap = useSnapshot(notesStore);
-  const activeNoteId = snap.activeNoteId;
-
-  if (activeNoteId) {
-    return <NotesEditor key={activeNoteId} noteId={activeNoteId} />;
-  }
-
-  // Empty state when no note is selected
-  return (
-    <div className="h-full flex items-center justify-center">
-      <div className="text-center max-w-md">
-        <FileText size={64} className="mx-auto mb-6 text-muted-foreground opacity-50" />
-        <h2 className="text-2xl font-semibold mb-2">No note selected</h2>
-        <p className="text-muted-foreground mb-6">
-          Select a note from the sidebar or create a new one to get started
-        </p>
-        <Button onClick={() => notesActions.createNote(spaceId, 'untitled.md')} size="lg">
-          <Plus className="mr-2 h-5 w-5" />
-          Create New Note
-        </Button>
-        <div className="mt-8 text-sm text-muted-foreground">
-          <p className="mb-2 font-medium">Quick tips:</p>
-          <ul className="space-y-1 text-left mx-auto inline-block">
-            <li>• Use Markdown shortcuts for formatting</li>
-            <li>• Link notes to tasks for context</li>
-            <li>• Organize with folders and tags</li>
-            <li>• Pin important notes for quick access</li>
-          </ul>
-        </div>
-      </div>
+      <CommandPalettePortal isOpen={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} />
     </div>
   );
 }

@@ -2,23 +2,20 @@ import { useCallback } from 'react';
 import { Plus } from 'lucide-react';
 import { useSpacesStore, spacesActions } from '@/stores/spaces.store';
 import { useWorkspaceStore, workspaceActions } from '@/stores/workspace.store';
-import { SpaceCard } from './SpaceCard';
+import { SpaceCardExpandable } from './SpaceCardExpandable';
 import { cn } from '@/lib/utils';
 
 export function ControlRoom() {
   const { spaces } = useSpacesStore();
   const { tabs } = useWorkspaceStore();
 
-  const handleMaximize = useCallback((spaceId: string) => {
-    spacesActions.updateSpaceLastActive(spaceId);
-    workspaceActions.maximizeSpace(spaceId);
-  }, []);
-
   const handleNewSpace = useCallback(() => {
     const name = `Space ${spaces.length + 1}`;
     const newSpace = spacesActions.addSpace(name);
-    handleMaximize(newSpace.id);
-  }, [spaces.length, handleMaximize]);
+    // Immediately maximize the new space
+    spacesActions.updateSpaceLastActive(newSpace.id);
+    workspaceActions.maximizeSpace(newSpace.id);
+  }, [spaces.length]);
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -40,11 +37,10 @@ export function ControlRoom() {
           {spaces.map((space) => {
             const spaceTabs = tabs.filter((t) => t.spaceId === space.id);
             return (
-              <SpaceCard
+              <SpaceCardExpandable
                 key={space.id}
                 space={space}
                 tabs={spaceTabs}
-                onMaximize={() => handleMaximize(space.id)}
               />
             );
           })}
@@ -57,7 +53,7 @@ export function ControlRoom() {
               'flex items-center justify-center gap-2 p-4 rounded-lg',
               'text-muted-foreground hover:text-foreground',
               'hover:bg-accent/50 transition-colors',
-              'min-h-[140px]'
+              'min-h-[120px]'
             )}
           >
             <Plus className="w-4 h-4" />
