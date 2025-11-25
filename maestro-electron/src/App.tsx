@@ -25,7 +25,7 @@ startAutoBackup();
 function App() {
   const [darkMode] = useState(true);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
-  const { activeSpaceId, layout, workspaceViewMode } = useWorkspaceStore();
+  const { activeSpaceId, activeTabId, layout, workspaceViewMode } = useWorkspaceStore();
   const { spaces } = useSpacesStore();
 
   const activeSpace = spaces.find((s) => s.id === activeSpaceId);
@@ -78,6 +78,15 @@ function App() {
       if (e.key === 't' && (e.metaKey || e.ctrlKey) && e.shiftKey) {
         e.preventDefault();
         workspaceActions.restoreRecentlyClosedTab();
+        return;
+      }
+
+      // Cmd+W - Close active tab
+      if (e.key === 'w' && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
+        e.preventDefault();
+        if (activeTabId) {
+          workspaceActions.closeTab(activeTabId);
+        }
         return;
       }
 
