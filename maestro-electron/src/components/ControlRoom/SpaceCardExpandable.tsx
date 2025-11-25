@@ -1,11 +1,9 @@
-import { useCallback, useMemo } from 'react';
+import { useState, useCallback } from 'react';
 import type { Space } from '@/types';
 import type { Tab } from '@/stores/workspace.store';
-import { cn } from '@/lib/utils';
-import { WarmthIndicator } from './WarmthIndicator';
-import { SpaceStatusSummary } from './SpaceStatusSummary';
-import { NextBubble } from './NextBubble';
+import { SpaceCard } from './SpaceCard';
 import { MaximizedWorkspace } from './MaximizedWorkspace';
+import { MaximizedTab } from './MaximizedTab';
 import { spacesActions } from '@/stores/spaces.store';
 import { workspaceActions } from '@/stores/workspace.store';
 import {
@@ -20,84 +18,74 @@ interface SpaceCardExpandableProps {
   tabs: Tab[];
 }
 
-function getLastActiveText(lastActiveAt: string | null): string {
-  if (!lastActiveAt) return 'Never';
-
-  const hoursSince =
-    (Date.now() - new Date(lastActiveAt).getTime()) / (1000 * 60 * 60);
-
-  if (hoursSince < 1) return 'Now';
-  if (hoursSince < 24) {
-    const hours = Math.floor(hoursSince);
-    return `${hours}h ago`;
-  }
-  const days = Math.floor(hoursSince / 24);
-  return `${days}d ago`;
-}
-
-// Inner component that can use the expandable screen context
-function SpaceCardContent({ space, tabs }: SpaceCardExpandableProps) {
-  const handleNextChange = useCallback(
-    (next: string | null) => {
-      spacesActions.setSpaceNext(space.id, next);
-    },
-    [space.id]
-  );
-
-  const lastActiveText = useMemo(
-    () => getLastActiveText(space.lastActiveAt),
-    [space.lastActiveAt]
-  );
-
-  return (
-    <div
-      className={cn(
-        'group flex flex-col p-5 rounded-lg min-h-[120px]',
-        'bg-card hover:bg-accent transition-colors cursor-pointer',
-        'border border-white/[0.04]'
-      )}
-    >
-      {/* Header: Icon + Name + Warmth */}
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-base">{space.icon || '📁'}</span>
-        <h3 className="flex-1 font-medium text-sm truncate">{space.name}</h3>
-        <WarmthIndicator lastActiveAt={space.lastActiveAt} />
-      </div>
-
-      {/* Status - minimal text */}
-      <div className="flex-1 mb-3">
-        {tabs.length > 0 ? (
-          <SpaceStatusSummary tabs={tabs} />
-        ) : (
-          <p className="text-xs text-muted-foreground">{lastActiveText}</p>
-        )}
-      </div>
-
-      {/* NEXT */}
-      <NextBubble value={space.next} onChange={handleNextChange} />
-    </div>
-  );
-}
+type ExpandMode =
+  | { type: 'none' }
+  | { type: 'space' }
+  | { type: 'tab'; tabId: string };
 
 // Wrapper component for the maximized content that has access to collapse
-function MaximizedWorkspaceWrapper({ space }: { space: Space }) {
+function MaximizedContentWrapper({
+  space,
+  tabs,
+  mode,
+  onModeReset,
+}: {
+  space: Space;
+  tabs: Tab[];
+  mode: ExpandMode;
+  onModeReset: () => void;
+}) {
   const { collapse } = useExpandableScreen();
 
   const handleBack = useCallback(() => {
     collapse();
-    // Also update workspace store state
+    onModeReset();
     workspaceActions.returnToControlRoom();
-  }, [collapse]);
+  }, [collapse, onModeReset]);
+
+  if (mode.type === 'tab') {
+    const tab = tabs.find((t) => t.id === mode.tabId);
+    if (tab) {
+      return <MaximizedTab tab={tab} space={space} onBack={handleBack} />;
+    }
+  }
 
   return <MaximizedWorkspace space={space} onBack={handleBack} />;
 }
 
 export function SpaceCardExpandable({ space, tabs }: SpaceCardExpandableProps) {
-  const handleExpand = useCallback(() => {
-    // Set this space as active when expanded
-    spacesActions.updateSpaceLastActive(space.id);
-    workspaceActions.maximizeSpace(space.id);
-  }, [space.id]);
+  const [expandMode, setExpandMode] = useState<ExpandMode>({ type: 'none' });
+
+  const handleMaximizeSpace = useCallback(() => {
+    setExpandMode({ type: 'space' });
+  }, []);
+
+  const handleMaximizeTab = useCallback((tabId: string) => {
+    setExpandMode({ type: 'tab', tabId });
+  }, []);
+
+  const handleModeReset = useCallback(() => {
+    setExpandMode({ type: 'none' });
+  }, []);
+
+  const handleExpandChange = useCallback(
+    (expanded: boolean) => {
+      if (expanded && expandMode.type !== 'none') {
+        // Set this space as active when expanded
+        spacesActions.updateSpaceLastActive(space.id);
+        workspaceActions.maximizeSpace(space.id);
+
+        // If maximizing a specific tab, also set it as active
+        if (expandMode.type === 'tab') {
+          workspaceActions.setActiveTab(expandMode.tabId);
+        }
+      }
+      if (!expanded) {
+        handleModeReset();
+      }
+    },
+    [expandMode, space.id, handleModeReset]
+  );
 
   return (
     <ExpandableScreen
@@ -105,23 +93,29 @@ export function SpaceCardExpandable({ space, tabs }: SpaceCardExpandableProps) {
       triggerRadius="8px"
       contentRadius="0px"
       animationDuration={0.35}
-      onExpandChange={(expanded) => {
-        if (expanded) {
-          handleExpand();
-        }
-      }}
+      onExpandChange={handleExpandChange}
     >
       {/* The card trigger */}
       <ExpandableScreenTrigger>
-        <SpaceCardContent space={space} tabs={tabs} />
+        <SpaceCard
+          space={space}
+          tabs={tabs}
+          onMaximize={handleMaximizeSpace}
+          onMaximizeTab={handleMaximizeTab}
+        />
       </ExpandableScreenTrigger>
 
-      {/* The maximized workspace content */}
+      {/* The maximized content - either workspace or single tab */}
       <ExpandableScreenContent
         className="bg-background"
         showCloseButton={false}
       >
-        <MaximizedWorkspaceWrapper space={space} />
+        <MaximizedContentWrapper
+          space={space}
+          tabs={tabs}
+          mode={expandMode}
+          onModeReset={handleModeReset}
+        />
       </ExpandableScreenContent>
     </ExpandableScreen>
   );
