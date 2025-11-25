@@ -17,3 +17,4 @@ export { SpaceEditMode } from './SpaceEditMode';
 // Status and notification components
 export { TerminalStatus } from './TerminalStatus';
 export { AttentionBubble } from './AttentionBubble';
+export { AgentProgressBar } from './AgentProgressBar';

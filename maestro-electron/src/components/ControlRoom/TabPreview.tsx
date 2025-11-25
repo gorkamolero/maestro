@@ -10,6 +10,7 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
+import { TerminalStatus } from './TerminalStatus';
 
 interface TabPreviewProps {
   tab: Tab;
@@ -36,10 +37,22 @@ function TabTypeIcon({ type, className }: { type: Tab['type']; className?: strin
   }
 }
 
-// Icon-only button view (for Control Room cards)
+const TAB_TYPE_LABELS: Record<Tab['type'], string> = {
+  terminal: 'Terminal',
+  browser: 'Browser',
+  'app-launcher': 'App',
+  tasks: 'Tasks',
+  notes: 'Notes',
+  agent: 'Agent',
+};
+
+// Icon + label button view (for Control Room cards)
 export function TabPreviewIcon({ tab, onClick }: TabPreviewProps) {
   // Use app icon for app-launcher tabs if available
   const appIcon = tab.type === 'app-launcher' && tab.appLauncherConfig?.icon;
+  const label = tab.type === 'app-launcher'
+    ? (tab.appLauncherConfig?.appName || tab.title).split(' ')[0] // First word only
+    : TAB_TYPE_LABELS[tab.type];
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -72,17 +85,28 @@ export function TabPreviewIcon({ tab, onClick }: TabPreviewProps) {
         <button
           onClick={handleClick}
           className={cn(
-            'w-8 h-8 rounded-lg flex items-center justify-center',
+            'flex flex-col items-center gap-1 p-1.5 rounded-lg min-w-[52px]',
             'bg-white/[0.04] hover:bg-white/[0.08] transition-colors',
             'text-muted-foreground hover:text-foreground',
             tab.disabled && 'opacity-40'
           )}
         >
-          {appIcon ? (
-            <img src={appIcon} alt={tab.title} className="w-5 h-5 rounded" />
-          ) : (
-            <TabTypeIcon type={tab.type} className="w-3.5 h-3.5" />
-          )}
+          <div className="relative w-7 h-7 rounded-md bg-white/[0.06] flex items-center justify-center">
+            {appIcon ? (
+              <img src={appIcon} alt={tab.title} className="w-5 h-5 rounded" />
+            ) : (
+              <TabTypeIcon type={tab.type} className="w-4 h-4" />
+            )}
+            {/* Status indicator for terminal/agent tabs */}
+            {(tab.type === 'terminal' || tab.type === 'agent') && (
+              <div className="absolute -top-0.5 -right-0.5">
+                <TerminalStatus tabId={tab.id} />
+              </div>
+            )}
+          </div>
+          <span className="text-[10px] leading-tight truncate max-w-[48px]">
+            {label}
+          </span>
         </button>
       </ContextMenuTrigger>
       <ContextMenuContent onClick={(e) => e.stopPropagation()}>

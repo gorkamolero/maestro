@@ -42,14 +42,14 @@ export function TabDropZone({
       ) : (
         <SortableList
           onSortEnd={handleSortEnd}
-          className="space-y-1"
+          className="space-y-0.5"
           draggedItemClassName="opacity-50"
           lockAxis="y"
         >
           {tabs.map((tab) => (
             <SortableItem key={tab.id}>
               <div>
-                <ListTab tab={tab} spaceId={spaceId} />
+                <ListTab tab={tab} />
               </div>
             </SortableItem>
           ))}

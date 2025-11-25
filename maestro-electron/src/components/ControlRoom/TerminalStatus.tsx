@@ -1,37 +1,32 @@
-import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-
-type TerminalStatusType = 'idle' | 'running' | 'success' | 'error';
+import { useWorkspaceStore } from '@/stores/workspace.store';
 
 interface TerminalStatusProps {
   tabId: string;
 }
 
 /**
- * Shows live terminal status indicator in the tab preview.
- * Phase 3 feature - subscribes to terminal events via IPC.
+ * Shows live terminal/agent status indicator in the tab preview.
+ * Reads from workspace store tab status.
  */
 export function TerminalStatus({ tabId }: TerminalStatusProps) {
-  const [status] = useState<TerminalStatusType>('idle');
+  const { tabs } = useWorkspaceStore();
+  const tab = tabs.find((t) => t.id === tabId);
+  const status = tab?.status || 'idle';
 
-  useEffect(() => {
-    // TODO: Subscribe to terminal events for this tab via IPC
-    // For now, just show idle state
-    // const [status, setStatus] = useState with IPC subscription
-    // const unsubscribe = window.electron?.onTerminalStatus?.(tabId, setStatus);
-    // return unsubscribe;
-  }, [tabId]);
+  // Don't show anything for idle status - keeps UI clean
+  if (status === 'idle') {
+    return null;
+  }
 
   return (
     <span
       className={cn(
-        'w-1.5 h-1.5 rounded-full shrink-0',
+        'w-2 h-2 rounded-full shrink-0 ring-1 ring-background',
         status === 'running' && 'bg-blue-400 animate-pulse',
-        status === 'success' && 'bg-green-400',
-        status === 'error' && 'bg-red-400',
-        status === 'idle' && 'bg-foreground/20'
+        status === 'active' && 'bg-green-400'
       )}
-      title={`Terminal ${status}`}
+      title={`${tab?.type || 'Tab'} ${status}`}
     />
   );
 }

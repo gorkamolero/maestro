@@ -1,15 +1,11 @@
 import { useWorkspaceStore, workspaceActions } from '@/stores/workspace.store';
 import { FileText, LayoutGrid } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { TabsSidebar } from './TabsSidebar';
 import { NotesSidebar } from '@/components/Notes/NotesSidebar';
 import { TabsViewModeSelector } from './TabsViewModeSelector';
+import { cn } from '@/lib/utils';
 
-interface SidebarProps {
-  onCommandPalette?: () => void;
-}
-
-export function Sidebar({ onCommandPalette }: SidebarProps) {
+export function Sidebar() {
   const { activeSpaceId, workspaceViewMode } = useWorkspaceStore();
 
   const handleViewModeSwitch = (mode: 'notes' | 'tabs') => {
@@ -27,61 +23,49 @@ export function Sidebar({ onCommandPalette }: SidebarProps) {
   }
 
   return (
-    <div className="w-full h-full flex flex-col">
-      {/* View Mode Switcher */}
-      <div className="h-14 p-3 flex items-center justify-start gap-2 border-b border-border/50">
-        <TooltipProvider delayDuration={0}>
-          {/* Tabs View Mode */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={() => handleViewModeSwitch('tabs')}
-                className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors shadow-sm ${
-                  workspaceViewMode === 'tabs'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-background/50 hover:bg-background'
-                }`}
-              >
-                <LayoutGrid className="w-4 h-4" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              <p className="text-xs">Tabs View</p>
-            </TooltipContent>
-          </Tooltip>
-
-          {/* Notes View Mode */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={() => handleViewModeSwitch('notes')}
-                className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors shadow-sm ${
-                  workspaceViewMode === 'notes'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-background/50 hover:bg-background'
-                }`}
-              >
-                <FileText className="w-4 h-4" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              <p className="text-xs">Notes View</p>
-            </TooltipContent>
-          </Tooltip>
-
-          {/* Tabs View Mode Selector - Only show when in tabs view */}
-          {workspaceViewMode === 'tabs' && (
-            <div className="ml-auto">
-              <TabsViewModeSelector />
-            </div>
+    <div className="w-full h-full flex flex-col bg-muted/30">
+      {/* View Mode Switcher - Zed style minimal header */}
+      <div className="h-10 px-2 flex items-center gap-1 border-b border-white/[0.04]">
+        {/* Tabs View Mode */}
+        <button
+          onClick={() => handleViewModeSwitch('tabs')}
+          className={cn(
+            'h-7 px-2.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors',
+            workspaceViewMode === 'tabs'
+              ? 'bg-white/[0.08] text-foreground'
+              : 'text-muted-foreground hover:text-foreground hover:bg-white/[0.04]'
           )}
-        </TooltipProvider>
+        >
+          <LayoutGrid className="w-3.5 h-3.5" />
+          <span>Tabs</span>
+        </button>
+
+        {/* Notes View Mode */}
+        <button
+          onClick={() => handleViewModeSwitch('notes')}
+          className={cn(
+            'h-7 px-2.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors',
+            workspaceViewMode === 'notes'
+              ? 'bg-white/[0.08] text-foreground'
+              : 'text-muted-foreground hover:text-foreground hover:bg-white/[0.04]'
+          )}
+        >
+          <FileText className="w-3.5 h-3.5" />
+          <span>Notes</span>
+        </button>
+
+        {/* Tabs View Mode Selector - Only show when in tabs view */}
+        {workspaceViewMode === 'tabs' && (
+          <div className="ml-auto">
+            <TabsViewModeSelector />
+          </div>
+        )}
       </div>
 
       {/* Conditional Sidebar Content */}
       <div className="flex-1 overflow-hidden">
         {workspaceViewMode === 'tabs' ? (
-          <TabsSidebar onCommandPalette={onCommandPalette} />
+          <TabsSidebar />
         ) : (
           <NotesSidebar spaceId={activeSpaceId} />
         )}

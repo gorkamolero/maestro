@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { Settings, Play } from 'lucide-react';
 import type { Space } from '@/types';
 import type { Tab } from '@/stores/workspace.store';
@@ -11,6 +11,7 @@ import { SpaceEditMode } from './SpaceEditMode';
 import { NextBubble } from './NextBubble';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useExpandableScreen } from '@/components/ui/expandable-screen';
+import { AgentProgressBar } from './AgentProgressBar';
 
 interface SpaceCardProps {
   space: Space;
@@ -55,6 +56,11 @@ export function SpaceCard({ space, tabs, onMaximize, onMaximizeTab }: SpaceCardP
     }
     // App-launcher tabs are handled by TabPreviewIcon directly (launch app)
   }, [tabs, expand, onMaximizeTab]);
+
+  // Check if any agent or terminal is running
+  const hasRunningAgent = useMemo(() => {
+    return tabs.some(t => (t.type === 'agent' || t.type === 'terminal') && t.status === 'running');
+  }, [tabs]);
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -137,6 +143,11 @@ export function SpaceCard({ space, tabs, onMaximize, onMaximizeTab }: SpaceCardP
           <div className="mt-auto pt-2">
             <NextBubble value={space.next} onChange={handleNextChange} />
           </div>
+        )}
+
+        {/* Agent progress bar - shows when agent/terminal is running */}
+        {hasRunningAgent && !isEditMode && (
+          <AgentProgressBar />
         )}
       </div>
     </TooltipProvider>
