@@ -32,9 +32,11 @@ interface UseWebviewOptions {
   setIsLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   isActive: boolean;
+  /** Session partition for profile isolation */
+  partition?: string;
 }
 
-export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setError, isActive }: UseWebviewOptions) {
+export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setError, isActive, partition }: UseWebviewOptions) {
   const webviewLabelRef = useRef<string | null>(null);
 
   // Log prop changes
@@ -155,6 +157,7 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
           y: position.y,
           width: position.width,
           height: position.height,
+          partition,
         });
 
         if (mounted) {
@@ -185,7 +188,7 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
         });
       }
     };
-  }, [tabId, initialUrl, containerRef, setIsLoading, setError, isActive]);
+  }, [tabId, initialUrl, containerRef, setIsLoading, setError, isActive, partition]);
 
   // Listen to navigation events to sync URL and history from actual webview
   useEffect(() => {

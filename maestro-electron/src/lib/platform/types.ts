@@ -15,6 +15,8 @@ export interface BrowserViewOptions {
   y: number;
   width: number;
   height: number;
+  /** Session partition for profile isolation (e.g., 'persist:profile-123') */
+  partition?: string;
 }
 
 export interface BrowserNavigationEvent {

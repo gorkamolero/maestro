@@ -1,17 +1,99 @@
 // Core Types
 import type { Tab } from '@/stores/workspace.store';
 
+// =============================================================================
+// Profile - Top-level organizational unit (like Arc browser profiles)
+// =============================================================================
+
+export interface Profile {
+  id: string;
+  name: string;
+  /** Optional avatar/icon for the profile */
+  avatar?: string;
+  /** Color theme for visual distinction */
+  color: string;
+  /** Electron session partition name for browser isolation */
+  sessionPartition: string;
+  /** Profile-specific settings */
+  settings: ProfileSettings;
+  /** Creation timestamp */
+  createdAt: string;
+  /** Last active timestamp */
+  lastActiveAt: string;
+}
+
+export interface ProfileSettings {
+  /** Default search engine */
+  searchEngine: 'google' | 'duckduckgo' | 'bing' | 'custom';
+  customSearchUrl?: string;
+  /** Default browser homepage */
+  homepage: string;
+  /** Enable/disable cookies */
+  cookiesEnabled: boolean;
+  /** Enable/disable JavaScript */
+  javascriptEnabled: boolean;
+  /** Block third-party cookies */
+  blockThirdPartyCookies: boolean;
+  /** User agent override (optional) */
+  userAgent?: string;
+  /** Proxy settings (optional) */
+  proxy?: ProxySettings;
+  /** Enabled Chrome extensions (extension IDs) */
+  enabledExtensions: string[];
+}
+
+export interface ProxySettings {
+  mode: 'direct' | 'system' | 'manual';
+  server?: string;
+  port?: number;
+  bypassList?: string[];
+}
+
+/** Default settings for new profiles */
+export const DEFAULT_PROFILE_SETTINGS: ProfileSettings = {
+  searchEngine: 'google',
+  homepage: 'about:blank',
+  cookiesEnabled: true,
+  javascriptEnabled: true,
+  blockThirdPartyCookies: false,
+  enabledExtensions: [],
+};
+
+/** Profile color palette */
+export const PROFILE_COLOR_PALETTE = [
+  '#3b82f6', // Blue
+  '#10b981', // Emerald
+  '#f59e0b', // Amber
+  '#ef4444', // Red
+  '#8b5cf6', // Violet
+  '#ec4899', // Pink
+  '#14b8a6', // Teal
+  '#f97316', // Orange
+] as const;
+
+// =============================================================================
+// Workspace - Container for Spaces (belongs to a Profile)
+// =============================================================================
+
 export interface Workspace {
   id: string;
   name: string;
+  /** Profile this workspace belongs to */
+  profileId: string;
   spaces: Space[];
   createdAt: Date;
   updatedAt: Date;
 }
 
+// =============================================================================
+// Space - Organizational unit within a Workspace
+// =============================================================================
+
 export interface Space {
   id: string;
   name: string;
+  /** Profile this space belongs to (denormalized for quick access) */
+  profileId?: string;
   position: number;
   primaryColor: string;
   secondaryColor: string;

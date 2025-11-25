@@ -5,6 +5,8 @@ import { Globe, Search } from 'lucide-react';
 import { useWebview } from './useWebview';
 import { BrowserToolbar } from './BrowserToolbar';
 import { browserStore, getBrowserState } from '@/stores/browser.store';
+import { useSpacesStore } from '@/stores/spaces.store';
+import { getProfileById } from '@/stores/profile.store';
 import { platform } from '@/lib/platform';
 import type { Tab } from '@/stores/workspace.store';
 
@@ -82,6 +84,11 @@ export function BrowserPanel({ tab, isActive }: BrowserPanelProps) {
   const [error, setError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Get the space this tab belongs to, then get its profile for session isolation
+  const { spaces } = useSpacesStore();
+  const space = spaces.find(s => s.id === tab.spaceId);
+  const profile = space?.profileId ? getProfileById(space.profileId) : null;
+
   // Get reactive snapshot of browser state
   const browserSnap = useSnapshot(browserStore);
 
@@ -137,6 +144,7 @@ export function BrowserPanel({ tab, isActive }: BrowserPanelProps) {
     setIsLoading,
     setError,
     isActive,
+    partition: profile?.sessionPartition,
   });
 
   // Show new tab page instead of webview when no URL

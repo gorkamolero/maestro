@@ -6,15 +6,14 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { SpaceEditor } from './SpaceEditor';
 import { SpaceButton } from './SpaceButton';
 import { useState } from 'react';
-import type { Space } from '@/types';
 
 export function Dock() {
   const spacesSnap = useSpacesStore();
   const workspaceSnap = useWorkspaceStore();
   const [newSpacePopoverOpen, setNewSpacePopoverOpen] = useState(false);
 
-  const handleCreateSpace = (name: string, icon?: string) => {
-    const newSpace = spacesActions.addSpace(name);
+  const handleCreateSpace = (name: string, icon?: string, profileId?: string) => {
+    const newSpace = spacesActions.addSpace(name, profileId);
     if (icon) {
       spacesActions.updateSpace(newSpace.id, { icon });
     }

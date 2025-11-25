@@ -41,10 +41,10 @@ Maestro is a timeline-based work orchestrator that manages parallel work streams
 ### 🎯 Remaining Workspace Features
 
 **Workspace Enhancements:**
-- [ ] Notes panel (markdown editor as workspace tool)
-- [ ] Command palette (Cmd+K) for workspace navigation
+- [x] Notes panel (markdown editor as workspace tool)
+- [x] Command palette (Cmd+K) for workspace navigation
 - [ ] Keyboard shortcuts for tab switching (Cmd+1-9)
-- [ ] Tab context menu (rename, duplicate, close)
+- [x] Tab context menu (rename, duplicate, close)
 - [ ] Workspace search (across all open tabs/tools)
 - [ ] Quick switcher between tools/tabs
 
@@ -54,12 +54,6 @@ Maestro is a timeline-based work orchestrator that manages parallel work streams
 - [ ] Context menu (copy/paste/inspect)
 - [ ] DevTools integration
 - [ ] Multiple tabs within browser panel
-
-**Terminal Enhancements:**
-- [ ] Command history search
-- [ ] Terminal tab splitting (horizontal/vertical)
-- [ ] Custom color schemes
-- [ ] Search in terminal output
 
 **UI Polish:**
 - [ ] Smooth tab switch animations
@@ -108,11 +102,17 @@ Maestro is a timeline-based work orchestrator that manages parallel work streams
 - Pane resize and focus
 - Layout persistence
 
-### External App Integration (Deferred)
-- Launch external apps (VSCode, Ableton, etc.)
-- App state tracking
-- Window position memory
-- File associations
+### External App Integration (Almost Complete)
+- [x] Launch external apps (VSCode, Ableton, etc.)
+- [x] App state tracking
+- [x] Window position memory
+- [x] macOS .app bundle registration via file picker
+- [x] Icon extraction (ICNS→PNG via sips)
+- [x] Running app detection with visual indicators
+- [x] Bring to front via AppleScript
+- [x] Launch methods: app only, with file, deep link (URL scheme)
+- [ ] File associations
+- [ ] Cross-platform support (Windows/Linux)
 
 ### Data & Persistence (Deferred)
 - SQLite migration
@@ -435,6 +435,7 @@ eventBus.on('agent:completed', ({ segmentId }) => {
 - ❌ Time tracking reports
 - ❌ Invoice generation
 - ❌ Team features
+- ❌ API-first interfaces (extensibility layer for external integrations)
 
 ---
 

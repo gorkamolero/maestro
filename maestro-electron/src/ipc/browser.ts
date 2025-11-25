@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow, BrowserView } from 'electron';
+import { ipcMain, BrowserWindow, BrowserView, session } from 'electron';
 
 const browserViews = new Map<string, BrowserView>();
 
@@ -6,7 +6,7 @@ const creatingViews = new Set<string>();
 
 export function registerBrowserHandlers(getMainWindow: () => BrowserWindow | null) {
   ipcMain.handle('create_browser_view', async (_event, options) => {
-    const { label, url, x, y, width, height } = options;
+    const { label, url, x, y, width, height, partition } = options;
     const mainWindow = getMainWindow();
 
     if (!mainWindow) return label;
@@ -45,11 +45,17 @@ export function registerBrowserHandlers(getMainWindow: () => BrowserWindow | nul
       mainWindow.removeBrowserView(otherView);
     }
 
-    // Create new view
+    // Get or create session for this profile's partition
+    // 'persist:' prefix means data persists to disk; without it, session is in-memory only
+    const sessionPartition = partition || 'persist:default';
+    const browserSession = session.fromPartition(sessionPartition);
+
+    // Create new view with profile-specific session
     view = new BrowserView({
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
+        session: browserSession,
       },
     });
 

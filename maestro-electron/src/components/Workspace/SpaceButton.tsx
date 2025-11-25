@@ -1,13 +1,21 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { Home, Play, type LucideIcon } from 'lucide-react';
+import { Home, Play, User, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMorphingEdit } from '@/hooks/useMorphingEdit';
 import { spacesActions } from '@/stores/spaces.store';
 import { useWorkspaceStore } from '@/stores/workspace.store';
+import { useProfileStore } from '@/stores/profile.store';
 import { launchTab } from '@/hooks/useTabClick';
 import { EmojiPickerComponent } from '@/components/ui/emoji-picker';
 import { SPACE_COLOR_PALETTE } from '@/types';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,6 +42,7 @@ interface SpaceButtonProps {
     id: string;
     name: string;
     icon?: string;
+    profileId?: string;
     primaryColor: string;
     secondaryColor: string;
     segments: Array<{ status: string }>;
@@ -49,12 +58,14 @@ export function SpaceButton({ space, isActive, onSwitch, onDelete }: SpaceButton
     primary: space.primaryColor,
     secondary: space.secondaryColor,
   });
+  const [selectedProfileId, setSelectedProfileId] = useState(space.profileId || 'none');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { tabs } = useWorkspaceStore();
+  const { profiles } = useProfileStore();
 
   const { isEditing, setIsEditing, containerRef, morphingProps, formProps } = useMorphingEdit({
     collapsedHeight: 32,
-    expandedHeight: 240,
+    expandedHeight: 300, // Increased to fit profile selector
   });
 
   const Icon = SPACE_ICONS[space.icon || 'home'] || Home;
@@ -79,6 +90,7 @@ export function SpaceButton({ space, isActive, onSwitch, onDelete }: SpaceButton
       spacesActions.updateSpace(space.id, {
         name: name.trim(),
         icon: icon || undefined,
+        profileId: selectedProfileId === 'none' ? undefined : selectedProfileId,
         primaryColor: selectedColors.primary,
         secondaryColor: selectedColors.secondary,
       });
@@ -210,6 +222,48 @@ export function SpaceButton({ space, isActive, onSwitch, onDelete }: SpaceButton
                   />
                 ))}
               </div>
+
+              <label className="text-xs font-medium mt-1">Profile</label>
+              <Select value={selectedProfileId} onValueChange={setSelectedProfileId}>
+                <SelectTrigger className="h-7 text-xs">
+                  <SelectValue placeholder="No profile (default)">
+                    {selectedProfileId && selectedProfileId !== 'none' ? (
+                      <div className="flex items-center gap-1.5">
+                        <div
+                          className="w-3 h-3 rounded-full flex items-center justify-center text-[8px] text-white font-medium"
+                          style={{ backgroundColor: profiles.find(p => p.id === selectedProfileId)?.color }}
+                        >
+                          {profiles.find(p => p.id === selectedProfileId)?.name[0].toUpperCase()}
+                        </div>
+                        <span>{profiles.find(p => p.id === selectedProfileId)?.name}</span>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">No profile</span>
+                    )}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">
+                    <div className="flex items-center gap-1.5">
+                      <User className="w-3 h-3 text-muted-foreground" />
+                      <span>No profile (default)</span>
+                    </div>
+                  </SelectItem>
+                  {profiles.map((profile) => (
+                    <SelectItem key={profile.id} value={profile.id}>
+                      <div className="flex items-center gap-1.5">
+                        <div
+                          className="w-3 h-3 rounded-full flex items-center justify-center text-[8px] text-white font-medium"
+                          style={{ backgroundColor: profile.color }}
+                        >
+                          {profile.name[0].toUpperCase()}
+                        </div>
+                        <span>{profile.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex gap-1.5">
               <button

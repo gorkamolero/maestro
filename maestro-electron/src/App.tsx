@@ -124,7 +124,7 @@ function App() {
           </div>
 
           {/* Space switcher at bottom-left */}
-          <div className="p-2 border-t border-border/50">
+          <div className="border-t border-border/50 p-2">
             <Dock />
           </div>
         </div>

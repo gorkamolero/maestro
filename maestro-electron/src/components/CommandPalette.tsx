@@ -14,9 +14,12 @@ import {
   History,
   CheckSquare,
   Play,
+  User,
+  UserPlus,
 } from 'lucide-react';
 import { useWorkspaceStore, workspaceActions } from '@/stores/workspace.store';
 import { useSpacesStore, spacesActions } from '@/stores/spaces.store';
+import { useProfileStore, profileActions } from '@/stores/profile.store';
 import { launcherStore, launcherActions } from '@/stores/launcher.store';
 import { getBrowserState } from '@/stores/browser.store';
 import { urlHistoryActions } from '@/stores/url-history.store';
@@ -48,6 +51,7 @@ export function CommandPalette({ onClose, isExiting = false }: CommandPalettePro
   const [installedApps, setInstalledApps] = useState<InstalledApp[]>([]);
   const { activeSpaceId, tabs, recentlyClosedTabs, activeTabId } = useWorkspaceStore();
   const { spaces } = useSpacesStore();
+  const { profiles } = useProfileStore();
   const { connectedApps } = useSnapshot(launcherStore);
 
   // Load installed apps on mount
@@ -165,6 +169,20 @@ export function CommandPalette({ onClose, isExiting = false }: CommandPalettePro
     });
     onClose();
   }, [activeSpaceId, tabs, onClose]);
+
+  const handleCreateProfile = useCallback(() => {
+    const name = `Profile ${profiles.length + 1}`;
+    const profile = profileActions.createProfile(name);
+    // Automatically switch to the new profile
+    profileActions.switchProfile(profile.id);
+    onClose();
+  }, [profiles.length, onClose]);
+
+  const handleAssignProfileToSpace = useCallback((profileId: string) => {
+    if (!activeSpaceId) return;
+    spacesActions.setSpaceProfile(activeSpaceId, profileId === 'none' ? undefined : profileId);
+    onClose();
+  }, [activeSpaceId, onClose]);
 
   // Filter apps based on search
   const filteredApps = connectedApps.filter((app) =>
@@ -394,6 +412,44 @@ export function CommandPalette({ onClose, isExiting = false }: CommandPalettePro
               <span className="flex-1">New Space</span>
               <CommandShortcut>S</CommandShortcut>
             </Command.Item>
+          </Command.Group>
+
+          <Command.Group heading="Profiles" className="mb-2">
+            <Command.Item
+              onSelect={handleCreateProfile}
+              className="flex items-center gap-3 px-3 py-2 rounded cursor-pointer aria-selected:bg-accent"
+            >
+              <UserPlus className="w-4 h-4" />
+              <span className="flex-1">New Profile</span>
+              <CommandShortcut>P</CommandShortcut>
+            </Command.Item>
+
+            {activeSpaceId && (
+              <>
+                <Command.Item
+                  onSelect={() => handleAssignProfileToSpace('none')}
+                  className="flex items-center gap-3 px-3 py-2 rounded cursor-pointer aria-selected:bg-accent"
+                >
+                  <User className="w-4 h-4 text-muted-foreground" />
+                  <span className="flex-1">Remove Profile from Space</span>
+                </Command.Item>
+                {profiles.map((profile) => (
+                  <Command.Item
+                    key={profile.id}
+                    onSelect={() => handleAssignProfileToSpace(profile.id)}
+                    className="flex items-center gap-3 px-3 py-2 rounded cursor-pointer aria-selected:bg-accent"
+                  >
+                    <div
+                      className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] text-white font-medium"
+                      style={{ backgroundColor: profile.color }}
+                    >
+                      {profile.name[0].toUpperCase()}
+                    </div>
+                    <span className="flex-1">Assign "{profile.name}" to Space</span>
+                  </Command.Item>
+                ))}
+              </>
+            )}
           </Command.Group>
 
           <Command.Group heading="Launch" className="mb-2">

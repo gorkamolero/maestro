@@ -66,12 +66,13 @@ export function useSpacesStore() {
 }
 
 export const spacesActions = {
-  addSpace: (name: string): Space => {
+  addSpace: (name: string, profileId?: string): Space => {
     const store = getSpacesStore();
     const colorPair = getNextColorPair();
     const newSpace: Space = {
       id: crypto.randomUUID(),
       name,
+      profileId,
       position: store.spaces.length,
       primaryColor: colorPair.primary,
       secondaryColor: colorPair.secondary,
@@ -80,6 +81,17 @@ export const spacesActions = {
     };
     store.spaces.push(newSpace);
     return newSpace;
+  },
+
+  /**
+   * Assign a profile to a space
+   */
+  setSpaceProfile: (spaceId: string, profileId: string | undefined): void => {
+    const store = getSpacesStore();
+    const space = store.spaces.find(s => s.id === spaceId);
+    if (space) {
+      space.profileId = profileId;
+    }
   },
 
   removeSpace: (spaceId: string) => {
