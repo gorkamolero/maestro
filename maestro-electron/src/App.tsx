@@ -7,9 +7,10 @@ import { NotesEditor } from '@/components/Notes/NotesEditor';
 import { AddFavoriteModal } from '@/components/Launcher';
 import { CommandPalettePortal } from '@/components/CommandPalettePortal';
 import { StatusBar } from '@/components/StatusBar';
+import { ControlRoom, FloatingNextBubble } from '@/components/ControlRoom';
 import { useWorkspaceStore, workspaceActions, getWorkspaceStore } from '@/stores/workspace.store';
 import { historyActions } from '@/stores/history.store';
-import { useSpacesStore } from '@/stores/spaces.store';
+import { useSpacesStore, spacesActions } from '@/stores/spaces.store';
 import { notesStore } from '@/stores/notes.store';
 import { ResizablePanel } from '@/components/ui/resizable-panel';
 import { FileText, Plus } from 'lucide-react';
@@ -25,10 +26,17 @@ startAutoBackup();
 function App() {
   const [darkMode] = useState(true);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
-  const { activeSpaceId, activeTabId, layout, workspaceViewMode } = useWorkspaceStore();
+  const { activeSpaceId, activeTabId, layout, workspaceViewMode, appViewMode } = useWorkspaceStore();
   const { spaces } = useSpacesStore();
 
   const activeSpace = spaces.find((s) => s.id === activeSpaceId);
+
+  // Update lastActiveAt when switching to a space
+  useEffect(() => {
+    if (activeSpaceId && appViewMode === 'workspace') {
+      spacesActions.updateSpaceLastActive(activeSpaceId);
+    }
+  }, [activeSpaceId, appViewMode]);
 
   useEffect(() => {
     // Apply space theme when active space changes
@@ -94,59 +102,104 @@ function App() {
       if ((e.key === 'k' || e.key === 't') && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
         e.preventDefault();
         setCommandPaletteOpen((open) => !open);
+        return;
+      }
+
+      // Escape - Return to Control Room (when in workspace view and not in input)
+      if (e.key === 'Escape' && appViewMode === 'workspace') {
+        const target = e.target as HTMLElement;
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+          return;
+        }
+        e.preventDefault();
+        workspaceActions.returnToControlRoom();
+        return;
+      }
+
+      // Cmd+Shift+O - Toggle Control Room
+      if (e.key === 'o' && (e.metaKey || e.ctrlKey) && e.shiftKey) {
+        e.preventDefault();
+        if (appViewMode === 'control-room') {
+          // If in control room and there's an active space, maximize it
+          if (activeSpaceId) {
+            workspaceActions.maximizeSpace(activeSpaceId);
+          }
+        } else {
+          workspaceActions.returnToControlRoom();
+        }
       }
     };
 
     document.addEventListener('keydown', down);
     return () => document.removeEventListener('keydown', down);
-  }, []);
+  }, [appViewMode, activeSpaceId]);
 
   const handleSidebarResize = (width: number) => {
     getWorkspaceStore().layout.sidebarWidth = width;
   };
 
+  // Control Room view
+  if (appViewMode === 'control-room') {
+    return (
+      <div className="h-screen bg-background text-foreground flex flex-col">
+        <div className="flex-1 overflow-hidden">
+          <ControlRoom />
+        </div>
+        <StatusBar />
+        <CommandPalettePortal isOpen={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} />
+      </div>
+    );
+  }
+
+  // Workspace view (existing layout)
   return (
     <div className="h-screen bg-background text-foreground flex flex-col">
       {/* Main content area */}
       <div className="flex-1 flex overflow-hidden">
         {/* Arc-style left sidebar - now resizable */}
         <ResizablePanel
-        defaultWidth={layout.sidebarWidth}
-        minWidth={180}
-        maxWidth={400}
-        onResize={handleSidebarResize}
-        className="bg-muted/20"
-      >
-        <div className="h-full flex flex-col">
-          {/* Sidebar with favorites and tabs */}
-          <div className="flex-1 overflow-hidden">
-            <Sidebar onCommandPalette={() => setCommandPaletteOpen(true)} />
-          </div>
+          defaultWidth={layout.sidebarWidth}
+          minWidth={180}
+          maxWidth={400}
+          onResize={handleSidebarResize}
+          className="bg-muted/20"
+        >
+          <div className="h-full flex flex-col">
+            {/* Sidebar with favorites and tabs */}
+            <div className="flex-1 overflow-hidden">
+              <Sidebar onCommandPalette={() => setCommandPaletteOpen(true)} />
+            </div>
 
-          {/* Space switcher at bottom-left */}
-          <div className="border-t border-border/50 p-2">
-            <Dock />
+            {/* Space switcher at bottom-left */}
+            <div className="border-t border-border/50 p-2">
+              <Dock />
+            </div>
+          </div>
+        </ResizablePanel>
+
+        {/* Main workspace area */}
+        <div className="flex-1 bg-muted/20">
+          <div className="h-full flex flex-col rounded-lg overflow-hidden bg-background">
+            {workspaceViewMode === 'tabs' ? (
+              <WorkspacePanel />
+            ) : activeSpaceId ? (
+              <NotesMainArea spaceId={activeSpaceId} />
+            ) : null}
           </div>
         </div>
-      </ResizablePanel>
 
-      {/* Main workspace area */}
-      <div className="flex-1 bg-muted/20">
-        <div className="h-full flex flex-col rounded-lg overflow-hidden bg-background">
-          {workspaceViewMode === 'tabs' ? (
-            <WorkspacePanel />
-          ) : activeSpaceId ? (
-            <NotesMainArea spaceId={activeSpaceId} />
-          ) : null}
-        </div>
-      </div>
-
-      {/* Modals */}
-      {activeSpaceId && <AddFavoriteModal workspaceId={activeSpaceId} />}
+        {/* Modals */}
+        {activeSpaceId && <AddFavoriteModal workspaceId={activeSpaceId} />}
 
         {/* Command Palette */}
         <CommandPalettePortal isOpen={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} />
       </div>
+
+      {/* Floating NEXT bubble - fixed position */}
+      <FloatingNextBubble
+        spaceId={activeSpaceId}
+        className="fixed bottom-16 right-4 z-50"
+      />
 
       {/* Status Bar */}
       <StatusBar />

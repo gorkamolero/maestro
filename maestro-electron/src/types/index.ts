@@ -105,6 +105,10 @@ export interface Space {
     terminal?: string;
     editor?: string;
   };
+  /** The "what's next" text for Control Room view */
+  next: string | null;
+  /** Last active timestamp for warmth calculation */
+  lastActiveAt: string | null;
 }
 
 // Color palette for spaces - 8 professional color pairs

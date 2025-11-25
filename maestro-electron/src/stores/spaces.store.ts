@@ -18,13 +18,13 @@ const { history: spacesHistory } = await persistWithHistory<SpacesState>(
   }
 );
 
-// Migrate old spaces that have `color` instead of `primaryColor`/`secondaryColor`
-const migrateSpaceColors = () => {
+// Migrate old spaces
+const migrateSpaces = () => {
   const store = spacesHistory.value;
   let needsMigration = false;
 
   store.spaces.forEach((space, index) => {
-    // Check if space has old `color` field but not new color fields
+    // Migrate old `color` field to `primaryColor`/`secondaryColor`
     const spaceAny = space as Space & { color?: string };
     if (spaceAny.color && !space.primaryColor) {
       needsMigration = true;
@@ -32,6 +32,18 @@ const migrateSpaceColors = () => {
       space.primaryColor = palette.primary;
       space.secondaryColor = palette.secondary;
       delete spaceAny.color;
+    }
+
+    // Add `next` field if missing
+    if (space.next === undefined) {
+      needsMigration = true;
+      space.next = null;
+    }
+
+    // Add `lastActiveAt` field if missing
+    if (space.lastActiveAt === undefined) {
+      needsMigration = true;
+      space.lastActiveAt = null;
     }
   });
 
@@ -41,7 +53,7 @@ const migrateSpaceColors = () => {
 };
 
 // Run migration on load
-migrateSpaceColors();
+migrateSpaces();
 
 export { spacesHistory };
 
@@ -78,6 +90,8 @@ export const spacesActions = {
       secondaryColor: colorPair.secondary,
       segments: [],
       markers: [],
+      next: null,
+      lastActiveAt: new Date().toISOString(),
     };
     store.spaces.push(newSpace);
     return newSpace;
@@ -136,6 +150,28 @@ export const spacesActions = {
       if (index !== -1) {
         space.segments[index] = { ...space.segments[index], ...updates };
       }
+    }
+  },
+
+  /**
+   * Set the "what's next" text for a space
+   */
+  setSpaceNext: (spaceId: string, next: string | null) => {
+    const store = getSpacesStore();
+    const space = store.spaces.find((s) => s.id === spaceId);
+    if (space) {
+      space.next = next;
+    }
+  },
+
+  /**
+   * Update the last active timestamp for a space
+   */
+  updateSpaceLastActive: (spaceId: string) => {
+    const store = getSpacesStore();
+    const space = store.spaces.find((s) => s.id === spaceId);
+    if (space) {
+      space.lastActiveAt = new Date().toISOString();
     }
   },
 };

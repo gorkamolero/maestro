@@ -33,6 +33,7 @@ export interface Tab {
 
 export type ViewMode = 'timeline' | 'workspace' | 'split';
 export type WorkspaceViewMode = 'notes' | 'tabs';
+export type AppViewMode = 'control-room' | 'workspace';
 
 export interface WorkspaceLayout {
   timelineHeight: number; // Percentage (20-50)
@@ -53,6 +54,7 @@ interface WorkspaceState {
   viewMode: ViewMode;
   workspaceViewMode: WorkspaceViewMode; // Notes view or Tabs view
   tabsViewMode: TabsViewMode; // Grid or List view for tabs
+  appViewMode: AppViewMode; // Control Room or Workspace view
 }
 
 // Create proxy with both history (undo/redo) and IndexedDB persistence
@@ -70,6 +72,7 @@ const { history: workspaceHistory } = await persistWithHistory<WorkspaceState>(
     viewMode: 'split',
     workspaceViewMode: 'tabs', // Default to tabs view
     tabsViewMode: 'grid', // Default to grid view
+    appViewMode: 'control-room', // Default to control room
   },
   'maestro-workspace',
   {
@@ -293,5 +296,37 @@ export const workspaceActions = {
   getEnabledTabsForSpace: (spaceId: string): Tab[] => {
     const store = getWorkspaceStore();
     return store.tabs.filter((t) => t.spaceId === spaceId && !t.disabled);
+  },
+
+  /**
+   * Set the app view mode (control-room or workspace)
+   */
+  setAppViewMode: (mode: AppViewMode) => {
+    const store = getWorkspaceStore();
+    store.appViewMode = mode;
+  },
+
+  /**
+   * Maximize a space - switch to workspace view with that space active
+   */
+  maximizeSpace: (spaceId: string) => {
+    const store = getWorkspaceStore();
+    store.activeSpaceId = spaceId;
+    store.appViewMode = 'workspace';
+    // Switch to first tab of this space, if any
+    const firstTab = store.tabs.find((t) => t.spaceId === spaceId);
+    if (firstTab) {
+      store.activeTabId = firstTab.id;
+    } else {
+      store.activeTabId = null;
+    }
+  },
+
+  /**
+   * Return to the control room view
+   */
+  returnToControlRoom: () => {
+    const store = getWorkspaceStore();
+    store.appViewMode = 'control-room';
   },
 };
