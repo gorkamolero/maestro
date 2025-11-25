@@ -114,6 +114,10 @@ export const launcherActions = {
   getConnectedApp(appId: string): ConnectedApp | undefined {
     return launcherStore.connectedApps.find((a) => a.id === appId);
   },
+
+  async getInstalledApps(): Promise<Array<{ name: string; path: string; bundleId: string | null; icon: string | null }>> {
+    return await invoke('launcher:get-installed-apps') as Array<{ name: string; path: string; bundleId: string | null; icon: string | null }>;
+  },
 };
 
 // Poll for running apps every 2 seconds

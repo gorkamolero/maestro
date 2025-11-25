@@ -270,3 +270,74 @@ export async function captureWindowState(bundleId: string): Promise<WindowState[
   }
 }
 
+export interface InstalledApp {
+  name: string;
+  path: string;
+  bundleId: string | null;
+  icon: string | null;
+}
+
+// Cache for installed apps (refreshed on demand)
+let installedAppsCache: InstalledApp[] | null = null;
+let cacheTimestamp = 0;
+const CACHE_DURATION = 60000; // 1 minute
+
+/**
+ * Get list of installed applications from /Applications
+ */
+export async function getInstalledApps(): Promise<InstalledApp[]> {
+  // Return cached if fresh
+  if (installedAppsCache && Date.now() - cacheTimestamp < CACHE_DURATION) {
+    return installedAppsCache;
+  }
+
+  const apps: InstalledApp[] = [];
+  const appDirs = ['/Applications', '/System/Applications'];
+
+  for (const dir of appDirs) {
+    try {
+      const entries = await fs.readdir(dir);
+
+      for (const entry of entries) {
+        if (!entry.endsWith('.app')) continue;
+
+        const appPath = path.join(dir, entry);
+        const name = entry.replace('.app', '');
+
+        try {
+          // Try to get bundle ID from Info.plist
+          const plistPath = path.join(appPath, 'Contents', 'Info.plist');
+          const plistContent = await fs.readFile(plistPath, 'utf8');
+          const info = plist.parse(plistContent) as Record<string, unknown>;
+          const bundleId = (info.CFBundleIdentifier as string) || null;
+
+          apps.push({
+            name,
+            path: appPath,
+            bundleId,
+            icon: null, // Icons loaded on demand
+          });
+        } catch {
+          // If plist fails, still add the app with minimal info
+          apps.push({
+            name,
+            path: appPath,
+            bundleId: null,
+            icon: null,
+          });
+        }
+      }
+    } catch {
+      // Directory doesn't exist or not accessible
+    }
+  }
+
+  // Sort alphabetically
+  apps.sort((a, b) => a.name.localeCompare(b.name));
+
+  installedAppsCache = apps;
+  cacheTimestamp = Date.now();
+
+  return apps;
+}
+

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useSnapshot } from 'valtio';
 import { Command } from 'cmdk';
 import {
@@ -36,11 +36,24 @@ interface CommandPaletteProps {
   isExiting?: boolean;
 }
 
+interface InstalledApp {
+  name: string;
+  path: string;
+  bundleId: string | null;
+  icon: string | null;
+}
+
 export function CommandPalette({ onClose, isExiting = false }: CommandPaletteProps) {
   const [search, setSearch] = useState('');
+  const [installedApps, setInstalledApps] = useState<InstalledApp[]>([]);
   const { activeSpaceId, tabs, recentlyClosedTabs, activeTabId } = useWorkspaceStore();
   const { spaces } = useSpacesStore();
   const { connectedApps } = useSnapshot(launcherStore);
+
+  // Load installed apps on mount
+  useEffect(() => {
+    launcherActions.getInstalledApps().then(setInstalledApps).catch(console.error);
+  }, []);
 
   // Get current active tab from workspace store
   const activeTab = tabs.find((t) => t.id === activeTabId);
@@ -83,6 +96,48 @@ export function CommandPalette({ onClose, isExiting = false }: CommandPalettePro
     });
     onClose();
   }, [onClose]);
+
+  const handleAddAppTab = useCallback((app: typeof connectedApps[0]) => {
+    if (!activeSpaceId) return;
+    workspaceActions.openTab(activeSpaceId, 'app-launcher', app.name, {
+      appLauncherConfig: {
+        connectedAppId: app.id,
+        icon: app.icon,
+        color: null,
+        launchConfig: {
+          filePath: null,
+          deepLink: null,
+          launchMethod: 'app-only',
+        },
+        savedState: null,
+      },
+    });
+    onClose();
+  }, [activeSpaceId, onClose]);
+
+  const handleAddInstalledAppTab = useCallback(async (app: InstalledApp) => {
+    if (!activeSpaceId) return;
+    // Register the app first to get full info including icon
+    try {
+      const registeredApp = await launcherActions.registerApp(app.path);
+      workspaceActions.openTab(activeSpaceId, 'app-launcher', registeredApp.name, {
+        appLauncherConfig: {
+          connectedAppId: registeredApp.id,
+          icon: registeredApp.icon,
+          color: null,
+          launchConfig: {
+            filePath: null,
+            deepLink: null,
+            launchMethod: 'app-only',
+          },
+          savedState: null,
+        },
+      });
+    } catch (error) {
+      console.error('Failed to register app:', error);
+    }
+    onClose();
+  }, [activeSpaceId, onClose]);
 
   const handleGoToUrl = useCallback((url?: string) => {
     const spaceId = activeSpaceId || spaces[0]?.id;
@@ -137,11 +192,17 @@ export function CommandPalette({ onClose, isExiting = false }: CommandPalettePro
   // Get URL history suggestions
   const urlSuggestions = urlHistoryActions.searchHistory(search);
 
+  // Filter installed apps based on search
+  const filteredInstalledApps = installedApps.filter((app) =>
+    app.name.toLowerCase().includes(search.toLowerCase())
+  );
+
   // Search everything results
   const searchResults = {
     tabs: tabs.filter((t) => t.title.toLowerCase().includes(search.toLowerCase())),
     spaces: spaces.filter((s) => s.name.toLowerCase().includes(search.toLowerCase())),
     apps: filteredApps,
+    installedApps: filteredInstalledApps.slice(0, 10), // Limit to 10 results
     urls: urlSuggestions,
   };
 
@@ -149,6 +210,7 @@ export function CommandPalette({ onClose, isExiting = false }: CommandPalettePro
     searchResults.tabs.length > 0 ||
     searchResults.spaces.length > 0 ||
     searchResults.apps.length > 0 ||
+    searchResults.installedApps.length > 0 ||
     searchResults.urls.length > 0
   );
 
@@ -276,7 +338,7 @@ export function CommandPalette({ onClose, isExiting = false }: CommandPalettePro
               )}
 
               {searchResults.apps.length > 0 && (
-                <Command.Group heading="Apps" className="mb-2">
+                <Command.Group heading="Connected Apps" className="mb-2">
                   {searchResults.apps.map((app) => (
                     <Command.Item
                       key={app.id}
@@ -290,6 +352,22 @@ export function CommandPalette({ onClose, isExiting = false }: CommandPalettePro
                       )}
                       <span className="flex-1">{app.name}</span>
                       <span className="text-xs text-muted-foreground">Launch</span>
+                    </Command.Item>
+                  ))}
+                </Command.Group>
+              )}
+
+              {searchResults.installedApps.length > 0 && (
+                <Command.Group heading="Add App as Tab" className="mb-2">
+                  {searchResults.installedApps.map((app) => (
+                    <Command.Item
+                      key={app.path}
+                      onSelect={() => handleAddInstalledAppTab(app)}
+                      className="flex items-center gap-3 px-3 py-2 rounded cursor-pointer aria-selected:bg-accent"
+                    >
+                      <Rocket className="w-4 h-4" />
+                      <span className="flex-1">{app.name}</span>
+                      <Plus className="w-3 h-3 text-muted-foreground" />
                     </Command.Item>
                   ))}
                 </Command.Group>
@@ -353,7 +431,7 @@ export function CommandPalette({ onClose, isExiting = false }: CommandPalettePro
                   className="flex items-center gap-3 px-3 py-2 rounded cursor-pointer aria-selected:bg-accent"
                 >
                   <Plus className="w-4 h-4" />
-                  <span className="flex-1">Add App Favorite</span>
+                  <span className="flex-1">Connect New App...</span>
                 </Command.Item>
 
                 {connectedApps.slice(0, 5).map((app) => (

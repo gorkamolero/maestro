@@ -150,4 +150,11 @@ export function registerLauncherHandlers() {
   ipcMain.handle('launcher:launch-app-only', async (_event, appPath: string): Promise<void> => {
     await macosUtils.launchApp(appPath);
   });
+
+  /**
+   * Get list of all installed applications
+   */
+  ipcMain.handle('launcher:get-installed-apps', async () => {
+    return await macosUtils.getInstalledApps();
+  });
 }
