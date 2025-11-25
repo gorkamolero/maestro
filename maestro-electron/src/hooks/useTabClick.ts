@@ -26,10 +26,18 @@ export function useTabClick(tab: Tab) {
 
 /**
  * Launch a single tab (used by launchAllTabs)
+ *
+ * Note: Agent tabs are NOT launched via this function.
+ * They are configured and started through the AgentDrawer component.
  */
 export function launchTab(tab: Tab): void {
   // Don't launch disabled tabs
   if (tab.disabled) {
+    return;
+  }
+
+  // Agent tabs are handled via AgentDrawer, not launched directly
+  if (tab.type === 'agent') {
     return;
   }
 

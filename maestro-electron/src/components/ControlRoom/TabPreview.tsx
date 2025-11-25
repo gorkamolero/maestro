@@ -139,6 +139,8 @@ export function TabPreviewIcon({ tab, onClick }: TabPreviewProps) {
   };
 
   // For agent tabs, wrap with AgentDrawer
+  // The AgentDrawer's FamilyDrawerTrigger handles opening the drawer on click.
+  // TabIconButton's onClick only stops propagation to prevent parent handlers.
   if (tab.type === 'agent') {
     return (
       <div
@@ -155,6 +157,7 @@ export function TabPreviewIcon({ tab, onClick }: TabPreviewProps) {
                 defaultWorkDir={tab.agentConfig?.workDir}
                 onMaximize={onClick}
               >
+                {/* onClick only prevents event bubbling; drawer opens via FamilyDrawerTrigger */}
                 <TabIconButton tab={tab} onClick={(e) => e.stopPropagation()} />
               </AgentDrawer>
             </div>

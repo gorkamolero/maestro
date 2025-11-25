@@ -5,6 +5,7 @@ import { ControlRoom } from '@/components/ControlRoom';
 import { useWorkspaceStore, workspaceActions } from '@/stores/workspace.store';
 import { historyActions } from '@/stores/history.store';
 import { useSpacesStore, spacesActions } from '@/stores/spaces.store';
+import { agentActions, type AgentStatus } from '@/stores/agent.store';
 import { applySpaceTheme, resetSpaceTheme } from '@/lib/space-theme';
 import { startAutoBackup } from '@/lib/backup';
 import '@/components/editor/themes/editor-theme.css';
@@ -12,11 +13,34 @@ import '@/components/editor/themes/editor-theme.css';
 // Start automatic database backups
 startAutoBackup();
 
+// Global agent IPC subscription hook
+function useAgentIpcSubscription() {
+  useEffect(() => {
+    // Subscribe to agent status updates
+    const unsubStatus = window.agent?.onStatus((data: { sessionId: string; status: string; error?: string }) => {
+      agentActions.updateStatus(data.sessionId, data.status as AgentStatus, data);
+    });
+
+    // Subscribe to agent terminal output
+    const unsubTerminal = window.agent?.onTerminalLine((data: { sessionId: string; line: string }) => {
+      agentActions.appendTerminalLine(data.sessionId, data.line);
+    });
+
+    return () => {
+      unsubStatus?.();
+      unsubTerminal?.();
+    };
+  }, []);
+}
+
 function App() {
   const [darkMode] = useState(true);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const { activeSpaceId, activeTabId, appViewMode } = useWorkspaceStore();
   const { spaces } = useSpacesStore();
+
+  // Subscribe to agent IPC events globally
+  useAgentIpcSubscription();
 
   const activeSpace = spaces.find((s) => s.id === activeSpaceId);
 

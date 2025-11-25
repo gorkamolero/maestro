@@ -1,14 +1,18 @@
 import { useState, useCallback, useMemo } from 'react';
+import { useSnapshot } from 'valtio';
+import { AnimatePresence } from 'motion/react';
 import { Settings, Play } from 'lucide-react';
 import type { Space } from '@/types';
 import type { Tab } from '@/stores/workspace.store';
 import { workspaceActions } from '@/stores/workspace.store';
 import { spacesActions } from '@/stores/spaces.store';
+import { notificationsStore, notificationsActions } from '@/stores/notifications.store';
 import { cn } from '@/lib/utils';
 import { WarmthIndicator } from './WarmthIndicator';
 import { TabPreviewList } from './TabPreviewList';
 import { SpaceEditMode } from './SpaceEditMode';
 import { NextBubble } from './NextBubble';
+import { AttentionBubble } from './AttentionBubble';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useExpandableScreen } from '@/components/ui/expandable-screen';
 import { AgentProgressBar } from './AgentProgressBar';
@@ -23,6 +27,15 @@ interface SpaceCardProps {
 export function SpaceCard({ space, tabs, onMaximize, onMaximizeTab }: SpaceCardProps) {
   const [isEditMode, setIsEditMode] = useState(false);
   const { expand } = useExpandableScreen();
+  const { notifications } = useSnapshot(notificationsStore);
+
+  // Get latest notification for this space
+  const latestNotification = useMemo(() => {
+    const spaceNotifications = notifications
+      .filter((n) => n.spaceId === space.id)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return spaceNotifications[0] || null;
+  }, [notifications, space.id]);
 
   const handleNextChange = useCallback(
     (next: string | null) => {
@@ -66,13 +79,27 @@ export function SpaceCard({ space, tabs, onMaximize, onMaximizeTab }: SpaceCardP
     <TooltipProvider delayDuration={0}>
       <div
         className={cn(
-          'group flex flex-col p-4 rounded-lg min-h-[160px]',
+          'group relative flex flex-col p-4 rounded-lg min-h-[160px]',
           'bg-card hover:bg-accent transition-colors',
           'border border-white/[0.04]',
           !isEditMode && 'cursor-pointer'
         )}
         onClick={handleCardClick}
       >
+        {/* Attention bubble for notifications */}
+        <AnimatePresence>
+          {latestNotification && !isEditMode && (
+            <AttentionBubble
+              type={latestNotification.type}
+              message={latestNotification.message}
+              onDismiss={() => notificationsActions.dismiss(latestNotification.id)}
+              onClick={() => {
+                onMaximize();
+              }}
+            />
+          )}
+        </AnimatePresence>
+
         {/* Header: Icon + Name + Actions + Warmth */}
         <div className="flex items-center gap-2 mb-3">
           <span className="text-base">{space.icon || '📁'}</span>

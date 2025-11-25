@@ -1,4 +1,4 @@
-import { useState, createContext, useContext } from 'react';
+import { useState, useEffect, createContext, useContext } from 'react';
 import { useSnapshot } from 'valtio';
 import { Play, Square, Eye, FolderOpen, ChevronRight, Maximize2, ArrowLeft, Bot } from 'lucide-react';
 import { agentStore, agentActions, type AgentStatus, type PermissionMode } from '@/stores/agent.store';
@@ -79,22 +79,20 @@ function DefaultView() {
   const { sessions } = useSnapshot(agentStore);
   const session = sessions.find(s => s.tabId === tabId);
 
-  // If there's an active session, redirect to running view
-  if (session && ['starting', 'thinking', 'editing', 'running-command', 'waiting'].includes(session.status)) {
-    // Use setTimeout to avoid setState during render
-    setTimeout(() => setView('running'), 0);
-    return null;
-  }
+  // Redirect to appropriate view based on session status
+  const sessionStatus = session?.status;
+  useEffect(() => {
+    if (!sessionStatus) return;
 
-  // If session completed or errored, show appropriate view
-  if (session?.status === 'completed') {
-    setTimeout(() => setView('completed'), 0);
-    return null;
-  }
-  if (session?.status === 'error') {
-    setTimeout(() => setView('error'), 0);
-    return null;
-  }
+    const activeStatuses = ['starting', 'thinking', 'editing', 'running-command', 'waiting'];
+    if (activeStatuses.includes(sessionStatus)) {
+      setView('running');
+    } else if (sessionStatus === 'completed') {
+      setView('completed');
+    } else if (sessionStatus === 'error') {
+      setView('error');
+    }
+  }, [sessionStatus, setView]);
 
   return (
     <>
@@ -274,25 +272,29 @@ function RunningView() {
   const { sessions } = useSnapshot(agentStore);
   const session = sessions.find(s => s.tabId === tabId);
 
-  // Redirect if session state changed
-  if (!session || session.status === 'idle' || session.status === 'stopped') {
-    setTimeout(() => setView('default'), 0);
-    return null;
-  }
-  if (session.status === 'completed') {
-    setTimeout(() => setView('completed'), 0);
-    return null;
-  }
-  if (session.status === 'error') {
-    setTimeout(() => setView('error'), 0);
-    return null;
-  }
+  // Redirect based on session state changes
+  const sessionStatus = session?.status;
+  useEffect(() => {
+    if (!sessionStatus || sessionStatus === 'idle' || sessionStatus === 'stopped') {
+      setView('default');
+    } else if (sessionStatus === 'completed') {
+      setView('completed');
+    } else if (sessionStatus === 'error') {
+      setView('error');
+    }
+  }, [sessionStatus, setView]);
 
   const handleStop = async () => {
+    if (!session) return;
     await window.agent.stop(session.id);
     agentActions.updateStatus(session.id, 'stopped');
     setView('default');
   };
+
+  // Guard for null session while useEffect redirects
+  if (!session) {
+    return <div className="p-4 text-center text-muted-foreground">Loading...</div>;
+  }
 
   return (
     <div>

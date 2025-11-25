@@ -79,6 +79,14 @@ export function AddTabPopover({ spaceId, children }: AddTabPopoverProps) {
       } finally {
         setIsLoading(false);
       }
+    } else if (type === 'agent') {
+      // Agent tab with default config
+      workspaceActions.openTab(spaceId, 'agent', 'Agent', {
+        agentConfig: {
+          workDir: '', // Will be set in AgentDrawer
+          permissionMode: 'askUser',
+        },
+      });
     } else {
       // Native tab types
       const titles: Record<string, string> = {
@@ -86,7 +94,6 @@ export function AddTabPopover({ spaceId, children }: AddTabPopoverProps) {
         browser: 'New Tab',
         notes: 'Notes',
         tasks: 'Tasks',
-        agent: 'Agent',
       };
       workspaceActions.openTab(spaceId, type, titles[type] || type);
     }
