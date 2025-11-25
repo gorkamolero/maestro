@@ -33,7 +33,6 @@ import { ShareContentPlugin } from "@/components/editor/plugins/actions/share-co
 import { SpeechToTextPlugin } from "@/components/editor/plugins/actions/speech-to-text-plugin"
 import { TreeViewPlugin } from "@/components/editor/plugins/actions/tree-view-plugin"
 import { AutoLinkPlugin } from "@/components/editor/plugins/auto-link-plugin"
-import { AutocompletePlugin } from "@/components/editor/plugins/autocomplete-plugin"
 import { CodeActionMenuPlugin } from "@/components/editor/plugins/code-action-menu-plugin"
 import { CodeHighlightPlugin } from "@/components/editor/plugins/code-highlight-plugin"
 import { ComponentPickerMenuPlugin } from "@/components/editor/plugins/component-picker-menu-plugin"
@@ -221,7 +220,6 @@ export function Plugins() {
         />
         <TypingPerfPlugin />
         <TabFocusPlugin />
-        <AutocompletePlugin />
         <AutoLinkPlugin />
         <LinkPlugin />
 
