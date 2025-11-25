@@ -66,7 +66,7 @@ export function ComponentPickerMenuPlugin({
         closeMenu()
       })
     },
-    [editor]
+    [editor, showModal]
   )
 
   return (

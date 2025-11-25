@@ -8,7 +8,6 @@ import {
 import {
   $getSelection,
   $isRangeSelection,
-  $setSelection,
   BaseSelection,
 } from "lexical"
 import { PaintBucketIcon } from "lucide-react"
@@ -48,7 +47,7 @@ export function FontBackgroundToolbarPlugin() {
   useUpdateToolbarHandler($updateToolbar)
 
   const applyStyleText = useCallback(
-    (styles: Record<string, string>, skipHistoryStack?: boolean) => {
+    (styles: Record<string, string>) => {
       activeEditor.update(
         () => {
           const selection = $getSelection()

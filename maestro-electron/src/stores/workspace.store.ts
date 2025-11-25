@@ -149,13 +149,14 @@ export const workspaceActions = {
     }
   },
 
-  restoreRecentlyClosedTab: (closedTabIndex: number = 0) => {
+  restoreRecentlyClosedTab: (closedTabIndex = 0) => {
     const store = getWorkspaceStore();
     const closedTab = store.recentlyClosedTabs[closedTabIndex];
     if (!closedTab) return null;
 
     // Remove closedAt before restoring
-    const { closedAt, ...tabData } = closedTab;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { closedAt: _, ...tabData } = closedTab;
 
     // Generate new ID to avoid conflicts
     const restoredTab: Tab = {

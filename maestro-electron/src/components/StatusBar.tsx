@@ -5,7 +5,7 @@ import { Activity, Cpu, HardDrive, Wifi } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export function StatusBar() {
-  const { activeSpaceId, tabs, activeTabId } = useWorkspaceStore();
+  const { activeSpaceId, tabs, activeTabId, appViewMode } = useWorkspaceStore();
   const { spaces } = useSpacesStore();
   const { tasks } = useTasksStore();
 
@@ -42,14 +42,14 @@ export function StatusBar() {
           <span className="text-foreground font-medium">📦 Maestro</span>
         </div>
 
-        {activeSpace && (
-          <>
-            <div className="w-px h-3 bg-border" />
-            <span>{activeSpace.name}</span>
-          </>
+        <div className="w-px h-3 bg-border" />
+        {appViewMode === 'control-room' ? (
+          <span>Control Room</span>
+        ) : (
+          <span>{activeSpace?.name || 'Workspace'}</span>
         )}
 
-        {activeTab && (
+        {appViewMode === 'workspace' && activeTab && (
           <>
             <div className="w-px h-3 bg-border" />
             <span className="capitalize">{activeTab.type} View</span>

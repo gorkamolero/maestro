@@ -80,7 +80,8 @@ function composeRefs<T>(...refs: PossibleRef<T>[]): React.RefCallback<T> {
  */
 function useComposedRefs<T>(...refs: PossibleRef<T>[]): React.RefCallback<T> {
   // biome-ignore lint/correctness/useExhaustiveDependencies: we want to memoize by all values
-  return React.useCallback(composeRefs(...refs), refs)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  return React.useCallback((node: T) => composeRefs(...refs)(node), refs)
 }
 
 type InputValue = string[] | string
@@ -123,6 +124,7 @@ function VisuallyHiddenInput<T = InputValue>(
     previous: isCheckInput ? checked : value,
   })
 
+  // eslint-disable-next-line react-hooks/refs
   const prevValue = React.useMemo(() => {
     const currentValue = isCheckInput ? checked : value
     if (prevValueRef.current.value !== currentValue) {

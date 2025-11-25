@@ -10,7 +10,6 @@ interface FloatingNextBubbleProps {
 
 export function FloatingNextBubble({ spaceId, className }: FloatingNextBubbleProps) {
   const { spaces } = useSpacesStore();
-
   const space = spaceId ? spaces.find((s) => s.id === spaceId) : null;
 
   const handleChange = useCallback(
@@ -27,7 +26,8 @@ export function FloatingNextBubble({ spaceId, className }: FloatingNextBubblePro
   return (
     <div
       className={cn(
-        'bg-background/95 backdrop-blur-sm rounded-full shadow-lg border border-border',
+        'px-3 py-2 rounded-lg',
+        'bg-card/90 backdrop-blur-sm',
         'max-w-xs',
         className
       )}

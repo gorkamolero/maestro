@@ -508,7 +508,7 @@ function useMentionLookupService(mentionString: string | null) {
     const cachedResults = mentionsCache.get(mentionString)
 
     if (mentionString == null) {
-      setResults([])
+      setResults([]) // eslint-disable-line react-hooks/set-state-in-effect
       return
     }
 

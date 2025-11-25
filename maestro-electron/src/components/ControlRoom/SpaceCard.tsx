@@ -1,5 +1,4 @@
 import { useCallback, useMemo } from 'react';
-import { Home } from 'lucide-react';
 import type { Space } from '@/types';
 import type { Tab } from '@/stores/workspace.store';
 import { cn } from '@/lib/utils';
@@ -15,17 +14,18 @@ interface SpaceCardProps {
 }
 
 function getLastActiveText(lastActiveAt: string | null): string {
-  if (!lastActiveAt) return 'Never active';
+  if (!lastActiveAt) return 'Never';
 
-  const hoursSince = (Date.now() - new Date(lastActiveAt).getTime()) / (1000 * 60 * 60);
+  const hoursSince =
+    (Date.now() - new Date(lastActiveAt).getTime()) / (1000 * 60 * 60);
 
-  if (hoursSince < 1) return 'Active now';
+  if (hoursSince < 1) return 'Now';
   if (hoursSince < 24) {
     const hours = Math.floor(hoursSince);
-    return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+    return `${hours}h ago`;
   }
   const days = Math.floor(hoursSince / 24);
-  return `${days} day${days === 1 ? '' : 's'} ago`;
+  return `${days}d ago`;
 }
 
 export function SpaceCard({ space, tabs, onMaximize }: SpaceCardProps) {
@@ -36,7 +36,6 @@ export function SpaceCard({ space, tabs, onMaximize }: SpaceCardProps) {
     [space.id]
   );
 
-  // Memoize last active text to avoid calling Date.now() during render
   const lastActiveText = useMemo(
     () => getLastActiveText(space.lastActiveAt),
     [space.lastActiveAt]
@@ -45,57 +44,30 @@ export function SpaceCard({ space, tabs, onMaximize }: SpaceCardProps) {
   return (
     <div
       className={cn(
-        'group relative flex flex-col p-4 rounded-xl border border-border',
-        'bg-card hover:bg-accent/50 transition-all cursor-pointer',
-        'hover:shadow-lg hover:scale-[1.02]'
+        'group flex flex-col p-5 rounded-lg min-h-[120px]',
+        'bg-card hover:bg-accent transition-colors cursor-pointer',
+        'border border-white/[0.04]'
       )}
       onClick={onMaximize}
-      style={{
-        borderLeftColor: space.primaryColor,
-        borderLeftWidth: '3px',
-      }}
     >
-      {/* Header: Icon, Name, Warmth */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-xl flex-shrink-0">
-            {space.icon || <Home className="w-5 h-5" />}
-          </span>
-          <h3 className="font-medium truncate">{space.name}</h3>
-        </div>
+      {/* Header: Icon + Name + Warmth */}
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-base">{space.icon || '📁'}</span>
+        <h3 className="flex-1 font-medium text-sm truncate">{space.name}</h3>
         <WarmthIndicator lastActiveAt={space.lastActiveAt} />
       </div>
 
-      {/* Status Summary */}
+      {/* Status - minimal text */}
       <div className="flex-1 mb-3">
         {tabs.length > 0 ? (
           <SpaceStatusSummary tabs={tabs} />
         ) : (
-          <div className="text-xs text-muted-foreground">
-            Last: {lastActiveText}
-          </div>
+          <p className="text-xs text-muted-foreground">{lastActiveText}</p>
         )}
       </div>
 
-      {/* NEXT Bubble */}
-      <NextBubble
-        value={space.next}
-        onChange={handleNextChange}
-      />
-
-      {/* Maximize button - visible on hover */}
-      <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onMaximize();
-          }}
-          className="px-2 py-1 text-xs bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
-        >
-          Maximize
-        </button>
-      </div>
+      {/* NEXT */}
+      <NextBubble value={space.next} onChange={handleNextChange} />
     </div>
   );
 }

@@ -1,7 +1,8 @@
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function invariant(
   cond?: boolean,
   message?: string,
-  ...args: string[]
+  ..._args: string[]
 ): asserts cond {
   if (cond) {
     return

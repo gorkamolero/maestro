@@ -164,6 +164,7 @@ export const profileActions = {
       profileStore.activeProfileId = profileStore.profiles[0].id;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     return getActiveProfile()!;
   },
 

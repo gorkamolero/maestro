@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react"
+import { useEffect, useMemo, useRef } from "react"
 import { debounce } from "lodash"
 
 export function useDebounce<T extends (...args: never[]) => void>(
@@ -7,11 +7,15 @@ export function useDebounce<T extends (...args: never[]) => void>(
   maxWait?: number
 ) {
   const funcRef = useRef<T | null>(null)
-  funcRef.current = fn
+
+  useEffect(() => {
+    funcRef.current = fn
+  }, [fn])
 
   return useMemo(
     () =>
       debounce(
+        // eslint-disable-next-line react-hooks/refs
         (...args: Parameters<T>) => {
           if (funcRef.current) {
             funcRef.current(...args)

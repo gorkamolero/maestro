@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface NextBubbleProps {
@@ -26,11 +25,14 @@ export function NextBubble({
     }
   }, [isEditing]);
 
-  const handleStartEdit = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    setEditValue(value || '');
-    setIsEditing(true);
-  }, [value]);
+  const handleStartEdit = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setEditValue(value || '');
+      setIsEditing(true);
+    },
+    [value]
+  );
 
   const handleSave = useCallback(() => {
     const trimmed = editValue.trim();
@@ -60,13 +62,10 @@ export function NextBubble({
   if (isEditing) {
     return (
       <div
-        className={cn(
-          'flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-full border border-border',
-          className
-        )}
+        className={cn('flex items-center gap-2', className)}
         onClick={(e) => e.stopPropagation()}
       >
-        <Pencil className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+        <span className="text-muted-foreground text-xs">→</span>
         <input
           ref={inputRef}
           type="text"
@@ -74,7 +73,7 @@ export function NextBubble({
           onChange={(e) => setEditValue(e.target.value)}
           onKeyDown={handleKeyDown}
           onBlur={handleSave}
-          className="flex-1 bg-transparent text-sm outline-none min-w-0"
+          className="flex-1 bg-transparent text-xs outline-none min-w-0 text-foreground"
           placeholder={placeholder}
         />
       </div>
@@ -86,23 +85,23 @@ export function NextBubble({
       type="button"
       onClick={handleStartEdit}
       className={cn(
-        'flex items-center gap-2 px-3 py-1.5 rounded-full border transition-colors text-left w-full',
-        isEmpty
-          ? 'bg-muted/30 border-dashed border-border hover:bg-muted/50'
-          : 'bg-muted/50 border-border hover:bg-muted/70',
+        'flex items-center gap-2 text-left w-full group/next',
         className
       )}
     >
-      <Pencil className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+      <span className="text-muted-foreground text-xs">→</span>
       {isEmpty ? (
         <>
-          <span className="flex-1 text-sm text-muted-foreground truncate">
+          <span className="flex-1 text-xs text-muted-foreground/50 group-hover/next:text-muted-foreground transition-colors">
             {placeholder}
           </span>
-          <span className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0" />
+          {/* Red dot - very small, muted */}
+          <span className="w-1.5 h-1.5 rounded-full bg-red-500/60" />
         </>
       ) : (
-        <span className="flex-1 text-sm truncate">{value}</span>
+        <span className="flex-1 text-xs text-muted-foreground group-hover/next:text-foreground transition-colors truncate">
+          {value}
+        </span>
       )}
     </button>
   );

@@ -132,7 +132,7 @@ function App() {
 
     document.addEventListener('keydown', down);
     return () => document.removeEventListener('keydown', down);
-  }, [appViewMode, activeSpaceId]);
+  }, [appViewMode, activeSpaceId, activeTabId]);
 
   const handleSidebarResize = (width: number) => {
     getWorkspaceStore().layout.sidebarWidth = width;

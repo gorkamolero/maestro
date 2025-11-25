@@ -168,7 +168,8 @@ export function View({ children, backdrop = false, style = {} }: ViewProps) {
 
 
     return computedBounds;
-  }, [layoutReady, node, parentContext, backdrop]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [layoutReady, node, parentContext]);
 
   const contextValue: ViewContextValue = {
     node,

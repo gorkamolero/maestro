@@ -68,7 +68,8 @@ function getContrastForeground(hex: string, isDark: boolean): string {
 /**
  * Apply a space's colors as the app's theme
  */
-export function applySpaceTheme(primaryColor: string, secondaryColor: string): void {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function applySpaceTheme(primaryColor: string, _secondaryColor: string): void {
   const root = document.documentElement;
   const isDark = root.classList.contains('dark');
 

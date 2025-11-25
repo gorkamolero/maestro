@@ -7,7 +7,6 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import plist from 'plist';
 import open from 'open';
 import { openWindows as getWindows } from 'get-windows';
 import type {

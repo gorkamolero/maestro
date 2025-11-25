@@ -1,53 +1,44 @@
 import { useMemo } from 'react';
-import { Flame, Sun, Snowflake } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type Warmth = 'hot' | 'warm' | 'cold';
+export type Warmth = 'hot' | 'warm' | 'cold';
 
 interface WarmthIndicatorProps {
   lastActiveAt: string | null;
   className?: string;
 }
 
-function getWarmth(lastActiveAt: string | null): Warmth {
+export function getWarmth(lastActiveAt: string | null): Warmth {
   if (!lastActiveAt) return 'cold';
 
-  const hoursSince = (Date.now() - new Date(lastActiveAt).getTime()) / (1000 * 60 * 60);
+  const hoursSince =
+    (Date.now() - new Date(lastActiveAt).getTime()) / (1000 * 60 * 60);
 
-  if (hoursSince < 1) return 'hot'; // Active within last hour
-  if (hoursSince < 24) return 'warm'; // Active today
-  return 'cold'; // Not active today
+  if (hoursSince < 1) return 'hot';
+  if (hoursSince < 24) return 'warm';
+  return 'cold';
 }
-
-const warmthConfig: Record<Warmth, { icon: typeof Flame; color: string; label: string }> = {
-  hot: {
-    icon: Flame,
-    color: 'text-orange-500',
-    label: 'Active recently',
-  },
-  warm: {
-    icon: Sun,
-    color: 'text-amber-400',
-    label: 'Active today',
-  },
-  cold: {
-    icon: Snowflake,
-    color: 'text-blue-400/60',
-    label: 'Inactive',
-  },
-};
 
 export function WarmthIndicator({ lastActiveAt, className }: WarmthIndicatorProps) {
   const warmth = useMemo(() => getWarmth(lastActiveAt), [lastActiveAt]);
-  const config = warmthConfig[warmth];
-  const Icon = config.icon;
 
+  // Simple dot - just opacity changes, no color
   return (
-    <div className={cn('flex items-center', className)} title={config.label}>
-      <Icon className={cn('w-4 h-4', config.color)} />
-    </div>
+    <div
+      className={cn(
+        'w-1.5 h-1.5 rounded-full',
+        warmth === 'hot' && 'bg-foreground',
+        warmth === 'warm' && 'bg-foreground/40',
+        warmth === 'cold' && 'bg-foreground/15',
+        className
+      )}
+      title={
+        warmth === 'hot'
+          ? 'Active now'
+          : warmth === 'warm'
+            ? 'Active today'
+            : 'Inactive'
+      }
+    />
   );
 }
-
-export { getWarmth };
-export type { Warmth };

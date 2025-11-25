@@ -1,4 +1,3 @@
-import { useSnapshot } from 'valtio';
 import { useWorkspaceStore, workspaceActions, type TabType } from '@/stores/workspace.store';
 import { useSpacesStore } from '@/stores/spaces.store';
 import { launcherStore } from '@/stores/launcher.store';
