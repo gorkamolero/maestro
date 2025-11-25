@@ -2,6 +2,35 @@
 
 All notable changes to Maestro will be documented in this file.
 
+## [Unreleased] - 2025-11-25
+
+### Control Room & Navigation Redesign ✅ COMPLETE
+
+#### ExpandableScreen Navigation Architecture
+- ✅ Replaced Arc-style dock/carousel navigation with Control Room → Expand → Collapse pattern
+- ✅ Space cards in Control Room morph into full workspace view using cult-ui's ExpandableScreen
+- ✅ Framer Motion layout animations with shared layoutId for smooth morphing transitions
+- ✅ Minimal Zed/Conductor-inspired UI aesthetic
+
+**New Components:**
+- `SpaceCardExpandable.tsx` - Wraps space cards with ExpandableScreen for morphing animation
+- `MaximizedWorkspace.tsx` - Focused workspace view with minimal header (icon, name, NextBubble, close button)
+- `expandable-screen.tsx` - cult-ui component for morphing card-to-fullscreen animations
+
+**Removed:**
+- Embla carousel from TabsSidebar (no longer navigating between spaces in workspace)
+- `carousel.tsx` component
+- `embla-carousel-react` and `embla-carousel-wheel-gestures` dependencies
+- Home button from Sidebar (redundant with close button)
+
+**Architecture:**
+- App.tsx simplified - ControlRoom always renders, ExpandableScreen handles workspace display
+- StatusBar shows "Control Room" or space name based on appViewMode
+- Escape key closes maximized workspace
+- Close button (X) in workspace header using Cross2Icon
+
+**Files Changed:** App.tsx, ControlRoom.tsx, Sidebar.tsx, TabsSidebar.tsx, StatusBar.tsx, package.json
+
 ## [Unreleased] - 2025-11-24
 
 ### Workspace Features ✅ COMPLETE

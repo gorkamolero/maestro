@@ -1,5 +1,6 @@
 import { useEffect, useCallback } from 'react';
-import { ChevronLeft, FileText, Plus } from 'lucide-react';
+import { FileText, Plus } from 'lucide-react';
+import { Cross2Icon } from '@radix-ui/react-icons';
 import type { Space } from '@/types';
 import { useWorkspaceStore } from '@/stores/workspace.store';
 import { spacesActions } from '@/stores/spaces.store';
@@ -53,13 +54,6 @@ export function MaximizedWorkspace({ space, onBack }: MaximizedWorkspaceProps) {
     <div className="flex flex-col h-full w-full bg-background">
       {/* Minimal Header */}
       <header className="flex items-center gap-3 px-4 py-3 border-b border-white/[0.04] shrink-0">
-        <button
-          onClick={onBack}
-          className="p-1.5 hover:bg-accent rounded-md transition-colors"
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </button>
-
         <span className="text-base">{space.icon || '📁'}</span>
         <span className="font-medium text-sm">{space.name}</span>
 
@@ -73,6 +67,15 @@ export function MaximizedWorkspace({ space, onBack }: MaximizedWorkspaceProps) {
             placeholder="What's next?"
           />
         </div>
+
+        {/* Close button */}
+        <button
+          onClick={onBack}
+          className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+          aria-label="Close"
+        >
+          <Cross2Icon className="h-4 w-4" />
+        </button>
       </header>
 
       {/* Workspace Content */}
