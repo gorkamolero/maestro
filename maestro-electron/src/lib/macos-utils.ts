@@ -24,10 +24,10 @@ const execAsync = promisify(exec);
  */
 export async function getAppInfo(appPath: string): Promise<ConnectedApp> {
   try {
-    // Read Info.plist
+    // Read Info.plist using plutil (handles both binary and XML formats)
     const plistPath = path.join(appPath, 'Contents', 'Info.plist');
-    const plistContent = await fs.readFile(plistPath, 'utf8');
-    const info = plist.parse(plistContent) as Record<string, unknown>;
+    const { stdout } = await execAsync(`plutil -convert json -o - "${plistPath}"`);
+    const info = JSON.parse(stdout) as Record<string, unknown>;
 
     // Extract basic info
     const bundleId = (info.CFBundleIdentifier as string) || '';
@@ -292,39 +292,61 @@ export async function getInstalledApps(): Promise<InstalledApp[]> {
   }
 
   const apps: InstalledApp[] = [];
-  const appDirs = ['/Applications', '/System/Applications'];
+  const { app } = require('electron');
+  const homeDir = app.getPath('home');
+  const appDirs = [
+    '/Applications',
+    '/System/Applications',
+    `${homeDir}/Applications`, // User-installed apps
+  ];
+
+  // Helper to add an app from a path
+  const addApp = async (appPath: string, entry: string) => {
+    const name = entry.replace('.app', '');
+    try {
+      const plistPath = path.join(appPath, 'Contents', 'Info.plist');
+      // Use plutil to convert plist to JSON (handles both binary and XML formats)
+      const { stdout } = await execAsync(`plutil -convert json -o - "${plistPath}"`);
+      const info = JSON.parse(stdout) as Record<string, unknown>;
+      const bundleId = (info.CFBundleIdentifier as string) || null;
+
+      apps.push({
+        name,
+        path: appPath,
+        bundleId,
+        icon: null,
+      });
+    } catch {
+      apps.push({
+        name,
+        path: appPath,
+        bundleId: null,
+        icon: null,
+      });
+    }
+  };
 
   for (const dir of appDirs) {
     try {
-      const entries = await fs.readdir(dir);
+      const entries = await fs.readdir(dir, { withFileTypes: true });
 
       for (const entry of entries) {
-        if (!entry.endsWith('.app')) continue;
+        const fullPath = path.join(dir, entry.name);
 
-        const appPath = path.join(dir, entry);
-        const name = entry.replace('.app', '');
-
-        try {
-          // Try to get bundle ID from Info.plist
-          const plistPath = path.join(appPath, 'Contents', 'Info.plist');
-          const plistContent = await fs.readFile(plistPath, 'utf8');
-          const info = plist.parse(plistContent) as Record<string, unknown>;
-          const bundleId = (info.CFBundleIdentifier as string) || null;
-
-          apps.push({
-            name,
-            path: appPath,
-            bundleId,
-            icon: null, // Icons loaded on demand
-          });
-        } catch {
-          // If plist fails, still add the app with minimal info
-          apps.push({
-            name,
-            path: appPath,
-            bundleId: null,
-            icon: null,
-          });
+        if (entry.name.endsWith('.app')) {
+          await addApp(fullPath, entry.name);
+        } else if (entry.isDirectory() && !entry.name.startsWith('.')) {
+          // Scan one level deep for app folders (e.g., /Applications/Setapp/)
+          try {
+            const subEntries = await fs.readdir(fullPath);
+            for (const subEntry of subEntries) {
+              if (subEntry.endsWith('.app')) {
+                await addApp(path.join(fullPath, subEntry), subEntry);
+              }
+            }
+          } catch {
+            // Subdirectory not accessible
+          }
         }
       }
     } catch {

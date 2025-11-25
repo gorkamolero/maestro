@@ -97,24 +97,6 @@ export function CommandPalette({ onClose, isExiting = false }: CommandPalettePro
     onClose();
   }, [onClose]);
 
-  const handleAddAppTab = useCallback((app: typeof connectedApps[0]) => {
-    if (!activeSpaceId) return;
-    workspaceActions.openTab(activeSpaceId, 'app-launcher', app.name, {
-      appLauncherConfig: {
-        connectedAppId: app.id,
-        icon: app.icon,
-        color: null,
-        launchConfig: {
-          filePath: null,
-          deepLink: null,
-          launchMethod: 'app-only',
-        },
-        savedState: null,
-      },
-    });
-    onClose();
-  }, [activeSpaceId, onClose]);
-
   const handleAddInstalledAppTab = useCallback(async (app: InstalledApp) => {
     if (!activeSpaceId) return;
     // Register the app first to get full info including icon
@@ -375,124 +357,120 @@ export function CommandPalette({ onClose, isExiting = false }: CommandPalettePro
             </>
           )}
 
-          {/* Create Actions - show when no search query */}
-          {!search && (
-            <>
-              <Command.Group heading="Create" className="mb-2">
+          {/* Actions - always shown, cmdk filters automatically */}
+          <Command.Group heading="Create" className="mb-2">
+            <Command.Item
+              onSelect={handleNewTerminal}
+              className="flex items-center gap-3 px-3 py-2 rounded cursor-pointer aria-selected:bg-accent"
+            >
+              <Terminal className="w-4 h-4" />
+              <span className="flex-1">New Terminal</span>
+              <CommandShortcut>T</CommandShortcut>
+            </Command.Item>
+
+            <Command.Item
+              onSelect={handleNewBrowser}
+              className="flex items-center gap-3 px-3 py-2 rounded cursor-pointer aria-selected:bg-accent"
+            >
+              <Globe className="w-4 h-4" />
+              <span className="flex-1">New Browser</span>
+              <CommandShortcut>B</CommandShortcut>
+            </Command.Item>
+
+            <Command.Item
+              onSelect={handleNewNote}
+              className="flex items-center gap-3 px-3 py-2 rounded cursor-pointer aria-selected:bg-accent"
+            >
+              <FileText className="w-4 h-4" />
+              <span className="flex-1">New Note</span>
+              <CommandShortcut>N</CommandShortcut>
+            </Command.Item>
+
+            <Command.Item
+              onSelect={handleNewSpace}
+              className="flex items-center gap-3 px-3 py-2 rounded cursor-pointer aria-selected:bg-accent"
+            >
+              <Layout className="w-4 h-4" />
+              <span className="flex-1">New Space</span>
+              <CommandShortcut>S</CommandShortcut>
+            </Command.Item>
+          </Command.Group>
+
+          <Command.Group heading="Launch" className="mb-2">
+            <Command.Item
+              onSelect={handleLaunchAllTabs}
+              className="flex items-center gap-3 px-3 py-2 rounded cursor-pointer aria-selected:bg-accent"
+            >
+              <Play className="w-4 h-4" />
+              <span className="flex-1">Launch All Tabs</span>
+              <CommandShortcut>L</CommandShortcut>
+            </Command.Item>
+
+            <Command.Item
+              onSelect={handleAddAppFavorite}
+              className="flex items-center gap-3 px-3 py-2 rounded cursor-pointer aria-selected:bg-accent"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="flex-1">Connect New App...</span>
+            </Command.Item>
+
+            {connectedApps.slice(0, 5).map((app) => (
+              <Command.Item
+                key={app.id}
+                onSelect={() => handleLaunchApp(app.id)}
+                className="flex items-center gap-3 px-3 py-2 rounded cursor-pointer aria-selected:bg-accent"
+              >
+                {app.icon ? (
+                  <img src={app.icon} alt={app.name} className="w-4 h-4" />
+                ) : (
+                  <Rocket className="w-4 h-4" />
+                )}
+                <span className="flex-1">Launch {app.name}</span>
+              </Command.Item>
+            ))}
+          </Command.Group>
+
+          <Command.Group heading="Navigate" className="mb-2">
+            <Command.Item
+              onSelect={handleGoToUrl}
+              className="flex items-center gap-3 px-3 py-2 rounded cursor-pointer aria-selected:bg-accent"
+            >
+              <ArrowRight className="w-4 h-4" />
+              <span className="flex-1">Go to URL</span>
+              <CommandShortcut>G</CommandShortcut>
+            </Command.Item>
+          </Command.Group>
+
+          {activeTab && (
+            <Command.Group heading="Current Tab" className="mb-2">
+              <Command.Item
+                onSelect={handleDuplicateTab}
+                className="flex items-center gap-3 px-3 py-2 rounded cursor-pointer aria-selected:bg-accent"
+              >
+                <Copy className="w-4 h-4" />
+                <span className="flex-1">Duplicate Tab</span>
+                <CommandShortcut>D</CommandShortcut>
+              </Command.Item>
+            </Command.Group>
+          )}
+
+          {recentlyClosedTabs.length > 0 && (
+            <Command.Group heading="Recently Closed" className="mb-2">
+              {recentlyClosedTabs.map((closedTab, index) => (
                 <Command.Item
-                  onSelect={handleNewTerminal}
+                  key={`${closedTab.id}-${index}`}
+                  onSelect={() => handleRestoreClosedTab(index)}
                   className="flex items-center gap-3 px-3 py-2 rounded cursor-pointer aria-selected:bg-accent"
                 >
-                  <Terminal className="w-4 h-4" />
-                  <span className="flex-1">New Terminal</span>
-                  <CommandShortcut>T</CommandShortcut>
+                  {closedTab.type === 'terminal' && <Terminal className="w-4 h-4" />}
+                  {closedTab.type === 'browser' && <Globe className="w-4 h-4" />}
+                  {closedTab.type === 'note' && <FileText className="w-4 h-4" />}
+                  {closedTab.type === 'tasks' && <CheckSquare className="w-4 h-4" />}
+                  <span className="flex-1">{closedTab.title}</span>
+                  <History className="w-3 h-3 text-muted-foreground" />
                 </Command.Item>
-
-                <Command.Item
-                  onSelect={handleNewBrowser}
-                  className="flex items-center gap-3 px-3 py-2 rounded cursor-pointer aria-selected:bg-accent"
-                >
-                  <Globe className="w-4 h-4" />
-                  <span className="flex-1">New Browser</span>
-                  <CommandShortcut>B</CommandShortcut>
-                </Command.Item>
-
-                <Command.Item
-                  onSelect={handleNewNote}
-                  className="flex items-center gap-3 px-3 py-2 rounded cursor-pointer aria-selected:bg-accent"
-                >
-                  <FileText className="w-4 h-4" />
-                  <span className="flex-1">New Note</span>
-                  <CommandShortcut>N</CommandShortcut>
-                </Command.Item>
-
-                <Command.Item
-                  onSelect={handleNewSpace}
-                  className="flex items-center gap-3 px-3 py-2 rounded cursor-pointer aria-selected:bg-accent"
-                >
-                  <Layout className="w-4 h-4" />
-                  <span className="flex-1">New Space</span>
-                  <CommandShortcut>S</CommandShortcut>
-                </Command.Item>
-              </Command.Group>
-
-              <Command.Group heading="Launch" className="mb-2">
-                <Command.Item
-                  onSelect={handleLaunchAllTabs}
-                  className="flex items-center gap-3 px-3 py-2 rounded cursor-pointer aria-selected:bg-accent"
-                >
-                  <Play className="w-4 h-4" />
-                  <span className="flex-1">Launch All Tabs</span>
-                  <CommandShortcut>L</CommandShortcut>
-                </Command.Item>
-
-                <Command.Item
-                  onSelect={handleAddAppFavorite}
-                  className="flex items-center gap-3 px-3 py-2 rounded cursor-pointer aria-selected:bg-accent"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span className="flex-1">Connect New App...</span>
-                </Command.Item>
-
-                {connectedApps.slice(0, 5).map((app) => (
-                  <Command.Item
-                    key={app.id}
-                    onSelect={() => handleLaunchApp(app.id)}
-                    className="flex items-center gap-3 px-3 py-2 rounded cursor-pointer aria-selected:bg-accent"
-                  >
-                    {app.icon ? (
-                      <img src={app.icon} alt={app.name} className="w-4 h-4" />
-                    ) : (
-                      <Rocket className="w-4 h-4" />
-                    )}
-                    <span className="flex-1">Launch {app.name}</span>
-                  </Command.Item>
-                ))}
-              </Command.Group>
-
-              <Command.Group heading="Navigate" className="mb-2">
-                <Command.Item
-                  onSelect={handleGoToUrl}
-                  className="flex items-center gap-3 px-3 py-2 rounded cursor-pointer aria-selected:bg-accent"
-                >
-                  <ArrowRight className="w-4 h-4" />
-                  <span className="flex-1">Go to URL</span>
-                  <CommandShortcut>G</CommandShortcut>
-                </Command.Item>
-              </Command.Group>
-
-              {activeTab && (
-                <Command.Group heading="Current Tab" className="mb-2">
-                  <Command.Item
-                    onSelect={handleDuplicateTab}
-                    className="flex items-center gap-3 px-3 py-2 rounded cursor-pointer aria-selected:bg-accent"
-                  >
-                    <Copy className="w-4 h-4" />
-                    <span className="flex-1">Duplicate Tab</span>
-                    <CommandShortcut>D</CommandShortcut>
-                  </Command.Item>
-                </Command.Group>
-              )}
-
-              {recentlyClosedTabs.length > 0 && (
-                <Command.Group heading="Recently Closed" className="mb-2">
-                  {recentlyClosedTabs.map((closedTab, index) => (
-                    <Command.Item
-                      key={`${closedTab.id}-${index}`}
-                      onSelect={() => handleRestoreClosedTab(index)}
-                      className="flex items-center gap-3 px-3 py-2 rounded cursor-pointer aria-selected:bg-accent"
-                    >
-                      {closedTab.type === 'terminal' && <Terminal className="w-4 h-4" />}
-                      {closedTab.type === 'browser' && <Globe className="w-4 h-4" />}
-                      {closedTab.type === 'note' && <FileText className="w-4 h-4" />}
-                      {closedTab.type === 'tasks' && <CheckSquare className="w-4 h-4" />}
-                      <span className="flex-1">{closedTab.title}</span>
-                      <History className="w-3 h-3 text-muted-foreground" />
-                    </Command.Item>
-                  ))}
-                </Command.Group>
-              )}
-            </>
+              ))}
+            </Command.Group>
           )}
         </Command.List>
       </Command>

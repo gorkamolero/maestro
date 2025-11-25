@@ -69,6 +69,13 @@ export function PortalWindow({ children, onClose }: PortalWindowProps) {
         externalWindow.document.body.style.overflow = 'hidden';
         externalWindow.document.body.style.pointerEvents = 'auto';
 
+        // Copy font styles from parent to ensure consistent typography
+        const computedStyle = window.getComputedStyle(document.body);
+        externalWindow.document.body.style.fontFamily = computedStyle.fontFamily;
+        externalWindow.document.body.style.fontSize = computedStyle.fontSize;
+        externalWindow.document.body.style.lineHeight = computedStyle.lineHeight;
+        externalWindow.document.body.style.color = computedStyle.color;
+
         // Fix for Electron BrowserView mouse events being blocked by draggable regions
         // See: https://github.com/electron/electron/issues/28057
         externalWindow.document.body.style.webkitUserSelect = 'auto';

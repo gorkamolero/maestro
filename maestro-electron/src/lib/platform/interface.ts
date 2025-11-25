@@ -106,6 +106,11 @@ export interface IPlatformBridge {
   browserCanGoForward(label: string): Promise<boolean>;
 
   /**
+   * Hide all browser views (used when showing non-browser content)
+   */
+  hideAllBrowserViews(): Promise<void>;
+
+  /**
    * Show modal overlay (creates a top-level BrowserView for modal dialogs)
    */
   showModalOverlay(): Promise<void>;

@@ -53,11 +53,19 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
 
   // Navigate to URL
   const handleNavigate = useCallback(async (url: string) => {
-    if (!webviewLabelRef.current) return;
+    const normalizedUrl = normalizeUrl(url);
+
+    // If no webview exists yet, update the store to trigger webview creation
+    if (!webviewLabelRef.current) {
+      updateBrowserNavigation(tabId, normalizedUrl, {
+        entries: [{ url: normalizedUrl, title: '' }],
+        activeIndex: 0,
+      });
+      return;
+    }
 
     try {
       setIsLoading(true);
-      const normalizedUrl = normalizeUrl(url);
       await platform.navigateBrowser(webviewLabelRef.current, normalizedUrl);
       // State will be updated via browser-navigation-updated event
       setError(null);
@@ -67,7 +75,7 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
     } finally {
       setIsLoading(false);
     }
-  }, [setIsLoading, setError]);
+  }, [tabId, setIsLoading, setError]);
 
   // Go back
   const handleGoBack = useCallback(async () => {
@@ -101,11 +109,11 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
     handleNavigate('https://www.google.com');
   }, [handleNavigate]);
 
-  // Create webview ONCE per tab.id, but only when active
+  // Create webview ONCE per tab.id, but only when active AND has a URL
   useEffect(() => {
-
-    if (!isActive) {
-      return; // Don't create view if tab is not active
+    // Don't create view if tab is not active or no URL
+    if (!isActive || !initialUrl || initialUrl === 'about:blank') {
+      return;
     }
 
     let mounted = true;
@@ -142,7 +150,7 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
 
         await platform.createBrowserView({
           label,
-          url: initialUrl || 'about:blank',
+          url: initialUrl,
           x: position.x,
           y: position.y,
           width: position.width,

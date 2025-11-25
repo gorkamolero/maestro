@@ -1,10 +1,11 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { useSnapshot } from 'valtio';
+import { Globe, Search } from 'lucide-react';
 import { useWebview } from './useWebview';
 import { BrowserToolbar } from './BrowserToolbar';
 import { browserStore, getBrowserState } from '@/stores/browser.store';
-import { normalizeUrl } from './browser.utils';
+import { platform } from '@/lib/platform';
 import type { Tab } from '@/stores/workspace.store';
 
 interface BrowserPanelProps {
@@ -12,8 +13,72 @@ interface BrowserPanelProps {
   isActive: boolean;
 }
 
+// New Tab Page component
+function NewTabPage({ onNavigate }: { onNavigate: (url: string) => void }) {
+  const [inputValue, setInputValue] = useState('');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (inputValue.trim()) {
+      onNavigate(inputValue.trim());
+    }
+  };
+
+  const quickLinks = [
+    { name: 'Google', url: 'https://google.com', icon: '🔍' },
+    { name: 'GitHub', url: 'https://github.com', icon: '🐙' },
+    { name: 'YouTube', url: 'https://youtube.com', icon: '▶️' },
+    { name: 'Twitter', url: 'https://twitter.com', icon: '🐦' },
+  ];
+
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center bg-background p-8">
+      <div className="flex flex-col items-center gap-6 max-w-md w-full">
+        {/* Icon */}
+        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+          <Globe className="w-8 h-8 text-primary" />
+        </div>
+
+        {/* Search/URL input */}
+        <form onSubmit={handleSubmit} className="w-full">
+          <div className="relative">
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              placeholder="Search or enter URL..."
+              className="w-full pl-14 pr-6 py-4 bg-muted/50 border border-border rounded-2xl text-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+              autoFocus
+            />
+          </div>
+        </form>
+
+        {/* Quick links */}
+        <div className="flex gap-3 flex-wrap justify-center">
+          {quickLinks.map((link) => (
+            <button
+              key={link.url}
+              onClick={() => onNavigate(link.url)}
+              className="flex items-center gap-2 px-4 py-2 bg-muted/50 hover:bg-muted rounded-lg text-sm transition-colors"
+            >
+              <span>{link.icon}</span>
+              <span>{link.name}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Hint */}
+        <p className="text-xs text-muted-foreground text-center">
+          Type a URL or search term and press Enter
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export function BrowserPanel({ tab, isActive }: BrowserPanelProps) {
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -24,7 +89,7 @@ export function BrowserPanel({ tab, isActive }: BrowserPanelProps) {
   const getInitialUrl = () => {
     // First check if browser state already exists (set from command palette)
     const existingState = browserSnap.browsers[tab.id];
-    if (existingState?.url) {
+    if (existingState?.url && existingState.url !== 'about:blank') {
       return existingState.url;
     }
 
@@ -46,6 +111,16 @@ export function BrowserPanel({ tab, isActive }: BrowserPanelProps) {
 
   const currentUrl = browserSnap.browsers[tab.id]?.url || initialUrl;
 
+  // Show new tab page when URL is empty or about:blank
+  const showNewTabPage = !currentUrl || currentUrl === 'about:blank';
+
+  // Hide all browser views when showing the new tab page
+  useEffect(() => {
+    if (showNewTabPage && isActive) {
+      platform.hideAllBrowserViews().catch(console.error);
+    }
+  }, [showNewTabPage, isActive]);
+
   // All webview logic and handlers are in the hook
   const {
     canGoBack,
@@ -63,6 +138,19 @@ export function BrowserPanel({ tab, isActive }: BrowserPanelProps) {
     setError,
     isActive,
   });
+
+  // Show new tab page instead of webview when no URL
+  if (showNewTabPage) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="flex-1 flex flex-col bg-background pt-4 pr-4"
+      >
+        <NewTabPage onNavigate={handleNavigate} />
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
@@ -87,7 +175,7 @@ export function BrowserPanel({ tab, isActive }: BrowserPanelProps) {
       <div ref={containerRef} className="flex-1 relative bg-background">
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/50">
-            <div className="text-sm text-muted-foreground">Loading webview...</div>
+            <div className="text-sm text-muted-foreground">Loading...</div>
           </div>
         )}
         {error && (
@@ -104,8 +192,8 @@ export function BrowserPanel({ tab, isActive }: BrowserPanelProps) {
       </div>
 
       {/* Status bar */}
-      <div className="px-3 py-1.5 text-[10px] text-muted-foreground/70 border-t border-border/50">
-        <span>Native Tauri child webview • {currentUrl}</span>
+      <div className="px-3 py-1.5 text-[10px] text-muted-foreground/70 border-t border-border/50 select-none">
+        <span>{currentUrl}</span>
       </div>
     </motion.div>
   );

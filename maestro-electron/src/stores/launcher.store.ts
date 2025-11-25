@@ -26,7 +26,7 @@ const { store } = await persist<LauncherState>(
   {
     storageStrategy: IndexedDBStrategy,
     debounceTime: 1000,
-    omit: ['isAddModalOpen'], // Don't persist UI state
+    omit: ['isAddModalOpen', 'runningApps'], // Don't persist UI state or runtime state
   }
 );
 

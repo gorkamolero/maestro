@@ -44,9 +44,20 @@ function scheduleHistorySave(historyProxy: { saveHistory: () => void }): void {
   pendingHistorySaves.set(historyProxy, timeoutId);
 }
 
+// Type for the history proxy returned by proxyWithHistory
+type HistoryProxy<T extends object> = {
+  value: T;
+  history: { nodes: unknown[]; index: number };
+  canUndo: () => boolean;
+  canRedo: () => boolean;
+  undo: () => void;
+  redo: () => void;
+  saveHistory: () => void;
+};
+
 interface PersistWithHistoryResult<T extends object> {
   /** The history proxy - use .value to access state, call .undo()/.redo() for history */
-  history: ReturnType<typeof proxyWithHistory<T>>;
+  history: HistoryProxy<T>;
   /** Direct reference to history.value for convenience */
   store: T;
   /** Manually trigger persistence */

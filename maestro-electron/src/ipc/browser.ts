@@ -149,4 +149,14 @@ export function registerBrowserHandlers(getMainWindow: () => BrowserWindow | nul
     const view = browserViews.get(label);
     return view?.webContents.navigationHistory.canGoForward() || false;
   });
+
+  // Hide all browser views (used when showing NewTabPage or non-browser content)
+  ipcMain.handle('hide_all_browser_views', async () => {
+    const mainWindow = getMainWindow();
+    if (!mainWindow) return;
+
+    for (const view of browserViews.values()) {
+      mainWindow.removeBrowserView(view);
+    }
+  });
 }

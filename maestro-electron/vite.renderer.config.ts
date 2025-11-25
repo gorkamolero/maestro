@@ -13,6 +13,12 @@ export default defineConfig(async () => {
         '@': path.resolve(__dirname, './src'),
       },
     },
+    server: {
+      fs: {
+        // Allow serving files from parent node_modules (monorepo structure)
+        allow: ['..'],
+      },
+    },
     build: {
       target: 'esnext',
     },

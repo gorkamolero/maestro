@@ -76,6 +76,10 @@ export class ElectronBridge implements IPlatformBridge {
     return this.invoke<boolean>('browser_can_go_forward', { label });
   }
 
+  async hideAllBrowserViews(): Promise<void> {
+    await this.invoke('hide_all_browser_views');
+  }
+
   async showModalOverlay(): Promise<void> {
     await this.invoke('show_modal_overlay');
   }
