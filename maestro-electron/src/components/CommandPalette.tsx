@@ -13,12 +13,14 @@ import {
   Copy,
   History,
   CheckSquare,
+  Play,
 } from 'lucide-react';
 import { useWorkspaceStore, workspaceActions } from '@/stores/workspace.store';
 import { useSpacesStore, spacesActions } from '@/stores/spaces.store';
 import { launcherStore, launcherActions } from '@/stores/launcher.store';
 import { getBrowserState } from '@/stores/browser.store';
 import { urlHistoryActions } from '@/stores/url-history.store';
+import { launchTab } from '@/hooks/useTabClick';
 
 // Keyboard shortcut display component
 function CommandShortcut({ children }: { children: string }) {
@@ -116,6 +118,16 @@ export function CommandPalette({ onClose, isExiting = false }: CommandPalettePro
     workspaceActions.restoreRecentlyClosedTab(index);
     onClose();
   }, [onClose]);
+
+  const handleLaunchAllTabs = useCallback(() => {
+    if (!activeSpaceId) return;
+    // Get all enabled tabs for the active space and launch them
+    const spaceTabs = tabs.filter((t) => t.spaceId === activeSpaceId && !t.disabled);
+    spaceTabs.forEach((tab) => {
+      launchTab(tab);
+    });
+    onClose();
+  }, [activeSpaceId, tabs, onClose]);
 
   // Filter apps based on search
   const filteredApps = connectedApps.filter((app) =>
@@ -327,6 +339,15 @@ export function CommandPalette({ onClose, isExiting = false }: CommandPalettePro
               </Command.Group>
 
               <Command.Group heading="Launch" className="mb-2">
+                <Command.Item
+                  onSelect={handleLaunchAllTabs}
+                  className="flex items-center gap-3 px-3 py-2 rounded cursor-pointer aria-selected:bg-accent"
+                >
+                  <Play className="w-4 h-4" />
+                  <span className="flex-1">Launch All Tabs</span>
+                  <CommandShortcut>L</CommandShortcut>
+                </Command.Item>
+
                 <Command.Item
                   onSelect={handleAddAppFavorite}
                   className="flex items-center gap-3 px-3 py-2 rounded cursor-pointer aria-selected:bg-accent"
