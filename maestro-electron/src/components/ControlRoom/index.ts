@@ -9,8 +9,9 @@ export type { Warmth } from './WarmthIndicator';
 export { FloatingNextBubble } from './FloatingNextBubble';
 
 // Tab preview components
-export { TabPreview, TabTypeIcon } from './TabPreview';
+export { TabPreview, TabPreviewIcon, TabTypeIcon } from './TabPreview';
 export { TabPreviewList } from './TabPreviewList';
+export { AddTabPopover } from './AddTabPopover';
 export { SpaceEditMode } from './SpaceEditMode';
 
 // Status and notification components

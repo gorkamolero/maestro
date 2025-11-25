@@ -153,11 +153,11 @@ export function ExpandableScreenContent({
   const { isExpanded, collapse, layoutId, contentRadius, animationDuration } =
     useExpandableScreen()
 
+  // Both paths use same animation structure
   return (
     <AnimatePresence initial={false}>
       {isExpanded && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-2">
-          {/* Morphing background with shared layoutId */}
           <motion.div
             layoutId={layoutId}
             transition={{ duration: animationDuration }}
@@ -170,7 +170,8 @@ export function ExpandableScreenContent({
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.15, duration: 0.4 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
               className="relative z-20 w-full"
             >
               {children}

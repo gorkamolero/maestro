@@ -9,6 +9,8 @@ import { WarmthIndicator } from './WarmthIndicator';
 import { TabPreviewList } from './TabPreviewList';
 import { SpaceEditMode } from './SpaceEditMode';
 import { NextBubble } from './NextBubble';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useExpandableScreen } from '@/components/ui/expandable-screen';
 
 interface SpaceCardProps {
   space: Space;
@@ -19,6 +21,7 @@ interface SpaceCardProps {
 
 export function SpaceCard({ space, tabs, onMaximize, onMaximizeTab }: SpaceCardProps) {
   const [isEditMode, setIsEditMode] = useState(false);
+  const { expand } = useExpandableScreen();
 
   const handleNextChange = useCallback(
     (next: string | null) => {
@@ -42,69 +45,100 @@ export function SpaceCard({ space, tabs, onMaximize, onMaximizeTab }: SpaceCardP
     }
   };
 
-  return (
-    <div
-      className={cn(
-        'group flex flex-col p-5 rounded-lg min-h-[120px]',
-        'bg-card hover:bg-accent transition-colors',
-        'border border-white/[0.04]',
-        !isEditMode && 'cursor-pointer'
-      )}
-      onClick={handleCardClick}
-    >
-      {/* Header: Icon + Name + Actions + Warmth */}
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-base">{space.icon || '📁'}</span>
-        <h3 className="flex-1 font-medium text-sm truncate">{space.name}</h3>
+  // Handle tab click - expand for non-app-launcher tabs
+  const handleTabClick = useCallback((tabId: string) => {
+    const tab = tabs.find(t => t.id === tabId);
+    if (tab && tab.type !== 'app-launcher') {
+      // Expand the card and show the tab
+      expand();
+      onMaximizeTab(tabId);
+    }
+    // App-launcher tabs are handled by TabPreviewIcon directly (launch app)
+  }, [tabs, expand, onMaximizeTab]);
 
-        {/* Hover actions - only visible on group hover when not in edit mode */}
+  return (
+    <TooltipProvider delayDuration={0}>
+      <div
+        className={cn(
+          'group flex flex-col p-4 rounded-lg h-[160px]',
+          'bg-card hover:bg-accent transition-colors',
+          'border border-white/[0.04]',
+          !isEditMode && 'cursor-pointer'
+        )}
+        onClick={handleCardClick}
+      >
+        {/* Header: Icon + Name + Actions + Warmth */}
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-base">{space.icon || '📁'}</span>
+          <h3 className="flex-1 font-medium text-sm truncate">{space.name}</h3>
+
+          {/* Hover actions - only visible on group hover when not in edit mode */}
+          {!isEditMode && (
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsEditMode(true);
+                    }}
+                    className="p-1.5 hover:bg-white/[0.08] rounded transition-colors"
+                  >
+                    <Settings className="w-3.5 h-3.5 text-muted-foreground" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p className="text-xs">Edit space</p>
+                </TooltipContent>
+              </Tooltip>
+              {tabs.some((t) => t.type === 'app-launcher') && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleLaunchAll();
+                      }}
+                      className="p-1.5 hover:bg-white/[0.08] rounded transition-colors"
+                    >
+                      <Play className="w-3.5 h-3.5 text-muted-foreground" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p className="text-xs">Launch all apps</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
+          )}
+
+          <WarmthIndicator lastActiveAt={space.lastActiveAt} />
+        </div>
+
+        {/* Tab previews OR Edit mode */}
+        <div className="flex-1 min-h-0">
+          {isEditMode ? (
+            <SpaceEditMode
+              space={space}
+              tabs={tabs}
+              onDone={() => setIsEditMode(false)}
+            />
+          ) : (
+            <TabPreviewList
+              tabs={tabs}
+              spaceId={space.id}
+              onTabClick={handleTabClick}
+            />
+          )}
+        </div>
+
+        {/* NEXT bubble - always visible */}
         {!isEditMode && (
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsEditMode(true);
-              }}
-              className="p-1.5 hover:bg-white/[0.08] rounded transition-colors"
-              title="Edit space"
-            >
-              <Settings className="w-3.5 h-3.5 text-muted-foreground" />
-            </button>
-            {tabs.some((t) => t.type === 'app-launcher') && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleLaunchAll();
-                }}
-                className="p-1.5 hover:bg-white/[0.08] rounded transition-colors"
-                title="Launch all apps"
-              >
-                <Play className="w-3.5 h-3.5 text-muted-foreground" />
-              </button>
-            )}
+          <div className="mt-auto pt-2">
+            <NextBubble value={space.next} onChange={handleNextChange} />
           </div>
         )}
-
-        <WarmthIndicator lastActiveAt={space.lastActiveAt} />
       </div>
-
-      {/* Tab previews OR Edit mode */}
-      <div className="flex-1 mb-3">
-        {isEditMode ? (
-          <SpaceEditMode
-            space={space}
-            tabs={tabs}
-            onDone={() => setIsEditMode(false)}
-          />
-        ) : (
-          <TabPreviewList tabs={tabs} onTabClick={onMaximizeTab} />
-        )}
-      </div>
-
-      {/* NEXT bubble - always visible */}
-      {!isEditMode && (
-        <NextBubble value={space.next} onChange={handleNextChange} />
-      )}
-    </div>
+    </TooltipProvider>
   );
 }

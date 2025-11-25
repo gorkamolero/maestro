@@ -2,7 +2,7 @@ import { useSnapshot } from 'valtio';
 import { persistWithHistory } from '@/lib/persist-with-history';
 import type { LaunchConfig, SavedState } from '@/types/launcher';
 
-export type TabType = 'terminal' | 'browser' | 'agent' | 'app-launcher' | 'tasks';
+export type TabType = 'terminal' | 'browser' | 'agent' | 'app-launcher' | 'tasks' | 'notes';
 export type TabStatus = 'active' | 'idle' | 'running';
 export type TabsViewMode = 'grid' | 'list';
 

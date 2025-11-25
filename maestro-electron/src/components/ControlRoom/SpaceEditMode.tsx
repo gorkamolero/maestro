@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Terminal, Globe, AppWindow } from 'lucide-react';
+import { X, Terminal, Globe, AppWindow, CheckSquare, StickyNote } from 'lucide-react';
 import type { Space } from '@/types';
 import type { Tab, TabType } from '@/stores/workspace.store';
 import { workspaceActions } from '@/stores/workspace.store';
@@ -19,6 +19,7 @@ const TAB_TYPE_LABELS: Record<TabType, string> = {
   browser: 'Browser',
   'app-launcher': 'App',
   tasks: 'Tasks',
+  notes: 'Notes',
   agent: 'Agent',
 };
 
@@ -122,6 +123,20 @@ export function SpaceEditMode({ space, tabs, onDone }: SpaceEditModeProps) {
         >
           <Globe className="w-3 h-3" />
           <span>Browser</span>
+        </button>
+        <button
+          onClick={() => handleAddTab('notes')}
+          className="flex items-center gap-1 px-2 py-1 rounded bg-white/[0.04] hover:bg-white/[0.08] text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <StickyNote className="w-3 h-3" />
+          <span>Notes</span>
+        </button>
+        <button
+          onClick={() => handleAddTab('tasks')}
+          className="flex items-center gap-1 px-2 py-1 rounded bg-white/[0.04] hover:bg-white/[0.08] text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <CheckSquare className="w-3 h-3" />
+          <span>Tasks</span>
         </button>
         <button
           onClick={() => handleAddTab('app-launcher')}
