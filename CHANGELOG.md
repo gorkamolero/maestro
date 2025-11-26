@@ -4,6 +4,26 @@ All notable changes to Maestro will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+#### Toast Notifications and Agent Error Handling (2025-11-26)
+- Added Sonner toast notifications globally via `<Toaster>` in App.tsx
+- Agent errors now display as toast notifications with 10s duration
+- Fixed SDK error parsing to properly handle billing/API errors
+  - SDK returns `{subtype: 'success', is_error: true}` for billing errors
+  - Now checks `is_error` before `subtype` to catch these cases
+- Added `hadResultError` tracking to suppress duplicate "process exited with code 1" errors
+- Added `findClaudeCodeExecutable()` to dynamically locate Claude Code CLI
+  - Checks PATH, resolves symlinks, falls back to common install locations
+
+#### Per-Workspace Recent Coding Paths (2025-11-26)
+- Added `recentCodingPaths` field to Space type (stores last 5 paths per workspace)
+- CreateAgentModal shows clickable recent path chips above the input field
+- Paths auto-save when starting agent tasks
+- Most recent path auto-selected if no default provided
+
+**Commit:** baf353b
+
 ### Changed
 
 #### Project Restructure - Move to Root Directory (2025-11-26)
