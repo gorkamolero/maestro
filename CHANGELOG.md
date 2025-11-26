@@ -6,6 +6,14 @@ All notable changes to Maestro will be documented in this file.
 
 ### Added
 
+#### Bundled Claude Code CLI for Keychain Auth (2025-11-26)
+- Added `@anthropic-ai/claude-code` as dependency for bundled CLI
+- Agent now uses bundled CLI which inherits keychain auth from interactive login
+- Same approach as Happy Coder - no separate API key needed if user has logged in via `claude` CLI
+- Replaced `findClaudeCodeExecutable()` with `getClaudeCodePath()` using `require.resolve`
+
+**Commit:** ea33bb6
+
 #### Toast Notifications and Agent Error Handling (2025-11-26)
 - Added Sonner toast notifications globally via `<Toaster>` in App.tsx
 - Agent errors now display as toast notifications with 10s duration
