@@ -1,7 +1,7 @@
 {
   "name": "maestro",
   "productName": "Maestro",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A workspace browser for focused productivity",
   "main": ".vite/build/main.js",
   "scripts": {

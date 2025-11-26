@@ -39,7 +39,7 @@ export function StatusBar() {
       {/* Left side - Context */}
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-1.5">
-          <span className="text-foreground font-medium">📦 Maestro</span>
+          <span className="text-foreground font-medium">📦 Maestro v1.0.1</span>
         </div>
 
         <div className="w-px h-3 bg-border" />
