@@ -1,7 +1,7 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useSnapshot } from 'valtio';
 import { AnimatePresence } from 'motion/react';
-import { Settings, Play } from 'lucide-react';
+import { Play, Maximize2 } from 'lucide-react';
 import type { Space } from '@/types';
 import type { Tab } from '@/stores/workspace.store';
 import { workspaceActions } from '@/stores/workspace.store';
@@ -10,12 +10,13 @@ import { notificationsStore, notificationsActions } from '@/stores/notifications
 import { cn } from '@/lib/utils';
 import { WarmthIndicator } from './WarmthIndicator';
 import { TabPreviewList } from './TabPreviewList';
-import { SpaceEditMode } from './SpaceEditMode';
 import { NextBubble } from './NextBubble';
 import { AttentionBubble } from './AttentionBubble';
+import { SpaceTasksSection } from './SpaceTasksSection';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useExpandableScreen } from '@/components/ui/expandable-screen';
 import { AgentProgressBar } from './AgentProgressBar';
+import { EmojiPickerComponent } from '@/components/ui/emoji-picker';
 
 interface SpaceCardProps {
   space: Space;
@@ -25,7 +26,10 @@ interface SpaceCardProps {
 }
 
 export function SpaceCard({ space, tabs, onMaximize, onMaximizeTab }: SpaceCardProps) {
-  const [isEditMode, setIsEditMode] = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [titleValue, setTitleValue] = useState(space.name);
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
+  const titleInputRef = useRef<HTMLInputElement>(null);
   const { expand } = useExpandableScreen();
   const { notifications } = useSnapshot(notificationsStore);
 
@@ -53,11 +57,10 @@ export function SpaceCard({ space, tabs, onMaximize, onMaximizeTab }: SpaceCardP
     }
   }, [tabs]);
 
-  const handleCardClick = () => {
-    if (!isEditMode) {
-      onMaximize();
-    }
-  };
+  const handleMaximize = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    onMaximize();
+  }, [onMaximize]);
 
   // Handle tab click - expand for non-app-launcher tabs
   const handleTabClick = useCallback((tabId: string) => {
@@ -75,20 +78,71 @@ export function SpaceCard({ space, tabs, onMaximize, onMaximizeTab }: SpaceCardP
     return tabs.some(t => (t.type === 'agent' || t.type === 'terminal') && t.status === 'running');
   }, [tabs]);
 
+  // ============================================================================
+  // Inline Title Editing
+  // ============================================================================
+
+  useEffect(() => {
+    if (isEditingTitle && titleInputRef.current) {
+      titleInputRef.current.focus();
+      titleInputRef.current.select();
+    }
+  }, [isEditingTitle]);
+
+  const handleTitleDoubleClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setTitleValue(space.name);
+    setIsEditingTitle(true);
+  }, [space.name]);
+
+  const handleTitleSave = useCallback(() => {
+    const trimmed = titleValue.trim();
+    if (trimmed && trimmed !== space.name) {
+      spacesActions.updateSpace(space.id, { name: trimmed });
+    }
+    setIsEditingTitle(false);
+  }, [titleValue, space.id, space.name]);
+
+  const handleTitleCancel = useCallback(() => {
+    setTitleValue(space.name);
+    setIsEditingTitle(false);
+  }, [space.name]);
+
+  const handleTitleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    e.stopPropagation();
+    if (e.key === 'Enter') {
+      handleTitleSave();
+    } else if (e.key === 'Escape') {
+      handleTitleCancel();
+    }
+  }, [handleTitleSave, handleTitleCancel]);
+
+  // ============================================================================
+  // Icon/Emoji Picker
+  // ============================================================================
+
+  const handleIconDoubleClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsEmojiPickerOpen(true);
+  }, []);
+
+  const handleIconChange = useCallback((emoji: string) => {
+    spacesActions.updateSpace(space.id, { icon: emoji });
+    setIsEmojiPickerOpen(false);
+  }, [space.id]);
+
   return (
     <TooltipProvider delayDuration={0}>
       <div
         className={cn(
           'group relative flex flex-col p-4 rounded-lg min-h-[160px]',
           'bg-card hover:bg-accent transition-colors',
-          'border border-white/[0.04]',
-          !isEditMode && 'cursor-pointer'
+          'border border-white/[0.04]'
         )}
-        onClick={handleCardClick}
       >
         {/* Attention bubble for notifications */}
         <AnimatePresence>
-          {latestNotification && !isEditMode && (
+          {latestNotification && (
             <AttentionBubble
               type={latestNotification.type}
               message={latestNotification.message}
@@ -102,78 +156,106 @@ export function SpaceCard({ space, tabs, onMaximize, onMaximizeTab }: SpaceCardP
 
         {/* Header: Icon + Name + Actions + Warmth */}
         <div className="flex items-center gap-2 mb-3">
-          <span className="text-base">{space.icon || '📁'}</span>
-          <h3 className="flex-1 font-medium text-sm truncate">{space.name}</h3>
+          {/* Icon - double click to open emoji picker */}
+          <EmojiPickerComponent
+            value={space.icon}
+            onChange={handleIconChange}
+            open={isEmojiPickerOpen}
+            onOpenChange={setIsEmojiPickerOpen}
+          >
+            <span
+              className="text-base cursor-pointer hover:bg-white/[0.08] rounded p-0.5 transition-colors"
+              onDoubleClick={handleIconDoubleClick}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {space.icon || '📁'}
+            </span>
+          </EmojiPickerComponent>
 
-          {/* Hover actions - only visible on group hover when not in edit mode */}
-          {!isEditMode && (
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          {/* Title - double click to edit inline */}
+          {isEditingTitle ? (
+            <input
+              ref={titleInputRef}
+              type="text"
+              value={titleValue}
+              onChange={(e) => setTitleValue(e.target.value)}
+              onKeyDown={handleTitleKeyDown}
+              onBlur={handleTitleSave}
+              onClick={(e) => e.stopPropagation()}
+              className={cn(
+                'flex-1 bg-transparent font-medium text-sm outline-none min-w-0',
+                'border-b border-primary/50'
+              )}
+            />
+          ) : (
+            <h3
+              className="flex-1 font-medium text-sm truncate"
+              onClick={(e) => e.stopPropagation()}
+              onDoubleClick={handleTitleDoubleClick}
+            >
+              {space.name}
+            </h3>
+          )}
+
+          {/* Hover actions - only visible on group hover */}
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            {tabs.some((t) => t.type === 'app-launcher') && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      setIsEditMode(true);
+                      handleLaunchAll();
                     }}
                     className="p-1.5 hover:bg-white/[0.08] rounded transition-colors"
                   >
-                    <Settings className="w-3.5 h-3.5 text-muted-foreground" />
+                    <Play className="w-3.5 h-3.5 text-muted-foreground" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">
-                  <p className="text-xs">Edit space</p>
+                  <p className="text-xs">Launch all apps</p>
                 </TooltipContent>
               </Tooltip>
-              {tabs.some((t) => t.type === 'app-launcher') && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleLaunchAll();
-                      }}
-                      className="p-1.5 hover:bg-white/[0.08] rounded transition-colors"
-                    >
-                      <Play className="w-3.5 h-3.5 text-muted-foreground" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    <p className="text-xs">Launch all apps</p>
-                  </TooltipContent>
-                </Tooltip>
-              )}
-            </div>
-          )}
+            )}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={handleMaximize}
+                  className="p-1.5 hover:bg-white/[0.08] rounded transition-colors"
+                >
+                  <Maximize2 className="w-3.5 h-3.5 text-muted-foreground" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <p className="text-xs">Open space</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
 
           <WarmthIndicator lastActiveAt={space.lastActiveAt} />
         </div>
 
-        {/* Tab previews OR Edit mode */}
+        {/* Tab previews */}
         <div className="flex-1 min-h-0">
-          {isEditMode ? (
-            <SpaceEditMode
-              space={space}
-              tabs={tabs}
-              onDone={() => setIsEditMode(false)}
-            />
-          ) : (
-            <TabPreviewList
-              tabs={tabs}
-              spaceId={space.id}
-              onTabClick={handleTabClick}
-            />
-          )}
+          <TabPreviewList
+            tabs={tabs}
+            spaceId={space.id}
+            onTabClick={handleTabClick}
+          />
         </div>
 
         {/* NEXT bubble - always visible */}
-        {!isEditMode && (
-          <div className="mt-auto pt-2">
-            <NextBubble value={space.next} onChange={handleNextChange} />
-          </div>
-        )}
+        <div className="mt-auto pt-2">
+          <NextBubble value={space.next} onChange={handleNextChange} />
+        </div>
+
+        {/* Tasks section - collapsible */}
+        <div className="mt-2 pt-2 border-t border-white/[0.06]">
+          <SpaceTasksSection spaceId={space.id} />
+        </div>
 
         {/* Agent progress bar - shows when agent/terminal is running */}
-        {hasRunningAgent && !isEditMode && (
+        {hasRunningAgent && (
           <AgentProgressBar />
         )}
       </div>

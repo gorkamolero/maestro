@@ -159,26 +159,34 @@ function EmojiPickerFooter({
   );
 }
 
-// Convenience wrapper for simple emoji selection (used by SpaceEditMode)
+// Convenience wrapper for simple emoji selection
 function EmojiPickerComponent({
   onChange,
   children,
+  open: controlledOpen,
+  onOpenChange,
 }: {
   value?: string;
   onChange: (emoji: string) => void;
   children: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
-  const [open, setOpen] = React.useState(false);
+  const [internalOpen, setInternalOpen] = React.useState(false);
+
+  // Support both controlled and uncontrolled modes
+  const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setIsOpen = onOpenChange || setInternalOpen;
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverContent className="w-[320px] p-0" align="start">
         <EmojiPicker
           className="h-[350px]"
           onEmojiSelect={(emoji) => {
             onChange(emoji.emoji);
-            setOpen(false);
+            setIsOpen(false);
           }}
         >
           <EmojiPickerSearch placeholder="Search emoji..." />

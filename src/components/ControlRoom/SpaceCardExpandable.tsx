@@ -54,23 +54,45 @@ function MaximizedContentWrapper({
   return <MaximizedWorkspace space={space} onBack={handleBack} />;
 }
 
-export function SpaceCardExpandable({ space, tabs }: SpaceCardExpandableProps) {
-  const [expandMode, setExpandMode] = useState<ExpandMode>({ type: 'none' });
+// SpaceCard wrapper that has access to expand context
+function SpaceCardWithExpand({
+  space,
+  tabs,
+  onModeChange,
+}: {
+  space: Space;
+  tabs: Tab[];
+  onModeChange: (mode: ExpandMode) => void;
+}) {
+  const { expand } = useExpandableScreen();
 
   const handleMaximizeSpace = useCallback(() => {
-    setExpandMode({ type: 'space' });
-    // Set workspace state immediately (will be used when content renders)
+    onModeChange({ type: 'space' });
     spacesActions.updateSpaceLastActive(space.id);
     workspaceActions.maximizeSpace(space.id);
-  }, [space.id]);
+    expand();
+  }, [space.id, expand, onModeChange]);
 
   const handleMaximizeTab = useCallback((tabId: string) => {
-    setExpandMode({ type: 'tab', tabId });
-    // Set workspace state immediately
+    onModeChange({ type: 'tab', tabId });
     spacesActions.updateSpaceLastActive(space.id);
     workspaceActions.maximizeSpace(space.id);
     workspaceActions.setActiveTab(tabId);
-  }, [space.id]);
+    expand();
+  }, [space.id, expand, onModeChange]);
+
+  return (
+    <SpaceCard
+      space={space}
+      tabs={tabs}
+      onMaximize={handleMaximizeSpace}
+      onMaximizeTab={handleMaximizeTab}
+    />
+  );
+}
+
+export function SpaceCardExpandable({ space, tabs }: SpaceCardExpandableProps) {
+  const [expandMode, setExpandMode] = useState<ExpandMode>({ type: 'none' });
 
   const handleModeReset = useCallback(() => {
     setExpandMode({ type: 'none' });
@@ -93,13 +115,12 @@ export function SpaceCardExpandable({ space, tabs }: SpaceCardExpandableProps) {
       animationDuration={0.35}
       onExpandChange={handleExpandChange}
     >
-      {/* The card trigger */}
-      <ExpandableScreenTrigger>
-        <SpaceCard
+      {/* The card trigger - disableAutoExpand so only maximize icon triggers expand */}
+      <ExpandableScreenTrigger disableAutoExpand>
+        <SpaceCardWithExpand
           space={space}
           tabs={tabs}
-          onMaximize={handleMaximizeSpace}
-          onMaximizeTab={handleMaximizeTab}
+          onModeChange={setExpandMode}
         />
       </ExpandableScreenTrigger>
 

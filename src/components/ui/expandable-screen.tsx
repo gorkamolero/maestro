@@ -97,11 +97,14 @@ export function ExpandableScreen({
 interface ExpandableScreenTriggerProps {
   children: ReactNode
   className?: string
+  /** If true, clicking the trigger will NOT auto-expand. Use expand() from context manually. */
+  disableAutoExpand?: boolean
 }
 
 export function ExpandableScreenTrigger({
   children,
   className = "",
+  disableAutoExpand = false,
 }: ExpandableScreenTriggerProps) {
   const { isExpanded, expand, layoutId, triggerRadius } = useExpandableScreen()
 
@@ -125,8 +128,8 @@ export function ExpandableScreenTrigger({
             transition={{ delay: 0.2 }}
             exit={{ opacity: 0, scale: 0.8 }}
             layout={false}
-            onClick={expand}
-            className="relative cursor-pointer"
+            onClick={disableAutoExpand ? undefined : expand}
+            className={`relative ${disableAutoExpand ? '' : 'cursor-pointer'}`}
           >
             {children}
           </motion.div>

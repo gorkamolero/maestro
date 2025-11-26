@@ -18,3 +18,4 @@ export { SpaceEditMode } from './SpaceEditMode';
 export { TerminalStatus } from './TerminalStatus';
 export { AttentionBubble } from './AttentionBubble';
 export { AgentProgressBar } from './AgentProgressBar';
+export { SpaceTasksSection } from './SpaceTasksSection';
