@@ -1,0 +1,2579 @@
+================================================================================
+CLAUDE CODE INTEGRATION - COMPLETE IMPLEMENTATION
+================================================================================
+All files for external review. Lint: 0 errors, 0 warnings. TSC: Pass.
+
+Dependencies required:
+  "@anthropic-ai/claude-agent-sdk": "^0.1.53"
+  "@xterm/xterm": "^5.5.0"
+  "@xterm/addon-fit": "^0.10.0"
+  "@xterm/addon-web-links": "^0.11.0"
+  "@xterm/addon-webgl": "^0.18.0"
+  "node-pty": "^1.0.0"
+  "strip-ansi": "^7.1.2"
+
+================================================================================
+
+// ============================================================================
+// FILE: src/services/agent.service.ts
+// ============================================================================
+
+import { BrowserWindow } from 'electron';
+import {
+  query,
+  type Options,
+  type SDKMessage,
+  type PermissionMode as SDKPermissionMode,
+  type HookCallback,
+  type PreToolUseHookInput,
+  type PostToolUseHookInput,
+  type NotificationHookInput,
+  type SessionStartHookInput,
+  type SessionEndHookInput,
+  type StopHookInput,
+  type SubagentStartHookInput,
+  type SubagentStopHookInput,
+} from '@anthropic-ai/claude-agent-sdk';
+
+// Types matching the agent store
+type AgentStatus =
+  | 'idle'
+  | 'starting'
+  | 'thinking'
+  | 'editing'
+  | 'running-command'
+  | 'waiting'
+  | 'completed'
+  | 'error'
+  | 'stopped';
+
+type PermissionMode = 'acceptEdits' | 'askUser' | 'planOnly';
+
+interface AgentOptions {
+  sessionId: string;
+  workDir: string;
+  prompt: string;
+  permissionMode: PermissionMode;
+  allowedTools?: string[];
+  window: BrowserWindow;
+}
+
+interface ActiveSession {
+  abortController: AbortController;
+  sessionId: string;
+  subagentCount: number;
+}
+
+// Map our permission modes to SDK permission modes
+const PERMISSION_MODE_MAP: Record<PermissionMode, SDKPermissionMode> = {
+  acceptEdits: 'acceptEdits',
+  askUser: 'default',
+  planOnly: 'plan',
+};
+
+/**
+ * AgentService manages Claude Code agent sessions using the official SDK.
+ *
+ * This service uses the Claude Agent SDK's async iterator to stream events
+ * back to the renderer process via IPC.
+ */
+export class AgentService {
+  private sessions = new Map<string, ActiveSession>();
+
+  // Enable mock mode for development/testing without real SDK
+  private mockMode = process.env.AGENT_MOCK === 'true';
+
+  async startSession({ sessionId, workDir, prompt, permissionMode, allowedTools, window }: AgentOptions) {
+    console.log('[AgentService] Starting session:', {
+      sessionId,
+      workDir,
+      prompt: prompt.slice(0, 50),
+      permissionMode,
+      allowedTools,
+      mockMode: this.mockMode,
+    });
+
+    // Emit starting event
+    this.emit(window, sessionId, { status: 'starting' as AgentStatus });
+    this.emitTerminalLine(window, sessionId, '● Starting Claude agent...');
+
+    const abortController = new AbortController();
+    const session: ActiveSession = {
+      abortController,
+      sessionId,
+      subagentCount: 0,
+    };
+    this.sessions.set(sessionId, session);
+
+    // Use mock mode if enabled
+    if (this.mockMode) {
+      console.log('[AgentService] Running in MOCK MODE');
+      this.emitTerminalLine(window, sessionId, '! Running in mock mode');
+      await this.runMockSession(sessionId, prompt, window, abortController.signal);
+      return;
+    }
+
+    try {
+      // Create hook callbacks with proper SDK signatures
+      const preToolUseHook: HookCallback = async (input, toolUseID, options) => {
+        void toolUseID; // Required by SDK signature but not used here
+        void options;   // Required by SDK signature but not used here
+        const hookInput = input as PreToolUseHookInput;
+        const toolName = hookInput.tool_name;
+        const toolInput = hookInput.tool_input as Record<string, unknown>;
+
+        // Detect status based on tool
+        if (toolName === 'Bash') {
+          const command = (toolInput?.command as string) || '';
+          this.emit(window, sessionId, {
+            status: 'running-command' as AgentStatus,
+            currentTool: toolName,
+            currentFile: command.slice(0, 80),
+          });
+          this.emitTerminalLine(window, sessionId, `> ${command.slice(0, 100)}`);
+        } else if (toolName === 'Write' || toolName === 'Edit') {
+          const filePath = (toolInput?.file_path as string) || (toolInput?.path as string) || '';
+          this.emit(window, sessionId, {
+            status: 'editing' as AgentStatus,
+            currentTool: toolName,
+            currentFile: filePath,
+          });
+          this.emitTerminalLine(window, sessionId, `● Editing ${filePath}`);
+        } else if (toolName === 'Read' || toolName === 'Glob' || toolName === 'Grep') {
+          const filePath =
+            (toolInput?.file_path as string) ||
+            (toolInput?.path as string) ||
+            (toolInput?.pattern as string) ||
+            '';
+          this.emit(window, sessionId, { currentTool: toolName });
+          this.emitTerminalLine(window, sessionId, `○ Reading ${filePath}`);
+        } else if (toolName === 'Task') {
+          this.emit(window, sessionId, { currentTool: toolName });
+          this.emitTerminalLine(window, sessionId, `● Spawning subagent...`);
+        } else {
+          this.emit(window, sessionId, { currentTool: toolName });
+          this.emitTerminalLine(window, sessionId, `● Using ${toolName}`);
+        }
+
+        return { continue: true };
+      };
+
+      const postToolUseHook: HookCallback = async (input, toolUseID, options) => {
+        void toolUseID;
+        void options;
+        const hookInput = input as PostToolUseHookInput;
+        const toolName = hookInput.tool_name;
+        // Return to thinking after tool completes
+        this.emit(window, sessionId, { status: 'thinking' as AgentStatus, currentTool: undefined });
+        this.emitTerminalLine(window, sessionId, `✓ ${toolName} completed`);
+        return { continue: true };
+      };
+
+      const notificationHook: HookCallback = async (input, toolUseID, options) => {
+        void toolUseID;
+        void options;
+        const hookInput = input as NotificationHookInput;
+        // Emit notification to renderer for toast/alert display
+        this.emitNotification(window, sessionId, {
+          type: hookInput.notification_type,
+          title: hookInput.title,
+          message: hookInput.message,
+        });
+        this.emitTerminalLine(window, sessionId, `⚠ ${hookInput.title || hookInput.notification_type}: ${hookInput.message}`);
+        return { continue: true };
+      };
+
+      const sessionStartHook: HookCallback = async (input, toolUseID, options) => {
+        void toolUseID;
+        void options;
+        const hookInput = input as SessionStartHookInput;
+        this.emit(window, sessionId, { status: 'thinking' as AgentStatus });
+        this.emitTerminalLine(window, sessionId, `● Session started (${hookInput.source})`);
+        return { continue: true };
+      };
+
+      const sessionEndHook: HookCallback = async (input, toolUseID, options) => {
+        void toolUseID;
+        void options;
+        const hookInput = input as SessionEndHookInput;
+        console.log('[AgentService] Session ended:', hookInput.reason);
+        this.emitTerminalLine(window, sessionId, `● Session ended: ${hookInput.reason}`);
+        return { continue: true };
+      };
+
+      const stopHook: HookCallback = async (input, toolUseID, options) => {
+        void toolUseID;
+        void options;
+        const hookInput = input as StopHookInput;
+        console.log('[AgentService] Stop hook:', hookInput.stop_hook_active);
+        if (hookInput.stop_hook_active) {
+          this.emit(window, sessionId, { status: 'stopped' as AgentStatus });
+          this.emitTerminalLine(window, sessionId, '● Agent stopping...');
+        }
+        return { continue: true };
+      };
+
+      const subagentStartHook: HookCallback = async (input, toolUseID, options) => {
+        void toolUseID;
+        void options;
+        const hookInput = input as SubagentStartHookInput;
+        const currentSession = this.sessions.get(sessionId);
+        if (currentSession) {
+          currentSession.subagentCount++;
+        }
+        this.emit(window, sessionId, {
+          subagentId: hookInput.agent_id,
+          subagentType: hookInput.agent_type,
+        });
+        this.emitTerminalLine(window, sessionId, `● Subagent started: ${hookInput.agent_type} (${hookInput.agent_id.slice(0, 8)})`);
+        return { continue: true };
+      };
+
+      const subagentStopHook: HookCallback = async (input, toolUseID, options) => {
+        void toolUseID;
+        void options;
+        const hookInput = input as SubagentStopHookInput;
+        const currentSession = this.sessions.get(sessionId);
+        if (currentSession && currentSession.subagentCount > 0) {
+          currentSession.subagentCount--;
+        }
+        this.emitTerminalLine(window, sessionId, `✓ Subagent completed: ${hookInput.agent_id.slice(0, 8)}`);
+        return { continue: true };
+      };
+
+      // Build SDK options
+      const options: Options = {
+        cwd: workDir,
+        permissionMode: PERMISSION_MODE_MAP[permissionMode],
+        abortController,
+        maxTurns: 50,
+        allowedTools,
+        // Hook callbacks for real-time updates (proper SDK signatures)
+        hooks: {
+          PreToolUse: [{ hooks: [preToolUseHook] }],
+          PostToolUse: [{ hooks: [postToolUseHook] }],
+          Notification: [{ hooks: [notificationHook] }],
+          SessionStart: [{ hooks: [sessionStartHook] }],
+          SessionEnd: [{ hooks: [sessionEndHook] }],
+          Stop: [{ hooks: [stopHook] }],
+          SubagentStart: [{ hooks: [subagentStartHook] }],
+          SubagentStop: [{ hooks: [subagentStopHook] }],
+        },
+      };
+
+      console.log('[AgentService] Starting SDK query...');
+      this.emitTerminalLine(window, sessionId, `> claude "${prompt.slice(0, 50)}..."`);
+
+      // Start the query with async iterator
+      const queryStream = query({ prompt, options });
+
+      // Process SDK messages
+      for await (const message of queryStream) {
+        if (abortController.signal.aborted) {
+          console.log('[AgentService] Session aborted');
+          break;
+        }
+
+        this.processSDKMessage(window, sessionId, message);
+      }
+
+      // Session completed successfully
+      if (!abortController.signal.aborted) {
+        this.emit(window, sessionId, { status: 'completed' as AgentStatus });
+        this.emitTerminalLine(window, sessionId, '✓ Task completed');
+      }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[AgentService] Error:', errorMessage);
+
+      if (!abortController.signal.aborted) {
+        this.emit(window, sessionId, {
+          status: 'error' as AgentStatus,
+          error: errorMessage,
+        });
+        this.emitTerminalLine(window, sessionId, `✕ Error: ${errorMessage}`);
+      }
+    } finally {
+      this.sessions.delete(sessionId);
+    }
+  }
+
+  private processSDKMessage(window: BrowserWindow, sessionId: string, message: SDKMessage) {
+    console.log('[AgentService] SDK message:', message.type, 'subtype' in message ? message.subtype : '');
+
+    switch (message.type) {
+      case 'assistant':
+        // Agent is thinking/responding
+        this.emit(window, sessionId, { status: 'thinking' as AgentStatus });
+        break;
+
+      case 'stream_event':
+        // Partial streaming update - ignore for now
+        break;
+
+      case 'tool_progress':
+        // Tool is running, update with elapsed time
+        this.emitTerminalLine(
+          window,
+          sessionId,
+          `⏱ ${message.tool_name} (${message.elapsed_time_seconds.toFixed(1)}s)`
+        );
+        break;
+
+      case 'result':
+        // Query completed
+        if (message.subtype === 'success') {
+          this.emit(window, sessionId, {
+            status: 'completed' as AgentStatus,
+            costUSD: message.total_cost_usd,
+            usage: message.usage,
+          });
+          this.emitTerminalLine(
+            window,
+            sessionId,
+            `✓ Completed (${message.num_turns} turns, $${message.total_cost_usd.toFixed(4)})`
+          );
+        } else {
+          // Error result
+          const errorMsg = 'errors' in message ? message.errors.join(', ') : message.subtype;
+          this.emit(window, sessionId, {
+            status: 'error' as AgentStatus,
+            error: errorMsg,
+            costUSD: message.total_cost_usd,
+          });
+          this.emitTerminalLine(window, sessionId, `✕ ${errorMsg}`);
+        }
+        break;
+
+      case 'system':
+        if (message.subtype === 'init') {
+          this.emitTerminalLine(
+            window,
+            sessionId,
+            `● Claude ${message.claude_code_version} | ${message.model}`
+          );
+        }
+        break;
+
+      case 'user':
+        // User message (synthetic or actual)
+        break;
+
+      default:
+        // Log unknown message types for debugging
+        console.log('[AgentService] Unknown message type:', message.type);
+    }
+  }
+
+  private emit(window: BrowserWindow, sessionId: string, data: Record<string, unknown>) {
+    if (!window.isDestroyed()) {
+      window.webContents.send('agent:status', { sessionId, ...data });
+    }
+  }
+
+  private emitTerminalLine(window: BrowserWindow, sessionId: string, line: string) {
+    if (!window.isDestroyed()) {
+      window.webContents.send('agent:terminal-line', { sessionId, line });
+    }
+  }
+
+  private emitNotification(
+    window: BrowserWindow,
+    sessionId: string,
+    notification: { type: string; title?: string; message: string }
+  ) {
+    if (!window.isDestroyed()) {
+      window.webContents.send('agent:notification', { sessionId, ...notification });
+    }
+  }
+
+  /**
+   * Mock session for development/testing without the real SDK.
+   * Simulates a realistic agent workflow.
+   */
+  private async runMockSession(
+    sessionId: string,
+    prompt: string,
+    window: BrowserWindow,
+    signal: AbortSignal
+  ) {
+    const sleep = (ms: number) =>
+      new Promise((resolve, reject) => {
+        const timeout = setTimeout(resolve, ms);
+        signal.addEventListener('abort', () => {
+          clearTimeout(timeout);
+          reject(new Error('Aborted'));
+        });
+      });
+
+    const mockSteps = [
+      { status: 'thinking' as AgentStatus, line: '● Analyzing request...', delay: 800 },
+      { status: 'thinking' as AgentStatus, line: '○ Reading CLAUDE.md', delay: 600 },
+      { status: 'thinking' as AgentStatus, line: '○ Reading package.json', delay: 400 },
+      { status: 'thinking' as AgentStatus, line: '● Planning approach...', delay: 1000 },
+      { status: 'running-command' as AgentStatus, line: '> git status', delay: 500 },
+      { status: 'thinking' as AgentStatus, line: '✓ Command completed', delay: 300 },
+      { status: 'editing' as AgentStatus, line: '● Editing src/components/Example.tsx', delay: 1200 },
+      { status: 'thinking' as AgentStatus, line: '✓ File saved', delay: 300 },
+      { status: 'running-command' as AgentStatus, line: '> pnpm lint', delay: 800 },
+      { status: 'thinking' as AgentStatus, line: '✓ Lint passed', delay: 300 },
+      { status: 'thinking' as AgentStatus, line: '● Reviewing changes...', delay: 600 },
+    ];
+
+    try {
+      for (const step of mockSteps) {
+        this.emit(window, sessionId, { status: step.status });
+        this.emitTerminalLine(window, sessionId, step.line);
+
+        if (step.delay > 0) {
+          await sleep(step.delay);
+        }
+      }
+
+      // Mock completion with cost
+      this.emit(window, sessionId, {
+        status: 'completed' as AgentStatus,
+        costUSD: 0.0234,
+        usage: {
+          input_tokens: 5000,
+          output_tokens: 1500,
+          cache_creation_input_tokens: 0,
+          cache_read_input_tokens: 2000,
+        },
+      });
+      this.emitTerminalLine(window, sessionId, '✓ Task completed (mock, $0.0234)');
+    } catch {
+      // Aborted
+      this.emit(window, sessionId, { status: 'stopped' as AgentStatus });
+      this.emitTerminalLine(window, sessionId, '● Session stopped');
+    }
+
+    this.sessions.delete(sessionId);
+    console.log('[AgentService] Mock session completed');
+  }
+
+  stopSession(sessionId: string) {
+    const session = this.sessions.get(sessionId);
+    if (session) {
+      console.log('[AgentService] Stopping session:', sessionId);
+      session.abortController.abort();
+      this.sessions.delete(sessionId);
+    }
+  }
+
+  isSessionActive(sessionId: string): boolean {
+    return this.sessions.has(sessionId);
+  }
+}
+
+// Singleton instance
+export const agentService = new AgentService();
+
+// ============================================================================
+// FILE: src/services/agent-pty.service.ts
+// ============================================================================
+
+import { BrowserWindow } from 'electron';
+import * as pty from 'node-pty';
+import stripAnsi from 'strip-ansi';
+
+type AgentStatus =
+  | 'idle'
+  | 'starting'
+  | 'thinking'
+  | 'editing'
+  | 'running-command'
+  | 'waiting'
+  | 'completed'
+  | 'error'
+  | 'stopped';
+
+interface PtySessionOptions {
+  sessionId: string;
+  workDir: string;
+  prompt: string;
+  permissionMode: 'acceptEdits' | 'askUser' | 'planOnly';
+  window: BrowserWindow;
+}
+
+interface ActivePtySession {
+  pty: pty.IPty;
+  sessionId: string;
+}
+
+/**
+ * AgentPtyService provides raw terminal mode for Claude Code sessions.
+ *
+ * This service spawns Claude CLI in a PTY (pseudo-terminal), enabling
+ * full xterm.js rendering in the renderer process. Use this when users
+ * want the complete terminal experience rather than just status updates.
+ */
+export class AgentPtyService {
+  private sessions = new Map<string, ActivePtySession>();
+
+  startSession({ sessionId, workDir, prompt, permissionMode, window }: PtySessionOptions) {
+    console.log('[AgentPtyService] Starting PTY session:', {
+      sessionId,
+      workDir,
+      prompt: prompt.slice(0, 50),
+      permissionMode,
+    });
+
+    // Build Claude CLI arguments
+    const args = ['-p', prompt];
+
+    switch (permissionMode) {
+      case 'acceptEdits':
+        args.push('--dangerously-skip-permissions');
+        break;
+      case 'planOnly':
+        args.push('--plan');
+        break;
+      // 'askUser' is default behavior
+    }
+
+    // Spawn Claude in PTY
+    const ptyProcess = pty.spawn('claude', args, {
+      name: 'xterm-256color',
+      cols: 120,
+      rows: 40,
+      cwd: workDir,
+      env: {
+        ...process.env,
+        TERM: 'xterm-256color',
+        // Force color output
+        FORCE_COLOR: '1',
+      },
+    });
+
+    const session: ActivePtySession = {
+      pty: ptyProcess,
+      sessionId,
+    };
+    this.sessions.set(sessionId, session);
+
+    // Emit initial status
+    this.emitStatus(window, sessionId, 'starting');
+
+    // Track current status for detection
+    let currentStatus: AgentStatus = 'thinking';
+
+    // Forward PTY data to renderer
+    ptyProcess.onData((data) => {
+      // Send raw data for xterm.js rendering
+      if (!window.isDestroyed()) {
+        window.webContents.send('agent:pty-data', { sessionId, data });
+      }
+
+      // Also parse for status detection
+      const cleanText = stripAnsi(data);
+      const detectedStatus = this.detectStatus(cleanText, currentStatus);
+
+      if (detectedStatus !== currentStatus) {
+        currentStatus = detectedStatus;
+        this.emitStatus(window, sessionId, detectedStatus);
+      }
+    });
+
+    // Handle exit
+    ptyProcess.onExit(({ exitCode }) => {
+      console.log('[AgentPtyService] PTY exited:', exitCode);
+
+      if (exitCode === 0) {
+        this.emitStatus(window, sessionId, 'completed');
+      } else {
+        this.emitStatus(window, sessionId, 'error', `Exit code ${exitCode}`);
+      }
+
+      this.sessions.delete(sessionId);
+    });
+
+    return ptyProcess;
+  }
+
+  /**
+   * Resize the PTY (call when terminal dimensions change)
+   */
+  resize(sessionId: string, cols: number, rows: number) {
+    const session = this.sessions.get(sessionId);
+    if (session) {
+      session.pty.resize(cols, rows);
+    }
+  }
+
+  /**
+   * Write input to the PTY (for interactive sessions)
+   */
+  write(sessionId: string, data: string) {
+    const session = this.sessions.get(sessionId);
+    if (session) {
+      session.pty.write(data);
+    }
+  }
+
+  /**
+   * Stop the PTY session
+   */
+  stopSession(sessionId: string) {
+    const session = this.sessions.get(sessionId);
+    if (session) {
+      console.log('[AgentPtyService] Killing PTY:', sessionId);
+      session.pty.kill();
+      this.sessions.delete(sessionId);
+    }
+  }
+
+  isSessionActive(sessionId: string): boolean {
+    return this.sessions.has(sessionId);
+  }
+
+  private emitStatus(window: BrowserWindow, sessionId: string, status: AgentStatus, error?: string) {
+    if (!window.isDestroyed()) {
+      window.webContents.send('agent:status', { sessionId, status, error });
+    }
+  }
+
+  /**
+   * Detect agent status from terminal output
+   */
+  private detectStatus(text: string, currentStatus: AgentStatus): AgentStatus {
+    const lowerText = text.toLowerCase();
+
+    // Check for completion indicators
+    if (lowerText.includes('task completed') || lowerText.includes('done')) {
+      return 'completed';
+    }
+
+    // Check for error indicators
+    if (lowerText.includes('error:') || lowerText.includes('failed')) {
+      return 'error';
+    }
+
+    // Check for tool use indicators
+    if (text.includes('$') || text.includes('>') || lowerText.includes('running')) {
+      return 'running-command';
+    }
+
+    if (lowerText.includes('editing') || lowerText.includes('writing')) {
+      return 'editing';
+    }
+
+    if (lowerText.includes('reading') || lowerText.includes('searching')) {
+      return 'thinking';
+    }
+
+    if (lowerText.includes('thinking') || lowerText.includes('analyzing')) {
+      return 'thinking';
+    }
+
+    // Default to current status
+    return currentStatus;
+  }
+}
+
+// Singleton instance
+export const agentPtyService = new AgentPtyService();
+
+// ============================================================================
+// FILE: src/services/git-worktree.service.ts
+// ============================================================================
+
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import * as path from 'path';
+import * as fs from 'fs';
+import * as os from 'os';
+
+const execAsync = promisify(exec);
+
+interface WorktreeInfo {
+  sessionId: string;
+  originalDir: string;
+  worktreePath: string;
+  branch: string;
+  createdAt: string;
+}
+
+/**
+ * GitWorktreeService provides session isolation using git worktrees.
+ *
+ * Per spec: "Crystal uses git worktrees for session isolation (no containers needed)"
+ *
+ * Each agent session gets its own worktree, allowing parallel sessions to
+ * work on the same repo without conflicts. Changes are isolated until merged.
+ */
+export class GitWorktreeService {
+  private worktrees = new Map<string, WorktreeInfo>();
+  private maestroWorktreesDir: string;
+
+  constructor() {
+    // Store worktrees in ~/.maestro/worktrees
+    this.maestroWorktreesDir = path.join(os.homedir(), '.maestro', 'worktrees');
+  }
+
+  /**
+   * Check if a directory is a git repository
+   */
+  async isGitRepo(dir: string): Promise<boolean> {
+    try {
+      await execAsync('git rev-parse --git-dir', { cwd: dir });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Get the root of the git repository
+   */
+  async getRepoRoot(dir: string): Promise<string> {
+    const { stdout } = await execAsync('git rev-parse --show-toplevel', { cwd: dir });
+    return stdout.trim();
+  }
+
+  /**
+   * Get current branch name
+   */
+  async getCurrentBranch(dir: string): Promise<string> {
+    const { stdout } = await execAsync('git branch --show-current', { cwd: dir });
+    return stdout.trim() || 'HEAD';
+  }
+
+  /**
+   * Create an isolated worktree for an agent session
+   *
+   * @param sessionId - Unique session identifier
+   * @param projectDir - The original project directory
+   * @returns Path to the isolated worktree, or original dir if not a git repo
+   */
+  async createWorktree(sessionId: string, projectDir: string): Promise<string> {
+    // Check if it's a git repo
+    const isRepo = await this.isGitRepo(projectDir);
+    if (!isRepo) {
+      console.log('[GitWorktreeService] Not a git repo, using original directory:', projectDir);
+      return projectDir;
+    }
+
+    try {
+      const repoRoot = await this.getRepoRoot(projectDir);
+      const currentBranch = await this.getCurrentBranch(repoRoot);
+
+      // Create unique branch name for this session
+      const sessionBranch = `maestro-session-${sessionId.slice(0, 8)}`;
+
+      // Create worktree directory
+      const worktreePath = path.join(this.maestroWorktreesDir, sessionId);
+
+      // Ensure parent directory exists
+      await fs.promises.mkdir(this.maestroWorktreesDir, { recursive: true });
+
+      // Create worktree with new branch based on current branch
+      await execAsync(`git worktree add -b ${sessionBranch} "${worktreePath}" ${currentBranch}`, {
+        cwd: repoRoot,
+      });
+
+      const worktreeInfo: WorktreeInfo = {
+        sessionId,
+        originalDir: repoRoot,
+        worktreePath,
+        branch: sessionBranch,
+        createdAt: new Date().toISOString(),
+      };
+
+      this.worktrees.set(sessionId, worktreeInfo);
+      console.log('[GitWorktreeService] Created worktree:', worktreeInfo);
+
+      return worktreePath;
+    } catch (error) {
+      console.error('[GitWorktreeService] Failed to create worktree:', error);
+      // Fall back to original directory
+      return projectDir;
+    }
+  }
+
+  /**
+   * Remove a worktree when session ends
+   */
+  async removeWorktree(sessionId: string): Promise<void> {
+    const worktreeInfo = this.worktrees.get(sessionId);
+    if (!worktreeInfo) {
+      return;
+    }
+
+    try {
+      // Remove the worktree
+      await execAsync(`git worktree remove "${worktreeInfo.worktreePath}" --force`, {
+        cwd: worktreeInfo.originalDir,
+      });
+
+      // Delete the session branch
+      await execAsync(`git branch -D ${worktreeInfo.branch}`, {
+        cwd: worktreeInfo.originalDir,
+      });
+
+      this.worktrees.delete(sessionId);
+      console.log('[GitWorktreeService] Removed worktree:', sessionId);
+    } catch (error) {
+      console.error('[GitWorktreeService] Failed to remove worktree:', error);
+
+      // Try to clean up the directory anyway
+      try {
+        await fs.promises.rm(worktreeInfo.worktreePath, { recursive: true, force: true });
+      } catch {
+        // Ignore cleanup errors
+      }
+    }
+  }
+
+  /**
+   * Merge changes from worktree back to original branch
+   */
+  async mergeWorktree(sessionId: string, commitMessage?: string): Promise<boolean> {
+    const worktreeInfo = this.worktrees.get(sessionId);
+    if (!worktreeInfo) {
+      console.error('[GitWorktreeService] No worktree found for session:', sessionId);
+      return false;
+    }
+
+    try {
+      // Check if there are any changes in the worktree
+      const { stdout: status } = await execAsync('git status --porcelain', {
+        cwd: worktreeInfo.worktreePath,
+      });
+
+      if (status.trim()) {
+        // Commit changes in worktree
+        await execAsync('git add -A', { cwd: worktreeInfo.worktreePath });
+        await execAsync(`git commit -m "${commitMessage || `Maestro session ${sessionId.slice(0, 8)}`}"`, {
+          cwd: worktreeInfo.worktreePath,
+        });
+      }
+
+      // Get the original branch
+      const { stdout: originalBranch } = await execAsync('git branch --show-current', {
+        cwd: worktreeInfo.originalDir,
+      });
+
+      // Merge the session branch into original
+      await execAsync(`git merge ${worktreeInfo.branch}`, {
+        cwd: worktreeInfo.originalDir,
+      });
+
+      console.log('[GitWorktreeService] Merged worktree:', sessionId, 'into', originalBranch.trim());
+      return true;
+    } catch (error) {
+      console.error('[GitWorktreeService] Failed to merge worktree:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get worktree info for a session
+   */
+  getWorktree(sessionId: string): WorktreeInfo | undefined {
+    return this.worktrees.get(sessionId);
+  }
+
+  /**
+   * Get the working directory for a session (worktree path or original)
+   */
+  getWorkDir(sessionId: string, originalDir: string): string {
+    const worktree = this.worktrees.get(sessionId);
+    return worktree?.worktreePath || originalDir;
+  }
+
+  /**
+   * List all active worktrees
+   */
+  listWorktrees(): WorktreeInfo[] {
+    return Array.from(this.worktrees.values());
+  }
+
+  /**
+   * Clean up all worktrees (call on app exit)
+   */
+  async cleanupAll(): Promise<void> {
+    const sessions = Array.from(this.worktrees.keys());
+    for (const sessionId of sessions) {
+      await this.removeWorktree(sessionId);
+    }
+  }
+}
+
+// Singleton instance
+export const gitWorktreeService = new GitWorktreeService();
+
+// ============================================================================
+// FILE: src/services/agent-jsonl.service.ts
+// ============================================================================
+
+import { BrowserWindow } from 'electron';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
+import * as readline from 'readline';
+
+interface ConversationEntry {
+  type: string;
+  message?: {
+    role: string;
+    content: unknown;
+  };
+  timestamp?: string;
+  costUSD?: number;
+  durationMs?: number;
+  usage?: {
+    input_tokens?: number;
+    output_tokens?: number;
+    cache_read_input_tokens?: number;
+    cache_creation_input_tokens?: number;
+  };
+}
+
+interface SessionAnalytics {
+  sessionId: string;
+  totalCostUSD: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  totalCacheReadTokens: number;
+  messageCount: number;
+  toolUseCount: number;
+  durationMs: number;
+  lastUpdated: string;
+}
+
+/**
+ * AgentJsonlService watches Claude's JSONL conversation logs for analytics.
+ *
+ * Claude Code stores conversations in ~/.claude/projects/{uuid}.jsonl
+ * This service monitors these files for cost tracking and conversation replay.
+ */
+export class AgentJsonlService {
+  private watchers = new Map<string, fs.FSWatcher>();
+  private analytics = new Map<string, SessionAnalytics>();
+  private projectsDir: string;
+
+  constructor() {
+    this.projectsDir = path.join(os.homedir(), '.claude', 'projects');
+  }
+
+  /**
+   * Start watching Claude's projects directory for new sessions
+   */
+  startWatching(window: BrowserWindow) {
+    // Ensure directory exists
+    if (!fs.existsSync(this.projectsDir)) {
+      console.log('[AgentJsonlService] Claude projects directory not found:', this.projectsDir);
+      return;
+    }
+
+    console.log('[AgentJsonlService] Watching:', this.projectsDir);
+
+    // Watch for new files
+    const dirWatcher = fs.watch(this.projectsDir, (eventType, filename) => {
+      if (filename && filename.endsWith('.jsonl')) {
+        const filePath = path.join(this.projectsDir, filename);
+
+        if (eventType === 'rename' && fs.existsSync(filePath)) {
+          // New file created
+          this.watchSessionFile(filePath, window);
+        }
+      }
+    });
+
+    this.watchers.set('dir', dirWatcher);
+
+    // Watch existing files
+    const files = fs.readdirSync(this.projectsDir).filter((f) => f.endsWith('.jsonl'));
+    for (const file of files) {
+      this.watchSessionFile(path.join(this.projectsDir, file), window);
+    }
+  }
+
+  /**
+   * Stop all watchers
+   */
+  stopWatching() {
+    for (const [key, watcher] of this.watchers) {
+      watcher.close();
+      console.log('[AgentJsonlService] Stopped watching:', key);
+    }
+    this.watchers.clear();
+  }
+
+  /**
+   * Watch a specific session file for updates
+   */
+  private watchSessionFile(filePath: string, window: BrowserWindow) {
+    const sessionId = path.basename(filePath, '.jsonl');
+
+    if (this.watchers.has(sessionId)) {
+      return; // Already watching
+    }
+
+    console.log('[AgentJsonlService] Watching session:', sessionId);
+
+    // Initial parse
+    this.parseSessionFile(filePath, sessionId, window);
+
+    // Watch for changes
+    const watcher = fs.watch(filePath, () => {
+      this.parseSessionFile(filePath, sessionId, window);
+    });
+
+    this.watchers.set(sessionId, watcher);
+  }
+
+  /**
+   * Parse a session JSONL file and emit analytics
+   */
+  private async parseSessionFile(filePath: string, sessionId: string, window: BrowserWindow) {
+    const analytics: SessionAnalytics = {
+      sessionId,
+      totalCostUSD: 0,
+      totalInputTokens: 0,
+      totalOutputTokens: 0,
+      totalCacheReadTokens: 0,
+      messageCount: 0,
+      toolUseCount: 0,
+      durationMs: 0,
+      lastUpdated: new Date().toISOString(),
+    };
+
+    try {
+      const fileStream = fs.createReadStream(filePath);
+      const rl = readline.createInterface({
+        input: fileStream,
+        crlfDelay: Infinity,
+      });
+
+      for await (const line of rl) {
+        if (!line.trim()) continue;
+
+        try {
+          const entry: ConversationEntry = JSON.parse(line);
+
+          // Accumulate analytics
+          if (entry.costUSD) {
+            analytics.totalCostUSD += entry.costUSD;
+          }
+
+          if (entry.durationMs) {
+            analytics.durationMs += entry.durationMs;
+          }
+
+          if (entry.usage) {
+            analytics.totalInputTokens += entry.usage.input_tokens || 0;
+            analytics.totalOutputTokens += entry.usage.output_tokens || 0;
+            analytics.totalCacheReadTokens += entry.usage.cache_read_input_tokens || 0;
+          }
+
+          if (entry.type === 'assistant' || entry.type === 'user') {
+            analytics.messageCount++;
+          }
+
+          if (entry.type === 'tool_use') {
+            analytics.toolUseCount++;
+          }
+        } catch {
+          // Skip malformed lines
+        }
+      }
+
+      // Store and emit
+      this.analytics.set(sessionId, analytics);
+
+      if (!window.isDestroyed()) {
+        window.webContents.send('agent:analytics', analytics);
+      }
+    } catch (error) {
+      console.error('[AgentJsonlService] Error parsing file:', error);
+    }
+  }
+
+  /**
+   * Get analytics for a specific session
+   */
+  getAnalytics(sessionId: string): SessionAnalytics | undefined {
+    return this.analytics.get(sessionId);
+  }
+
+  /**
+   * Get all session analytics
+   */
+  getAllAnalytics(): SessionAnalytics[] {
+    return Array.from(this.analytics.values());
+  }
+
+  /**
+   * Get total cost across all sessions
+   */
+  getTotalCost(): number {
+    let total = 0;
+    for (const analytics of this.analytics.values()) {
+      total += analytics.totalCostUSD;
+    }
+    return total;
+  }
+
+  /**
+   * List available session files
+   */
+  listSessions(): string[] {
+    if (!fs.existsSync(this.projectsDir)) {
+      return [];
+    }
+
+    return fs
+      .readdirSync(this.projectsDir)
+      .filter((f) => f.endsWith('.jsonl'))
+      .map((f) => path.basename(f, '.jsonl'));
+  }
+
+  /**
+   * Read full conversation history for a session
+   */
+  async readSessionHistory(sessionId: string): Promise<ConversationEntry[]> {
+    const filePath = path.join(this.projectsDir, `${sessionId}.jsonl`);
+
+    if (!fs.existsSync(filePath)) {
+      return [];
+    }
+
+    const entries: ConversationEntry[] = [];
+
+    const fileStream = fs.createReadStream(filePath);
+    const rl = readline.createInterface({
+      input: fileStream,
+      crlfDelay: Infinity,
+    });
+
+    for await (const line of rl) {
+      if (!line.trim()) continue;
+
+      try {
+        entries.push(JSON.parse(line));
+      } catch {
+        // Skip malformed lines
+      }
+    }
+
+    return entries;
+  }
+}
+
+// Singleton instance
+export const agentJsonlService = new AgentJsonlService();
+
+// ============================================================================
+// FILE: src/components/Agent/AgentTerminal.tsx
+// ============================================================================
+
+import { useEffect, useRef, useCallback } from 'react';
+import { Terminal } from '@xterm/xterm';
+import { FitAddon } from '@xterm/addon-fit';
+import { WebLinksAddon } from '@xterm/addon-web-links';
+import { WebglAddon } from '@xterm/addon-webgl';
+import '@xterm/xterm/css/xterm.css';
+
+interface AgentTerminalProps {
+  sessionId: string;
+  className?: string;
+  onReady?: () => void;
+}
+
+/**
+ * AgentTerminal renders raw PTY output using xterm.js
+ *
+ * Per spec: "For real-time terminal rendering in Maestro's Control Room,
+ * wrap Claude Code with node-pty and xterm.js"
+ */
+export function AgentTerminal({ sessionId, className, onReady }: AgentTerminalProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const terminalRef = useRef<Terminal | null>(null);
+  const fitAddonRef = useRef<FitAddon | null>(null);
+  const cleanupRef = useRef<(() => void) | null>(null);
+
+  // Handle resize
+  const handleResize = useCallback(() => {
+    if (fitAddonRef.current && terminalRef.current) {
+      fitAddonRef.current.fit();
+      const { cols, rows } = terminalRef.current;
+      window.agent.ptyResize(sessionId, cols, rows);
+    }
+  }, [sessionId]);
+
+  // Initialize terminal
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    // Create terminal instance
+    const terminal = new Terminal({
+      cursorBlink: true,
+      cursorStyle: 'block',
+      fontFamily: '"JetBrains Mono Variable", "Fira Code", monospace',
+      fontSize: 13,
+      lineHeight: 1.2,
+      theme: {
+        background: '#0d0d0d',
+        foreground: '#e4e4e4',
+        cursor: '#e4e4e4',
+        cursorAccent: '#0d0d0d',
+        selectionBackground: '#3b3b3b',
+        black: '#0d0d0d',
+        red: '#ff5555',
+        green: '#50fa7b',
+        yellow: '#f1fa8c',
+        blue: '#6272a4',
+        magenta: '#ff79c6',
+        cyan: '#8be9fd',
+        white: '#e4e4e4',
+        brightBlack: '#6272a4',
+        brightRed: '#ff6e6e',
+        brightGreen: '#69ff94',
+        brightYellow: '#ffffa5',
+        brightBlue: '#d6acff',
+        brightMagenta: '#ff92df',
+        brightCyan: '#a4ffff',
+        brightWhite: '#ffffff',
+      },
+      allowTransparency: true,
+      scrollback: 5000,
+    });
+
+    // Create addons
+    const fitAddon = new FitAddon();
+    const webLinksAddon = new WebLinksAddon();
+
+    terminal.loadAddon(fitAddon);
+    terminal.loadAddon(webLinksAddon);
+
+    // Open terminal in container
+    terminal.open(containerRef.current);
+
+    // Try to use WebGL for better performance
+    try {
+      const webglAddon = new WebglAddon();
+      terminal.loadAddon(webglAddon);
+      webglAddon.onContextLoss(() => {
+        webglAddon.dispose();
+      });
+    } catch (e) {
+      console.warn('[AgentTerminal] WebGL not available, using canvas renderer');
+    }
+
+    // Fit to container
+    fitAddon.fit();
+
+    // Store refs
+    terminalRef.current = terminal;
+    fitAddonRef.current = fitAddon;
+
+    // Subscribe to PTY data
+    const unsubscribe = window.agent.onPtyData((data) => {
+      if (data.sessionId === sessionId) {
+        terminal.write(data.data);
+      }
+    });
+
+    // Handle terminal input - send to PTY
+    const disposable = terminal.onData((data) => {
+      window.agent.ptyWrite(sessionId, data);
+    });
+
+    // Send initial size to PTY
+    const { cols, rows } = terminal;
+    window.agent.ptyResize(sessionId, cols, rows);
+
+    // Handle window resize
+    const resizeObserver = new ResizeObserver(() => {
+      handleResize();
+    });
+    resizeObserver.observe(containerRef.current);
+
+    // Cleanup function
+    cleanupRef.current = () => {
+      unsubscribe();
+      disposable.dispose();
+      resizeObserver.disconnect();
+      terminal.dispose();
+    };
+
+    onReady?.();
+
+    return () => {
+      cleanupRef.current?.();
+    };
+  }, [sessionId, handleResize, onReady]);
+
+  // Handle external resize events
+  useEffect(() => {
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [handleResize]);
+
+  return (
+    <div
+      ref={containerRef}
+      className={className}
+      style={{
+        width: '100%',
+        height: '100%',
+        backgroundColor: '#0d0d0d',
+        borderRadius: '8px',
+        overflow: 'hidden',
+      }}
+    />
+  );
+}
+
+/**
+ * Hook to use agent terminal in PTY mode
+ */
+export function useAgentTerminal(sessionId: string) {
+  const startPtySession = useCallback(
+    async (workDir: string, prompt: string, permissionMode: 'acceptEdits' | 'askUser' | 'planOnly') => {
+      return window.agent.start({
+        sessionId,
+        workDir,
+        prompt,
+        permissionMode,
+        mode: 'pty',
+      });
+    },
+    [sessionId]
+  );
+
+  const stopSession = useCallback(() => {
+    return window.agent.stop(sessionId);
+  }, [sessionId]);
+
+  const write = useCallback(
+    (data: string) => {
+      window.agent.ptyWrite(sessionId, data);
+    },
+    [sessionId]
+  );
+
+  const resize = useCallback(
+    (cols: number, rows: number) => {
+      window.agent.ptyResize(sessionId, cols, rows);
+    },
+    [sessionId]
+  );
+
+  return {
+    startPtySession,
+    stopSession,
+    write,
+    resize,
+  };
+}
+
+// ============================================================================
+// FILE: src/components/Agent/AgentDrawer.tsx
+// ============================================================================
+
+import { useState, useEffect, createContext, useContext } from 'react';
+import { useSnapshot } from 'valtio';
+import { Play, Square, Eye, FolderOpen, ChevronRight, Maximize2, ArrowLeft, Bot, Coins } from 'lucide-react';
+import { agentStore, agentActions, type AgentStatus, type PermissionMode, type AgentUsage } from '@/stores/agent.store';
+import { cn } from '@/lib/utils';
+import { AgentAvatar } from './AgentAvatar';
+import { AgentActivityLogCompact } from './AgentActivityLog';
+import {
+  FamilyDrawerRoot,
+  FamilyDrawerTrigger,
+  FamilyDrawerPortal,
+  FamilyDrawerOverlay,
+  FamilyDrawerContent,
+  FamilyDrawerAnimatedWrapper,
+  FamilyDrawerAnimatedContent,
+  FamilyDrawerHeader,
+  FamilyDrawerButton,
+  FamilyDrawerSecondaryButton,
+  FamilyDrawerViewContent,
+  FamilyDrawerClose,
+  useFamilyDrawer,
+  type ViewsRegistry,
+} from '@/components/ui/family-drawer';
+
+// ============================================================================
+// Types
+// ============================================================================
+
+interface AgentDrawerProps {
+  tabId: string;
+  spaceId: string;
+  children: React.ReactNode;
+  defaultWorkDir?: string;
+  onMaximize?: () => void;
+}
+
+// ============================================================================
+// Context for passing tab info to views
+// ============================================================================
+
+interface AgentDrawerContextValue {
+  tabId: string;
+  spaceId: string;
+  defaultWorkDir?: string;
+  onMaximize?: () => void;
+}
+
+const AgentDrawerContext = createContext<AgentDrawerContextValue | null>(null);
+
+function useAgentDrawerContext() {
+  const ctx = useContext(AgentDrawerContext);
+  if (!ctx) throw new Error('Must be used within AgentDrawer');
+  return ctx;
+}
+
+// ============================================================================
+// Status Labels
+// ============================================================================
+
+const STATUS_LABELS: Record<AgentStatus, string> = {
+  idle: 'Ready to start',
+  starting: 'Starting...',
+  thinking: 'Thinking...',
+  editing: 'Editing files...',
+  'running-command': 'Running command...',
+  waiting: 'Waiting...',
+  completed: 'Completed',
+  error: 'Error',
+  stopped: 'Stopped',
+};
+
+// ============================================================================
+// Cost Display Component
+// ============================================================================
+
+function formatTokens(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return n.toString();
+}
+
+interface CostDisplayProps {
+  costUSD?: number;
+  usage?: AgentUsage;
+  compact?: boolean;
+}
+
+function CostDisplay({ costUSD, usage, compact = false }: CostDisplayProps) {
+  if (!costUSD && !usage) return null;
+
+  if (compact) {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Coins className="w-3 h-3" />
+        {costUSD !== undefined ? `$${costUSD.toFixed(4)}` : '...'}
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-lg bg-muted/30 p-3 space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-muted-foreground">Total Cost</span>
+        <span className="text-sm font-medium">
+          {costUSD !== undefined ? `$${costUSD.toFixed(4)}` : '—'}
+        </span>
+      </div>
+      {usage && (
+        <>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Input tokens</span>
+            <span className="text-xs font-mono">{formatTokens(usage.input_tokens)}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Output tokens</span>
+            <span className="text-xs font-mono">{formatTokens(usage.output_tokens)}</span>
+          </div>
+          {usage.cache_read_input_tokens !== undefined && usage.cache_read_input_tokens > 0 && (
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Cache hits</span>
+              <span className="text-xs font-mono text-green-400">
+                {formatTokens(usage.cache_read_input_tokens)}
+              </span>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
+// View: Default (Idle)
+// ============================================================================
+
+function DefaultView() {
+  const { setView } = useFamilyDrawer();
+  const { tabId } = useAgentDrawerContext();
+  const { sessions } = useSnapshot(agentStore);
+  const session = sessions.find(s => s.tabId === tabId);
+
+  // Redirect to appropriate view based on session status
+  const sessionStatus = session?.status;
+  useEffect(() => {
+    if (!sessionStatus) return;
+
+    const activeStatuses = ['starting', 'thinking', 'editing', 'running-command', 'waiting'];
+    if (activeStatuses.includes(sessionStatus)) {
+      setView('running');
+    } else if (sessionStatus === 'completed') {
+      setView('completed');
+    } else if (sessionStatus === 'error') {
+      setView('error');
+    }
+  }, [sessionStatus, setView]);
+
+  return (
+    <>
+      <header className="mb-4 flex h-[72px] items-center gap-3 border-b border-border">
+        <AgentAvatar status="idle" size="sm" />
+        <div>
+          <h2 className="text-[17px] font-semibold text-foreground">Claude Agent</h2>
+          <p className="text-sm text-muted-foreground">Ready to help</p>
+        </div>
+      </header>
+
+      <div className="space-y-3">
+        <FamilyDrawerButton onClick={() => setView('create')}>
+          <Play className="w-4 h-4" />
+          Start New Task
+        </FamilyDrawerButton>
+      </div>
+
+      {/* Recent task hint */}
+      {session?.prompt && (
+        <div className="mt-4 pt-4 border-t border-border">
+          <p className="text-xs text-muted-foreground mb-1">Last task:</p>
+          <p className="text-sm truncate">{session.prompt}</p>
+        </div>
+      )}
+    </>
+  );
+}
+
+// ============================================================================
+// View: Create Task
+// ============================================================================
+
+// Available tools that can be restricted
+const AVAILABLE_TOOLS = [
+  { name: 'Read', desc: 'Read files' },
+  { name: 'Write', desc: 'Create files' },
+  { name: 'Edit', desc: 'Edit files' },
+  { name: 'Bash', desc: 'Run commands' },
+  { name: 'Glob', desc: 'Search files' },
+  { name: 'Grep', desc: 'Search content' },
+  { name: 'Task', desc: 'Spawn agents' },
+  { name: 'WebFetch', desc: 'Fetch URLs' },
+  { name: 'WebSearch', desc: 'Search web' },
+];
+
+function CreateView() {
+  const { setView } = useFamilyDrawer();
+  const { tabId, spaceId, defaultWorkDir } = useAgentDrawerContext();
+
+  const [prompt, setPrompt] = useState('');
+  const [workDir, setWorkDir] = useState(defaultWorkDir || '');
+  const [permissionMode, setPermissionMode] = useState<PermissionMode>('acceptEdits');
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [allowedTools, setAllowedTools] = useState<string[]>([]);
+  const [useWorktree, setUseWorktree] = useState(false);
+
+  const handleBrowse = async () => {
+    const path = await window.electron?.invoke('dialog:openDirectory');
+    if (path) setWorkDir(path);
+  };
+
+  const toggleTool = (toolName: string) => {
+    setAllowedTools((prev) =>
+      prev.includes(toolName) ? prev.filter((t) => t !== toolName) : [...prev, toolName]
+    );
+  };
+
+  const handleStart = async () => {
+    if (!prompt.trim() || !workDir.trim()) return;
+
+    const session = agentActions.createSession(
+      tabId,
+      spaceId,
+      prompt,
+      workDir,
+      permissionMode
+    );
+
+    await window.agent.start({
+      sessionId: session.id,
+      workDir,
+      prompt,
+      permissionMode,
+      // Only pass allowedTools if user has restricted them
+      allowedTools: allowedTools.length > 0 ? allowedTools : undefined,
+      useWorktree,
+    });
+
+    setView('running');
+  };
+
+  return (
+    <div>
+      <div className="px-1">
+        <FamilyDrawerHeader
+          icon={<Bot className="w-10 h-10 text-primary" />}
+          title="New Task"
+          description="What should Claude do?"
+        />
+
+        {/* Prompt input */}
+        <div className="mt-6 space-y-4 border-t border-border pt-6">
+          <div>
+            <label className="text-[15px] font-semibold text-foreground">Task description</label>
+            <textarea
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder="Describe what you want the agent to do..."
+              className="mt-2 w-full h-24 px-3 py-2 text-sm bg-background border border-border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
+              autoFocus
+            />
+          </div>
+
+          {/* Working directory */}
+          <div>
+            <label className="text-[15px] font-semibold text-foreground">Working directory</label>
+            <div className="mt-2 flex gap-2">
+              <input
+                type="text"
+                value={workDir}
+                onChange={(e) => setWorkDir(e.target.value)}
+                placeholder="/path/to/project"
+                className="flex-1 px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+              <button
+                onClick={handleBrowse}
+                className="px-3 py-2 bg-muted hover:bg-muted/80 border border-border rounded-lg transition-colors"
+              >
+                <FolderOpen className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Permission mode */}
+          <div>
+            <label className="text-[15px] font-semibold text-foreground mb-2 block">Permission mode</label>
+            <div className="space-y-2">
+              {[
+                { value: 'acceptEdits', label: 'Auto-approve', desc: 'Agent edits without asking' },
+                { value: 'askUser', label: 'Ask first', desc: 'Confirm each edit' },
+                { value: 'planOnly', label: 'Plan only', desc: 'Suggest but don\'t apply' },
+              ].map((mode) => (
+                <button
+                  key={mode.value}
+                  onClick={() => setPermissionMode(mode.value as PermissionMode)}
+                  className={cn(
+                    'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors',
+                    permissionMode === mode.value
+                      ? 'bg-primary/20 border border-primary/40'
+                      : 'bg-muted/50 border border-transparent hover:bg-muted'
+                  )}
+                >
+                  <div className={cn(
+                    'w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0',
+                    permissionMode === mode.value ? 'border-primary' : 'border-muted-foreground'
+                  )}>
+                    {permissionMode === mode.value && (
+                      <div className="w-2 h-2 rounded-full bg-primary" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">{mode.label}</p>
+                    <p className="text-xs text-muted-foreground">{mode.desc}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Advanced options toggle */}
+          <button
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            className="w-full flex items-center justify-between px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <span>Advanced options</span>
+            <ChevronRight className={cn('w-4 h-4 transition-transform', showAdvanced && 'rotate-90')} />
+          </button>
+
+          {/* Advanced options */}
+          {showAdvanced && (
+            <div className="space-y-4">
+              {/* Git worktree isolation */}
+              <div>
+                <button
+                  onClick={() => setUseWorktree(!useWorktree)}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors bg-muted/30 hover:bg-muted/50"
+                >
+                  <div className={cn(
+                    'w-4 h-4 rounded border-2 flex items-center justify-center shrink-0',
+                    useWorktree ? 'border-primary bg-primary' : 'border-muted-foreground'
+                  )}>
+                    {useWorktree && (
+                      <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Use git worktree</p>
+                    <p className="text-xs text-muted-foreground">Isolate session in separate branch</p>
+                  </div>
+                </button>
+              </div>
+
+              {/* Allowed tools */}
+              <div className="space-y-2">
+                <label className="text-[15px] font-semibold text-foreground block">
+                  Allowed tools
+                  <span className="text-xs font-normal text-muted-foreground ml-2">
+                    {allowedTools.length === 0 ? '(all enabled)' : `(${allowedTools.length} selected)`}
+                  </span>
+                </label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Restrict which tools the agent can use. Leave empty to allow all.
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {AVAILABLE_TOOLS.map((tool) => (
+                    <button
+                      key={tool.name}
+                      onClick={() => toggleTool(tool.name)}
+                      className={cn(
+                        'px-2 py-1.5 text-xs rounded-md border transition-colors',
+                        allowedTools.includes(tool.name)
+                          ? 'bg-primary/20 border-primary/40 text-foreground'
+                          : allowedTools.length === 0
+                            ? 'bg-muted/30 border-transparent text-muted-foreground hover:bg-muted/50'
+                            : 'bg-muted/10 border-transparent text-muted-foreground/50 hover:bg-muted/30'
+                      )}
+                      title={tool.desc}
+                    >
+                      {tool.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="mt-7 flex gap-4">
+        <FamilyDrawerSecondaryButton
+          onClick={() => setView('default')}
+          className="bg-secondary text-secondary-foreground"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back
+        </FamilyDrawerSecondaryButton>
+        <FamilyDrawerSecondaryButton
+          onClick={handleStart}
+          className={cn(
+            "bg-primary text-primary-foreground",
+            (!prompt.trim() || !workDir.trim()) && "opacity-50 cursor-not-allowed"
+          )}
+        >
+          <Play className="w-4 h-4" /> Start
+        </FamilyDrawerSecondaryButton>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// View: Running
+// ============================================================================
+
+function RunningView() {
+  const { setView } = useFamilyDrawer();
+  const { tabId, onMaximize } = useAgentDrawerContext();
+  const { sessions } = useSnapshot(agentStore);
+  const session = sessions.find(s => s.tabId === tabId);
+
+  // Redirect based on session state changes
+  const sessionStatus = session?.status;
+  useEffect(() => {
+    if (!sessionStatus || sessionStatus === 'idle' || sessionStatus === 'stopped') {
+      setView('default');
+    } else if (sessionStatus === 'completed') {
+      setView('completed');
+    } else if (sessionStatus === 'error') {
+      setView('error');
+    }
+  }, [sessionStatus, setView]);
+
+  const handleStop = async () => {
+    if (!session) return;
+    await window.agent.stop(session.id);
+    agentActions.updateStatus(session.id, 'stopped');
+    setView('default');
+  };
+
+  // Guard for null session while useEffect redirects
+  if (!session) {
+    return <div className="p-4 text-center text-muted-foreground">Loading...</div>;
+  }
+
+  return (
+    <div>
+      <div className="px-1">
+        <FamilyDrawerHeader
+          icon={<AgentAvatar status={session.status} size="md" />}
+          title={STATUS_LABELS[session.status]}
+          description={session.currentFile || session.prompt?.slice(0, 50) + '...'}
+        />
+
+        {/* Activity log */}
+        <div className="mt-6 border-t border-border pt-6">
+          <div className="bg-black/40 rounded-xl p-3 max-h-40 overflow-hidden">
+            {session.terminalLines.length > 0 ? (
+              <AgentActivityLogCompact
+                lines={session.terminalLines}
+                maxLines={6}
+              />
+            ) : (
+              <p className="text-xs text-muted-foreground italic">Waiting for activity...</p>
+            )}
+          </div>
+
+          {/* Task summary with live cost */}
+          <div className="mt-4 p-3 bg-muted/30 rounded-lg">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs text-muted-foreground">Current task:</p>
+              <CostDisplay costUSD={session.costUSD} compact />
+            </div>
+            <p className="text-sm">{session.prompt}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="mt-7 flex gap-4">
+        <FamilyDrawerSecondaryButton
+          onClick={handleStop}
+          className="bg-destructive/20 text-destructive hover:bg-destructive/30"
+        >
+          <Square className="w-4 h-4" /> Stop
+        </FamilyDrawerSecondaryButton>
+        {onMaximize && (
+          <FamilyDrawerSecondaryButton
+            onClick={onMaximize}
+            className="bg-secondary text-secondary-foreground"
+          >
+            <Maximize2 className="w-4 h-4" /> Expand
+          </FamilyDrawerSecondaryButton>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// View: Completed
+// ============================================================================
+
+function CompletedView() {
+  const { setView } = useFamilyDrawer();
+  const { tabId, onMaximize } = useAgentDrawerContext();
+  const { sessions } = useSnapshot(agentStore);
+  const session = sessions.find(s => s.tabId === tabId);
+
+  const handleNewTask = () => {
+    if (session) {
+      agentActions.clearSession(session.id);
+    }
+    setView('create');
+  };
+
+  return (
+    <div>
+      <div className="px-1">
+        <FamilyDrawerHeader
+          icon={<AgentAvatar status="completed" size="md" />}
+          title="Task Completed"
+          description={session?.prompt?.slice(0, 50) + '...'}
+        />
+
+        <div className="mt-6 space-y-4 border-t border-border pt-6">
+          {/* Success summary */}
+          <div className="rounded-lg bg-green-500/10 p-4">
+            <p className="text-sm font-medium text-green-400">Task completed successfully</p>
+          </div>
+
+          {/* Cost & usage breakdown */}
+          {session && (session.costUSD !== undefined || session.usage) && (
+            <CostDisplay costUSD={session.costUSD} usage={session.usage} />
+          )}
+
+          {/* Activity summary */}
+          {session && session.terminalLines.length > 0 && (
+            <div className="bg-black/40 rounded-xl p-3 max-h-32 overflow-hidden">
+              <AgentActivityLogCompact
+                lines={session.terminalLines.slice(-4)}
+                maxLines={4}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="mt-7 flex gap-4">
+        {onMaximize && (
+          <FamilyDrawerSecondaryButton
+            onClick={onMaximize}
+            className="bg-secondary text-secondary-foreground"
+          >
+            <Eye className="w-4 h-4" /> View Details
+          </FamilyDrawerSecondaryButton>
+        )}
+        <FamilyDrawerSecondaryButton
+          onClick={handleNewTask}
+          className="bg-primary text-primary-foreground"
+        >
+          <Play className="w-4 h-4" /> New Task
+        </FamilyDrawerSecondaryButton>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// View: Error
+// ============================================================================
+
+function ErrorView() {
+  const { setView } = useFamilyDrawer();
+  const { tabId } = useAgentDrawerContext();
+  const { sessions } = useSnapshot(agentStore);
+  const session = sessions.find(s => s.tabId === tabId);
+
+  const handleRetry = () => {
+    setView('create');
+  };
+
+  const handleDismiss = () => {
+    if (session) {
+      agentActions.clearSession(session.id);
+    }
+    setView('default');
+  };
+
+  return (
+    <div>
+      <div className="px-1">
+        <FamilyDrawerHeader
+          icon={<AgentAvatar status="error" size="md" />}
+          title="Task Failed"
+          description="An error occurred during execution"
+        />
+
+        <div className="mt-6 space-y-4 border-t border-border pt-6">
+          {/* Error details */}
+          <div className="rounded-lg bg-destructive/10 p-4">
+            <p className="text-sm font-medium text-destructive">Error</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {session?.error || 'An unexpected error occurred'}
+            </p>
+          </div>
+
+          {/* Activity log showing what happened */}
+          {session && session.terminalLines.length > 0 && (
+            <div className="bg-black/40 rounded-xl p-3 max-h-32 overflow-hidden">
+              <AgentActivityLogCompact
+                lines={session.terminalLines.slice(-4)}
+                maxLines={4}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="mt-7 flex gap-4">
+        <FamilyDrawerSecondaryButton
+          onClick={handleDismiss}
+          className="bg-secondary text-secondary-foreground"
+        >
+          Dismiss
+        </FamilyDrawerSecondaryButton>
+        <FamilyDrawerSecondaryButton
+          onClick={handleRetry}
+          className="bg-primary text-primary-foreground"
+        >
+          <ChevronRight className="w-4 h-4" /> Try Again
+        </FamilyDrawerSecondaryButton>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// Views Registry
+// ============================================================================
+
+const agentViews: ViewsRegistry = {
+  default: DefaultView,
+  create: CreateView,
+  running: RunningView,
+  completed: CompletedView,
+  error: ErrorView,
+};
+
+// ============================================================================
+// Main Component
+// ============================================================================
+
+export function AgentDrawer({
+  tabId,
+  spaceId,
+  children,
+  defaultWorkDir,
+  onMaximize,
+}: AgentDrawerProps) {
+  const { sessions } = useSnapshot(agentStore);
+  const session = sessions.find(s => s.tabId === tabId);
+
+  // Determine initial view based on session state
+  const getInitialView = () => {
+    if (!session) return 'default';
+    if (['starting', 'thinking', 'editing', 'running-command', 'waiting'].includes(session.status)) {
+      return 'running';
+    }
+    if (session.status === 'completed') return 'completed';
+    if (session.status === 'error') return 'error';
+    return 'default';
+  };
+
+  return (
+    <AgentDrawerContext.Provider value={{ tabId, spaceId, defaultWorkDir, onMaximize }}>
+      <FamilyDrawerRoot views={agentViews} defaultView={getInitialView()}>
+        <FamilyDrawerTrigger asChild>
+          {children}
+        </FamilyDrawerTrigger>
+
+        <FamilyDrawerPortal>
+          <FamilyDrawerOverlay className="bg-black/50" />
+          <FamilyDrawerContent className="max-w-[400px] rounded-t-[24px] rounded-b-none bottom-0 inset-x-0 mx-auto bg-card border border-white/[0.08]">
+            <FamilyDrawerClose />
+            <FamilyDrawerAnimatedWrapper className="px-5 pb-8 pt-3">
+              {/* Drag handle */}
+              <div className="flex justify-center mb-2">
+                <div className="w-10 h-1 rounded-full bg-white/20" />
+              </div>
+              <FamilyDrawerAnimatedContent>
+                <FamilyDrawerViewContent />
+              </FamilyDrawerAnimatedContent>
+            </FamilyDrawerAnimatedWrapper>
+          </FamilyDrawerContent>
+        </FamilyDrawerPortal>
+      </FamilyDrawerRoot>
+    </AgentDrawerContext.Provider>
+  );
+}
+
+// ============================================================================
+// FILE: src/components/Agent/index.ts
+// ============================================================================
+
+export { AgentPanel } from './AgentPanel';
+export { AgentAvatar } from './AgentAvatar';
+export { AgentStatusBadge } from './AgentStatusBadge';
+export { TerminalPreview } from './TerminalPreview';
+export { CreateAgentModal } from './CreateAgentModal';
+export { AgentActivityLog, AgentActivityLogCompact } from './AgentActivityLog';
+export { AgentDrawer } from './AgentDrawer';
+export { AgentTerminal, useAgentTerminal } from './AgentTerminal';
+
+// ============================================================================
+// FILE: src/ipc/agent.ts
+// ============================================================================
+
+import { ipcMain, BrowserWindow, app } from 'electron';
+import { agentService } from '../services/agent.service';
+import { agentPtyService } from '../services/agent-pty.service';
+import { agentJsonlService } from '../services/agent-jsonl.service';
+import { gitWorktreeService } from '../services/git-worktree.service';
+
+type PermissionMode = 'acceptEdits' | 'askUser' | 'planOnly';
+
+interface StartAgentOptions {
+  sessionId: string;
+  workDir: string;
+  prompt: string;
+  permissionMode: PermissionMode;
+  allowedTools?: string[];
+  useWorktree?: boolean; // Enable git worktree isolation
+  mode?: 'sdk' | 'pty'; // Default to 'sdk'
+}
+
+export function registerAgentHandlers(getMainWindow: () => BrowserWindow | null) {
+  // Clean up worktrees on app quit
+  app.on('before-quit', async () => {
+    await gitWorktreeService.cleanupAll();
+  });
+
+  // ============================================================================
+  // SDK Mode Handlers (default)
+  // ============================================================================
+
+  ipcMain.handle('agent:start', async (_, options: StartAgentOptions) => {
+    const window = getMainWindow();
+    if (!window) {
+      return { success: false, error: 'No window available' };
+    }
+
+    const { sessionId, workDir, prompt, permissionMode, allowedTools, useWorktree = false, mode = 'sdk' } = options;
+
+    // Optionally create git worktree for session isolation
+    let effectiveWorkDir = workDir;
+    let worktreePath: string | undefined;
+
+    if (useWorktree) {
+      effectiveWorkDir = await gitWorktreeService.createWorktree(sessionId, workDir);
+      if (effectiveWorkDir !== workDir) {
+        worktreePath = effectiveWorkDir;
+      }
+    }
+
+    if (mode === 'pty') {
+      // Use PTY mode for raw terminal experience
+      agentPtyService.startSession({
+        sessionId,
+        workDir: effectiveWorkDir,
+        prompt,
+        permissionMode,
+        window,
+      });
+    } else {
+      // Use SDK mode for structured events (default)
+      agentService.startSession({
+        sessionId,
+        workDir: effectiveWorkDir,
+        prompt,
+        permissionMode,
+        allowedTools,
+        window,
+      });
+    }
+
+    return { success: true, worktreePath };
+  });
+
+  ipcMain.handle('agent:stop', async (_, { sessionId }: { sessionId: string }) => {
+    // Stop in both services (only one will have the session)
+    agentService.stopSession(sessionId);
+    agentPtyService.stopSession(sessionId);
+
+    // Clean up worktree if it was used
+    await gitWorktreeService.removeWorktree(sessionId);
+
+    return { success: true };
+  });
+
+  ipcMain.handle('agent:is-active', async (_, { sessionId }: { sessionId: string }) => {
+    return agentService.isSessionActive(sessionId) || agentPtyService.isSessionActive(sessionId);
+  });
+
+  // Merge worktree changes back to original branch
+  ipcMain.handle('agent:merge-worktree', async (_, { sessionId, commitMessage }: { sessionId: string; commitMessage?: string }) => {
+    const success = await gitWorktreeService.mergeWorktree(sessionId, commitMessage);
+    return { success };
+  });
+
+  // ============================================================================
+  // PTY Mode Handlers
+  // ============================================================================
+
+  ipcMain.handle('agent:pty-resize', async (_, { sessionId, cols, rows }: { sessionId: string; cols: number; rows: number }) => {
+    agentPtyService.resize(sessionId, cols, rows);
+    return { success: true };
+  });
+
+  ipcMain.handle('agent:pty-write', async (_, { sessionId, data }: { sessionId: string; data: string }) => {
+    agentPtyService.write(sessionId, data);
+    return { success: true };
+  });
+
+  // ============================================================================
+  // Analytics Handlers
+  // ============================================================================
+
+  ipcMain.handle('agent:analytics-start', async () => {
+    const window = getMainWindow();
+    if (window) {
+      agentJsonlService.startWatching(window);
+    }
+    return { success: true };
+  });
+
+  ipcMain.handle('agent:analytics-stop', async () => {
+    agentJsonlService.stopWatching();
+    return { success: true };
+  });
+
+  ipcMain.handle('agent:analytics-get', async (_, { sessionId }: { sessionId?: string }) => {
+    if (sessionId) {
+      return agentJsonlService.getAnalytics(sessionId);
+    }
+    return agentJsonlService.getAllAnalytics();
+  });
+
+  ipcMain.handle('agent:analytics-total-cost', async () => {
+    return agentJsonlService.getTotalCost();
+  });
+
+  ipcMain.handle('agent:analytics-list-sessions', async () => {
+    return agentJsonlService.listSessions();
+  });
+
+  ipcMain.handle('agent:analytics-read-history', async (_, { sessionId }: { sessionId: string }) => {
+    return agentJsonlService.readSessionHistory(sessionId);
+  });
+}
+
+// ============================================================================
+// FILE: src/preload.ts
+// ============================================================================
+
+import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
+
+// ============================================================================
+// Expose Electron APIs to renderer
+// ============================================================================
+
+contextBridge.exposeInMainWorld('electron', {
+  // IPC invoke (for request-response)
+  invoke: (channel: string, args?: unknown) => ipcRenderer.invoke(channel, args),
+
+  // IPC send (for one-way messages to main)
+  send: (channel: string, ...args: unknown[]) => {
+    ipcRenderer.send(channel, ...args);
+  },
+
+  // IPC on (for events from main)
+  on: (channel: string, callback: (...args: unknown[]) => void) => {
+    const subscription = (_event: IpcRendererEvent, ...args: unknown[]) => {
+      callback(...args);
+    };
+    ipcRenderer.on(channel, subscription);
+
+    // Return unsubscribe function
+    return () => {
+      ipcRenderer.removeListener(channel, subscription);
+    };
+  },
+});
+
+// ============================================================================
+// Expose Agent API for Claude Code integration
+// ============================================================================
+
+type PermissionMode = 'acceptEdits' | 'askUser' | 'planOnly';
+type AgentMode = 'sdk' | 'pty';
+
+interface AgentStartOptions {
+  sessionId: string;
+  workDir: string;
+  prompt: string;
+  permissionMode: PermissionMode;
+  allowedTools?: string[];
+  useWorktree?: boolean;
+  mode?: AgentMode;
+}
+
+interface AgentStatusEvent {
+  sessionId: string;
+  status: string;
+  currentTool?: string;
+  currentFile?: string;
+  error?: string;
+  costUSD?: number;
+  usage?: {
+    input_tokens: number;
+    output_tokens: number;
+    cache_creation_input_tokens?: number;
+    cache_read_input_tokens?: number;
+  };
+  subagentId?: string;
+  subagentType?: string;
+}
+
+interface AgentTerminalLineEvent {
+  sessionId: string;
+  line: string;
+}
+
+interface AgentPtyDataEvent {
+  sessionId: string;
+  data: string;
+}
+
+interface AgentNotificationEvent {
+  sessionId: string;
+  type: string;
+  title?: string;
+  message: string;
+}
+
+interface SessionAnalytics {
+  sessionId: string;
+  totalCostUSD: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  totalCacheReadTokens: number;
+  messageCount: number;
+  toolUseCount: number;
+  durationMs: number;
+  lastUpdated: string;
+}
+
+contextBridge.exposeInMainWorld('agent', {
+  // Session control
+  start: (options: AgentStartOptions) =>
+    ipcRenderer.invoke('agent:start', options),
+
+  stop: (sessionId: string) =>
+    ipcRenderer.invoke('agent:stop', { sessionId }),
+
+  isActive: (sessionId: string) =>
+    ipcRenderer.invoke('agent:is-active', { sessionId }),
+
+  // Event subscriptions
+  onStatus: (callback: (data: AgentStatusEvent) => void) => {
+    const handler = (_: IpcRendererEvent, data: AgentStatusEvent) => callback(data);
+    ipcRenderer.on('agent:status', handler);
+    return () => ipcRenderer.removeListener('agent:status', handler);
+  },
+
+  onTerminalLine: (callback: (data: AgentTerminalLineEvent) => void) => {
+    const handler = (_: IpcRendererEvent, data: AgentTerminalLineEvent) => callback(data);
+    ipcRenderer.on('agent:terminal-line', handler);
+    return () => ipcRenderer.removeListener('agent:terminal-line', handler);
+  },
+
+  onNotification: (callback: (data: AgentNotificationEvent) => void) => {
+    const handler = (_: IpcRendererEvent, data: AgentNotificationEvent) => callback(data);
+    ipcRenderer.on('agent:notification', handler);
+    return () => ipcRenderer.removeListener('agent:notification', handler);
+  },
+
+  // PTY mode (raw terminal data for xterm.js)
+  onPtyData: (callback: (data: AgentPtyDataEvent) => void) => {
+    const handler = (_: IpcRendererEvent, data: AgentPtyDataEvent) => callback(data);
+    ipcRenderer.on('agent:pty-data', handler);
+    return () => ipcRenderer.removeListener('agent:pty-data', handler);
+  },
+
+  ptyResize: (sessionId: string, cols: number, rows: number) =>
+    ipcRenderer.invoke('agent:pty-resize', { sessionId, cols, rows }),
+
+  ptyWrite: (sessionId: string, data: string) =>
+    ipcRenderer.invoke('agent:pty-write', { sessionId, data }),
+
+  // Analytics
+  analytics: {
+    start: () => ipcRenderer.invoke('agent:analytics-start'),
+    stop: () => ipcRenderer.invoke('agent:analytics-stop'),
+    get: (sessionId?: string) => ipcRenderer.invoke('agent:analytics-get', { sessionId }),
+    getTotalCost: () => ipcRenderer.invoke('agent:analytics-total-cost'),
+    listSessions: () => ipcRenderer.invoke('agent:analytics-list-sessions'),
+    readHistory: (sessionId: string) => ipcRenderer.invoke('agent:analytics-read-history', { sessionId }),
+
+    onUpdate: (callback: (data: SessionAnalytics) => void) => {
+      const handler = (_: IpcRendererEvent, data: SessionAnalytics) => callback(data);
+      ipcRenderer.on('agent:analytics', handler);
+      return () => ipcRenderer.removeListener('agent:analytics', handler);
+    },
+  },
+});
+
+// ============================================================================
+// Expose PTY API via IPC (node-pty runs in main process)
+// ============================================================================
+
+interface PtySpawnOptions {
+  cwd?: string;
+  env?: Record<string, string>;
+  cols?: number;
+  rows?: number;
+}
+
+contextBridge.exposeInMainWorld('pty', {
+  spawn: async (shell: string, args: string[], options: PtySpawnOptions) => {
+    // Request main process to spawn a PTY
+    const ptyId = await ipcRenderer.invoke('pty-spawn', { shell, args, options });
+
+    // Return wrapper object that communicates via IPC
+    return {
+      onData: (callback: (data: string) => void) => {
+        const listener = (_event: IpcRendererEvent, data: string) => callback(data);
+        ipcRenderer.on(`pty-data-${ptyId}`, listener);
+        // Return cleanup function
+        return () => ipcRenderer.removeListener(`pty-data-${ptyId}`, listener);
+      },
+      write: (data: string) => {
+        ipcRenderer.send('pty-write', ptyId, data);
+      },
+      resize: (cols: number, rows: number) => {
+        ipcRenderer.send('pty-resize', ptyId, { cols, rows });
+      },
+      onExit: (callback: (exitCode: { exitCode: number }) => void) => {
+        const listener = (_event: IpcRendererEvent, exitCode: { exitCode: number }) => callback(exitCode);
+        ipcRenderer.on(`pty-exit-${ptyId}`, listener);
+        return () => ipcRenderer.removeListener(`pty-exit-${ptyId}`, listener);
+      },
+      kill: () => {
+        ipcRenderer.send(`pty-kill-${ptyId}`);
+      },
+    };
+  },
+});
+
+// ============================================================================
+// FILE: src/types/electron.d.ts
+// ============================================================================
+
+// TypeScript declarations for Electron preload API
+
+type PermissionMode = 'acceptEdits' | 'askUser' | 'planOnly';
+type AgentMode = 'sdk' | 'pty';
+
+interface AgentStartOptions {
+  sessionId: string;
+  workDir: string;
+  prompt: string;
+  permissionMode: PermissionMode;
+  allowedTools?: string[];
+  useWorktree?: boolean;
+  mode?: AgentMode;
+}
+
+interface AgentUsage {
+  input_tokens: number;
+  output_tokens: number;
+  cache_creation_input_tokens?: number;
+  cache_read_input_tokens?: number;
+}
+
+interface AgentStatusEvent {
+  sessionId: string;
+  status: string;
+  currentTool?: string;
+  currentFile?: string;
+  error?: string;
+  costUSD?: number;
+  usage?: AgentUsage;
+  subagentId?: string;
+  subagentType?: string;
+}
+
+interface AgentTerminalLineEvent {
+  sessionId: string;
+  line: string;
+}
+
+interface AgentPtyDataEvent {
+  sessionId: string;
+  data: string;
+}
+
+interface AgentNotificationEvent {
+  sessionId: string;
+  type: string;
+  title?: string;
+  message: string;
+}
+
+interface SessionAnalytics {
+  sessionId: string;
+  totalCostUSD: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  totalCacheReadTokens: number;
+  messageCount: number;
+  toolUseCount: number;
+  durationMs: number;
+  lastUpdated: string;
+}
+
+interface AgentAnalyticsAPI {
+  start: () => Promise<{ success: boolean }>;
+  stop: () => Promise<{ success: boolean }>;
+  get: (sessionId?: string) => Promise<SessionAnalytics | SessionAnalytics[] | undefined>;
+  getTotalCost: () => Promise<number>;
+  listSessions: () => Promise<string[]>;
+  readHistory: (sessionId: string) => Promise<unknown[]>;
+  onUpdate: (callback: (data: SessionAnalytics) => void) => () => void;
+}
+
+interface AgentAPI {
+  // Session control
+  start: (options: AgentStartOptions) => Promise<{ success: boolean; error?: string; worktreePath?: string }>;
+  stop: (sessionId: string) => Promise<{ success: boolean }>;
+  isActive: (sessionId: string) => Promise<boolean>;
+
+  // Event subscriptions
+  onStatus: (callback: (data: AgentStatusEvent) => void) => () => void;
+  onTerminalLine: (callback: (data: AgentTerminalLineEvent) => void) => () => void;
+  onNotification: (callback: (data: AgentNotificationEvent) => void) => () => void;
+
+  // PTY mode
+  onPtyData: (callback: (data: AgentPtyDataEvent) => void) => () => void;
+  ptyResize: (sessionId: string, cols: number, rows: number) => Promise<{ success: boolean }>;
+  ptyWrite: (sessionId: string, data: string) => Promise<{ success: boolean }>;
+
+  // Analytics
+  analytics: AgentAnalyticsAPI;
+}
+
+interface ElectronAPI {
+  invoke: (channel: string, args?: unknown) => Promise<unknown>;
+  send: (channel: string, ...args: unknown[]) => void;
+  on: (channel: string, callback: (...args: unknown[]) => void) => () => void;
+}
+
+interface PtySpawnOptions {
+  cwd?: string;
+  env?: Record<string, string>;
+  cols?: number;
+  rows?: number;
+}
+
+interface PtyInstance {
+  onData: (callback: (data: string) => void) => () => void;
+  write: (data: string) => void;
+  resize: (cols: number, rows: number) => void;
+  onExit: (callback: (exitCode: { exitCode: number }) => void) => () => void;
+  kill: () => void;
+}
+
+interface PtyAPI {
+  spawn: (shell: string, args: string[], options: PtySpawnOptions) => Promise<PtyInstance>;
+}
+
+declare global {
+  interface Window {
+    electron: ElectronAPI;
+    agent: AgentAPI;
+    pty: PtyAPI;
+  }
+}
+
+export {};
+
+// ============================================================================
+// END OF CONCATENATED FILES
+// ============================================================================

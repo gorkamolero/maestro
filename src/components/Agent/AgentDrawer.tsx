@@ -1,7 +1,7 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import { useSnapshot } from 'valtio';
-import { Play, Square, Eye, FolderOpen, ChevronRight, Maximize2, ArrowLeft, Bot } from 'lucide-react';
-import { agentStore, agentActions, type AgentStatus, type PermissionMode } from '@/stores/agent.store';
+import { Play, Square, Eye, FolderOpen, ChevronRight, Maximize2, ArrowLeft, Bot, Coins } from 'lucide-react';
+import { agentStore, agentActions, type AgentStatus, type PermissionMode, type AgentUsage } from '@/stores/agent.store';
 import { cn } from '@/lib/utils';
 import { AgentAvatar } from './AgentAvatar';
 import { AgentActivityLogCompact } from './AgentActivityLog';
@@ -70,6 +70,66 @@ const STATUS_LABELS: Record<AgentStatus, string> = {
 };
 
 // ============================================================================
+// Cost Display Component
+// ============================================================================
+
+function formatTokens(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return n.toString();
+}
+
+interface CostDisplayProps {
+  costUSD?: number;
+  usage?: AgentUsage;
+  compact?: boolean;
+}
+
+function CostDisplay({ costUSD, usage, compact = false }: CostDisplayProps) {
+  if (!costUSD && !usage) return null;
+
+  if (compact) {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Coins className="w-3 h-3" />
+        {costUSD !== undefined ? `$${costUSD.toFixed(4)}` : '...'}
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-lg bg-muted/30 p-3 space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-muted-foreground">Total Cost</span>
+        <span className="text-sm font-medium">
+          {costUSD !== undefined ? `$${costUSD.toFixed(4)}` : '—'}
+        </span>
+      </div>
+      {usage && (
+        <>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Input tokens</span>
+            <span className="text-xs font-mono">{formatTokens(usage.input_tokens)}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Output tokens</span>
+            <span className="text-xs font-mono">{formatTokens(usage.output_tokens)}</span>
+          </div>
+          {usage.cache_read_input_tokens !== undefined && usage.cache_read_input_tokens > 0 && (
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Cache hits</span>
+              <span className="text-xs font-mono text-green-400">
+                {formatTokens(usage.cache_read_input_tokens)}
+              </span>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
 // View: Default (Idle)
 // ============================================================================
 
@@ -126,6 +186,19 @@ function DefaultView() {
 // View: Create Task
 // ============================================================================
 
+// Available tools that can be restricted
+const AVAILABLE_TOOLS = [
+  { name: 'Read', desc: 'Read files' },
+  { name: 'Write', desc: 'Create files' },
+  { name: 'Edit', desc: 'Edit files' },
+  { name: 'Bash', desc: 'Run commands' },
+  { name: 'Glob', desc: 'Search files' },
+  { name: 'Grep', desc: 'Search content' },
+  { name: 'Task', desc: 'Spawn agents' },
+  { name: 'WebFetch', desc: 'Fetch URLs' },
+  { name: 'WebSearch', desc: 'Search web' },
+];
+
 function CreateView() {
   const { setView } = useFamilyDrawer();
   const { tabId, spaceId, defaultWorkDir } = useAgentDrawerContext();
@@ -133,10 +206,19 @@ function CreateView() {
   const [prompt, setPrompt] = useState('');
   const [workDir, setWorkDir] = useState(defaultWorkDir || '');
   const [permissionMode, setPermissionMode] = useState<PermissionMode>('acceptEdits');
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [allowedTools, setAllowedTools] = useState<string[]>([]);
+  const [useWorktree, setUseWorktree] = useState(false);
 
   const handleBrowse = async () => {
     const path = await window.electron?.invoke('dialog:openDirectory');
     if (path) setWorkDir(path);
+  };
+
+  const toggleTool = (toolName: string) => {
+    setAllowedTools((prev) =>
+      prev.includes(toolName) ? prev.filter((t) => t !== toolName) : [...prev, toolName]
+    );
   };
 
   const handleStart = async () => {
@@ -155,6 +237,9 @@ function CreateView() {
       workDir,
       prompt,
       permissionMode,
+      // Only pass allowedTools if user has restricted them
+      allowedTools: allowedTools.length > 0 ? allowedTools : undefined,
+      useWorktree,
     });
 
     setView('running');
@@ -237,6 +322,75 @@ function CreateView() {
               ))}
             </div>
           </div>
+
+          {/* Advanced options toggle */}
+          <button
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            className="w-full flex items-center justify-between px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <span>Advanced options</span>
+            <ChevronRight className={cn('w-4 h-4 transition-transform', showAdvanced && 'rotate-90')} />
+          </button>
+
+          {/* Advanced options */}
+          {showAdvanced && (
+            <div className="space-y-4">
+              {/* Git worktree isolation */}
+              <div>
+                <button
+                  onClick={() => setUseWorktree(!useWorktree)}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors bg-muted/30 hover:bg-muted/50"
+                >
+                  <div className={cn(
+                    'w-4 h-4 rounded border-2 flex items-center justify-center shrink-0',
+                    useWorktree ? 'border-primary bg-primary' : 'border-muted-foreground'
+                  )}>
+                    {useWorktree && (
+                      <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Use git worktree</p>
+                    <p className="text-xs text-muted-foreground">Isolate session in separate branch</p>
+                  </div>
+                </button>
+              </div>
+
+              {/* Allowed tools */}
+              <div className="space-y-2">
+                <label className="text-[15px] font-semibold text-foreground block">
+                  Allowed tools
+                  <span className="text-xs font-normal text-muted-foreground ml-2">
+                    {allowedTools.length === 0 ? '(all enabled)' : `(${allowedTools.length} selected)`}
+                  </span>
+                </label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Restrict which tools the agent can use. Leave empty to allow all.
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {AVAILABLE_TOOLS.map((tool) => (
+                    <button
+                      key={tool.name}
+                      onClick={() => toggleTool(tool.name)}
+                      className={cn(
+                        'px-2 py-1.5 text-xs rounded-md border transition-colors',
+                        allowedTools.includes(tool.name)
+                          ? 'bg-primary/20 border-primary/40 text-foreground'
+                          : allowedTools.length === 0
+                            ? 'bg-muted/30 border-transparent text-muted-foreground hover:bg-muted/50'
+                            : 'bg-muted/10 border-transparent text-muted-foreground/50 hover:bg-muted/30'
+                      )}
+                      title={tool.desc}
+                    >
+                      {tool.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -318,9 +472,12 @@ function RunningView() {
             )}
           </div>
 
-          {/* Task summary */}
+          {/* Task summary with live cost */}
           <div className="mt-4 p-3 bg-muted/30 rounded-lg">
-            <p className="text-xs text-muted-foreground mb-1">Current task:</p>
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs text-muted-foreground">Current task:</p>
+              <CostDisplay costUSD={session.costUSD} compact />
+            </div>
             <p className="text-sm">{session.prompt}</p>
           </div>
         </div>
@@ -377,12 +534,12 @@ function CompletedView() {
           {/* Success summary */}
           <div className="rounded-lg bg-green-500/10 p-4">
             <p className="text-sm font-medium text-green-400">Task completed successfully</p>
-            {session?.costUSD && (
-              <p className="mt-1 text-xs text-muted-foreground">
-                Cost: ${session.costUSD.toFixed(4)}
-              </p>
-            )}
           </div>
+
+          {/* Cost & usage breakdown */}
+          {session && (session.costUSD !== undefined || session.usage) && (
+            <CostDisplay costUSD={session.costUSD} usage={session.usage} />
+          )}
 
           {/* Activity summary */}
           {session && session.terminalLines.length > 0 && (

@@ -32,12 +32,16 @@ contextBridge.exposeInMainWorld('electron', {
 // ============================================================================
 
 type PermissionMode = 'acceptEdits' | 'askUser' | 'planOnly';
+type AgentMode = 'sdk' | 'pty';
 
 interface AgentStartOptions {
   sessionId: string;
   workDir: string;
   prompt: string;
   permissionMode: PermissionMode;
+  allowedTools?: string[];
+  useWorktree?: boolean;
+  mode?: AgentMode;
 }
 
 interface AgentStatusEvent {
@@ -46,6 +50,15 @@ interface AgentStatusEvent {
   currentTool?: string;
   currentFile?: string;
   error?: string;
+  costUSD?: number;
+  usage?: {
+    input_tokens: number;
+    output_tokens: number;
+    cache_creation_input_tokens?: number;
+    cache_read_input_tokens?: number;
+  };
+  subagentId?: string;
+  subagentType?: string;
 }
 
 interface AgentTerminalLineEvent {
@@ -53,7 +66,32 @@ interface AgentTerminalLineEvent {
   line: string;
 }
 
+interface AgentPtyDataEvent {
+  sessionId: string;
+  data: string;
+}
+
+interface AgentNotificationEvent {
+  sessionId: string;
+  type: string;
+  title?: string;
+  message: string;
+}
+
+interface SessionAnalytics {
+  sessionId: string;
+  totalCostUSD: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  totalCacheReadTokens: number;
+  messageCount: number;
+  toolUseCount: number;
+  durationMs: number;
+  lastUpdated: string;
+}
+
 contextBridge.exposeInMainWorld('agent', {
+  // Session control
   start: (options: AgentStartOptions) =>
     ipcRenderer.invoke('agent:start', options),
 
@@ -63,6 +101,7 @@ contextBridge.exposeInMainWorld('agent', {
   isActive: (sessionId: string) =>
     ipcRenderer.invoke('agent:is-active', { sessionId }),
 
+  // Event subscriptions
   onStatus: (callback: (data: AgentStatusEvent) => void) => {
     const handler = (_: IpcRendererEvent, data: AgentStatusEvent) => callback(data);
     ipcRenderer.on('agent:status', handler);
@@ -73,6 +112,41 @@ contextBridge.exposeInMainWorld('agent', {
     const handler = (_: IpcRendererEvent, data: AgentTerminalLineEvent) => callback(data);
     ipcRenderer.on('agent:terminal-line', handler);
     return () => ipcRenderer.removeListener('agent:terminal-line', handler);
+  },
+
+  onNotification: (callback: (data: AgentNotificationEvent) => void) => {
+    const handler = (_: IpcRendererEvent, data: AgentNotificationEvent) => callback(data);
+    ipcRenderer.on('agent:notification', handler);
+    return () => ipcRenderer.removeListener('agent:notification', handler);
+  },
+
+  // PTY mode (raw terminal data for xterm.js)
+  onPtyData: (callback: (data: AgentPtyDataEvent) => void) => {
+    const handler = (_: IpcRendererEvent, data: AgentPtyDataEvent) => callback(data);
+    ipcRenderer.on('agent:pty-data', handler);
+    return () => ipcRenderer.removeListener('agent:pty-data', handler);
+  },
+
+  ptyResize: (sessionId: string, cols: number, rows: number) =>
+    ipcRenderer.invoke('agent:pty-resize', { sessionId, cols, rows }),
+
+  ptyWrite: (sessionId: string, data: string) =>
+    ipcRenderer.invoke('agent:pty-write', { sessionId, data }),
+
+  // Analytics
+  analytics: {
+    start: () => ipcRenderer.invoke('agent:analytics-start'),
+    stop: () => ipcRenderer.invoke('agent:analytics-stop'),
+    get: (sessionId?: string) => ipcRenderer.invoke('agent:analytics-get', { sessionId }),
+    getTotalCost: () => ipcRenderer.invoke('agent:analytics-total-cost'),
+    listSessions: () => ipcRenderer.invoke('agent:analytics-list-sessions'),
+    readHistory: (sessionId: string) => ipcRenderer.invoke('agent:analytics-read-history', { sessionId }),
+
+    onUpdate: (callback: (data: SessionAnalytics) => void) => {
+      const handler = (_: IpcRendererEvent, data: SessionAnalytics) => callback(data);
+      ipcRenderer.on('agent:analytics', handler);
+      return () => ipcRenderer.removeListener('agent:analytics', handler);
+    },
   },
 });
 

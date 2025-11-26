@@ -40,6 +40,8 @@ export function AgentPanel({ tab }: AgentPanelProps) {
           currentTool: data.currentTool,
           currentFile: data.currentFile,
           error: data.error,
+          costUSD: data.costUSD,
+          usage: data.usage,
         });
       }
     });
@@ -50,9 +52,23 @@ export function AgentPanel({ tab }: AgentPanelProps) {
       }
     });
 
+    // Subscribe to SDK notification events (warnings, errors, info from hooks)
+    const unsubNotification = window.agent.onNotification((data) => {
+      if (data.sessionId === session.id) {
+        notificationsActions.add({
+          spaceId: session.spaceId,
+          tabId: session.tabId,
+          type: data.type === 'error' ? 'agent-error' : 'agent-info',
+          title: data.title,
+          message: data.message,
+        });
+      }
+    });
+
     return () => {
       unsubStatus();
       unsubTerminal();
+      unsubNotification();
     };
   }, [session]);
 

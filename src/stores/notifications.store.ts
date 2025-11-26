@@ -3,6 +3,7 @@ import { proxy } from 'valtio';
 export type NotificationType =
   | 'agent-done'
   | 'agent-error'
+  | 'agent-info'
   | 'build-failed'
   | 'build-success'
   | 'process-crashed'
@@ -13,6 +14,7 @@ export interface Notification {
   spaceId: string;
   tabId?: string;
   type: NotificationType;
+  title?: string;
   message: string;
   createdAt: string;
 }

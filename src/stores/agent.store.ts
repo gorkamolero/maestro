@@ -13,6 +13,13 @@ export type AgentStatus =
 
 export type PermissionMode = 'acceptEdits' | 'askUser' | 'planOnly';
 
+export interface AgentUsage {
+  input_tokens: number;
+  output_tokens: number;
+  cache_creation_input_tokens?: number;
+  cache_read_input_tokens?: number;
+}
+
 export interface AgentSession {
   id: string;
   tabId: string;
@@ -27,6 +34,7 @@ export interface AgentSession {
   completedAt?: string;
   error?: string;
   costUSD?: number;
+  usage?: AgentUsage;
   terminalLines: string[]; // Last N lines for preview
   ptyId?: string; // For terminal rendering
 }
