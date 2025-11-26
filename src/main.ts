@@ -7,6 +7,16 @@ import { registerLauncherHandlers } from './ipc/launcher';
 import { registerPortalHandler } from './ipc/portal';
 import { registerAgentHandlers } from './ipc/agent';
 
+// Get icon path - different in dev vs production
+const getIconPath = () => {
+  if (app.isPackaged) {
+    // In production, resources are in the app's resources folder
+    return path.join(process.resourcesPath, 'resources', 'icon.png');
+  }
+  // In development, use the source resources folder
+  return path.join(__dirname, '..', '..', 'resources', 'icon.png');
+};
+
 // Handle creating/removing shortcuts on Windows
 if (started) {
   app.quit();
@@ -21,6 +31,7 @@ const createWindow = () => {
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
+    icon: getIconPath(),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
