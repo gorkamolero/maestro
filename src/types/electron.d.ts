@@ -3,6 +3,13 @@
 type PermissionMode = 'acceptEdits' | 'askUser' | 'planOnly';
 type AgentMode = 'sdk' | 'pty';
 
+interface HappySettings {
+  serverUrl?: string;
+  webappUrl?: string;
+  trackName?: string;
+  trackIcon?: string;
+}
+
 interface AgentStartOptions {
   sessionId: string;
   workDir: string;
@@ -11,6 +18,10 @@ interface AgentStartOptions {
   allowedTools?: string[];
   useWorktree?: boolean;
   mode?: AgentMode;
+  /** Use Happy Coder for mobile access */
+  useHappy?: boolean;
+  /** Happy Coder configuration */
+  happySettings?: HappySettings;
 }
 
 interface AgentUsage {

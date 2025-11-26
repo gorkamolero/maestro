@@ -1,6 +1,7 @@
 import { BrowserWindow } from 'electron';
 import * as pty from 'node-pty';
 import stripAnsi from 'strip-ansi';
+import { happyService } from './happy.service';
 
 type AgentStatus =
   | 'idle'
@@ -19,11 +20,22 @@ interface PtySessionOptions {
   prompt: string;
   permissionMode: 'acceptEdits' | 'askUser' | 'planOnly';
   window: BrowserWindow;
+  /** Use Happy Coder for mobile access (defaults to checking settings) */
+  useHappy?: boolean;
+  /** Happy Coder settings */
+  happySettings?: {
+    serverUrl?: string;
+    webappUrl?: string;
+    trackName?: string;
+    trackIcon?: string;
+  };
 }
 
 interface ActivePtySession {
   pty: pty.IPty;
   sessionId: string;
+  /** Whether this session is using Happy Coder */
+  isHappySession: boolean;
 }
 
 /**
@@ -36,15 +48,29 @@ interface ActivePtySession {
 export class AgentPtyService {
   private sessions = new Map<string, ActivePtySession>();
 
-  startSession({ sessionId, workDir, prompt, permissionMode, window }: PtySessionOptions) {
+  async startSession({
+    sessionId,
+    workDir,
+    prompt,
+    permissionMode,
+    window,
+    useHappy = true,
+    happySettings,
+  }: PtySessionOptions) {
+    // Determine which command to use (happy or claude)
+    const command = await happyService.getCommand(useHappy);
+    const isHappySession = command === 'happy';
+
     console.log('[AgentPtyService] Starting PTY session:', {
       sessionId,
       workDir,
       prompt: prompt.slice(0, 50),
       permissionMode,
+      command,
+      isHappySession,
     });
 
-    // Build Claude CLI arguments
+    // Build CLI arguments
     const args = ['-p', prompt];
 
     switch (permissionMode) {
@@ -57,14 +83,20 @@ export class AgentPtyService {
       // 'askUser' is default behavior
     }
 
-    // Spawn Claude in PTY
-    const ptyProcess = pty.spawn('claude', args, {
+    // Build environment with Happy-specific vars if applicable
+    const happyEnv = isHappySession
+      ? happyService.buildHappyEnv(happySettings)
+      : {};
+
+    // Spawn Claude/Happy in PTY
+    const ptyProcess = pty.spawn(command, args, {
       name: 'xterm-256color',
       cols: 120,
       rows: 40,
       cwd: workDir,
       env: {
         ...process.env,
+        ...happyEnv,
         TERM: 'xterm-256color',
         // Force color output
         FORCE_COLOR: '1',
@@ -74,8 +106,18 @@ export class AgentPtyService {
     const session: ActivePtySession = {
       pty: ptyProcess,
       sessionId,
+      isHappySession,
     };
     this.sessions.set(sessionId, session);
+
+    // Track Happy session for status reporting
+    if (isHappySession) {
+      happyService.registerSession(sessionId, {
+        startedAt: new Date().toISOString(),
+        trackName: happySettings?.trackName,
+        trackIcon: happySettings?.trackIcon,
+      });
+    }
 
     // Emit initial status
     this.emitStatus(window, sessionId, 'starting');
@@ -108,6 +150,11 @@ export class AgentPtyService {
         this.emitStatus(window, sessionId, 'completed');
       } else {
         this.emitStatus(window, sessionId, 'error', `Exit code ${exitCode}`);
+      }
+
+      // Clean up Happy session tracking
+      if (isHappySession) {
+        happyService.unregisterSession(sessionId);
       }
 
       this.sessions.delete(sessionId);
@@ -144,12 +191,33 @@ export class AgentPtyService {
     if (session) {
       console.log('[AgentPtyService] Killing PTY:', sessionId);
       session.pty.kill();
+
+      // Clean up Happy session tracking
+      if (session.isHappySession) {
+        happyService.unregisterSession(sessionId);
+      }
+
       this.sessions.delete(sessionId);
     }
   }
 
   isSessionActive(sessionId: string): boolean {
     return this.sessions.has(sessionId);
+  }
+
+  /**
+   * Check if a session is using Happy Coder
+   */
+  isHappySession(sessionId: string): boolean {
+    const session = this.sessions.get(sessionId);
+    return session?.isHappySession ?? false;
+  }
+
+  /**
+   * Get active Happy session count
+   */
+  getActiveHappySessionCount(): number {
+    return happyService.getActiveSessionCount();
   }
 
   private emitStatus(window: BrowserWindow, sessionId: string, status: AgentStatus, error?: string) {

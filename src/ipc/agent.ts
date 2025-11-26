@@ -3,8 +3,16 @@ import { agentService } from '../services/agent.service';
 import { agentPtyService } from '../services/agent-pty.service';
 import { agentJsonlService } from '../services/agent-jsonl.service';
 import { gitWorktreeService } from '../services/git-worktree.service';
+import { happyService } from '../services/happy.service';
 
 type PermissionMode = 'acceptEdits' | 'askUser' | 'planOnly';
+
+interface HappySettings {
+  serverUrl?: string;
+  webappUrl?: string;
+  trackName?: string;
+  trackIcon?: string;
+}
 
 interface StartAgentOptions {
   sessionId: string;
@@ -14,6 +22,10 @@ interface StartAgentOptions {
   allowedTools?: string[];
   useWorktree?: boolean; // Enable git worktree isolation
   mode?: 'sdk' | 'pty'; // Default to 'sdk'
+  /** Use Happy Coder for mobile access */
+  useHappy?: boolean;
+  /** Happy Coder configuration */
+  happySettings?: HappySettings;
 }
 
 export function registerAgentHandlers(getMainWindow: () => BrowserWindow | null) {
@@ -32,7 +44,17 @@ export function registerAgentHandlers(getMainWindow: () => BrowserWindow | null)
       return { success: false, error: 'No window available' };
     }
 
-    const { sessionId, workDir, prompt, permissionMode, allowedTools, useWorktree = false, mode = 'sdk' } = options;
+    const {
+      sessionId,
+      workDir,
+      prompt,
+      permissionMode,
+      allowedTools,
+      useWorktree = false,
+      mode = 'sdk',
+      useHappy = true,
+      happySettings,
+    } = options;
 
     // Optionally create git worktree for session isolation
     let effectiveWorkDir = workDir;
@@ -45,14 +67,19 @@ export function registerAgentHandlers(getMainWindow: () => BrowserWindow | null)
       }
     }
 
+    // Check if Happy is installed (for response metadata)
+    const happyDetection = await happyService.detectInstallation();
+
     if (mode === 'pty') {
       // Use PTY mode for raw terminal experience
-      agentPtyService.startSession({
+      await agentPtyService.startSession({
         sessionId,
         workDir: effectiveWorkDir,
         prompt,
         permissionMode,
         window,
+        useHappy,
+        happySettings,
       });
     } else {
       // Use SDK mode for structured events (default)
@@ -66,7 +93,12 @@ export function registerAgentHandlers(getMainWindow: () => BrowserWindow | null)
       });
     }
 
-    return { success: true, worktreePath };
+    return {
+      success: true,
+      worktreePath,
+      happyEnabled: useHappy && happyDetection.isInstalled,
+      happyVersion: happyDetection.version,
+    };
   });
 
   ipcMain.handle('agent:stop', async (_, { sessionId }: { sessionId: string }) => {
@@ -138,5 +170,55 @@ export function registerAgentHandlers(getMainWindow: () => BrowserWindow | null)
 
   ipcMain.handle('agent:analytics-read-history', async (_, { sessionId }: { sessionId: string }) => {
     return agentJsonlService.readSessionHistory(sessionId);
+  });
+
+  // ============================================================================
+  // Happy Coder Handlers
+  // ============================================================================
+
+  /**
+   * Check if Happy Coder is installed
+   */
+  ipcMain.handle('happy:detect', async () => {
+    return happyService.detectInstallation();
+  });
+
+  /**
+   * Clear Happy detection cache (call after user installs)
+   */
+  ipcMain.handle('happy:clear-cache', async () => {
+    happyService.clearCache();
+    return { success: true };
+  });
+
+  /**
+   * Get active Happy session count
+   */
+  ipcMain.handle('happy:active-sessions', async () => {
+    return {
+      count: happyService.getActiveSessionCount(),
+      sessions: happyService.getActiveSessions(),
+    };
+  });
+
+  /**
+   * Check if a specific session is using Happy
+   */
+  ipcMain.handle('happy:is-session', async (_, { sessionId }: { sessionId: string }) => {
+    return happyService.isHappySession(sessionId);
+  });
+
+  /**
+   * Get Happy web app URL for QR pairing
+   */
+  ipcMain.handle('happy:get-webapp-url', async (_, { customUrl }: { customUrl?: string }) => {
+    return happyService.getWebAppUrl(customUrl);
+  });
+
+  /**
+   * Get installation instructions
+   */
+  ipcMain.handle('happy:install-instructions', async () => {
+    return happyService.getInstallInstructions();
   });
 }

@@ -34,6 +34,13 @@ contextBridge.exposeInMainWorld('electron', {
 type PermissionMode = 'acceptEdits' | 'askUser' | 'planOnly';
 type AgentMode = 'sdk' | 'pty';
 
+interface HappySettings {
+  serverUrl?: string;
+  webappUrl?: string;
+  trackName?: string;
+  trackIcon?: string;
+}
+
 interface AgentStartOptions {
   sessionId: string;
   workDir: string;
@@ -42,6 +49,10 @@ interface AgentStartOptions {
   allowedTools?: string[];
   useWorktree?: boolean;
   mode?: AgentMode;
+  /** Use Happy Coder for mobile access */
+  useHappy?: boolean;
+  /** Happy Coder configuration */
+  happySettings?: HappySettings;
 }
 
 interface AgentStatusEvent {
@@ -88,6 +99,21 @@ interface SessionAnalytics {
   toolUseCount: number;
   durationMs: number;
   lastUpdated: string;
+}
+
+// Happy Coder types
+interface HappyDetectionResult {
+  isInstalled: boolean;
+  version?: string;
+  path?: string;
+  error?: string;
+}
+
+interface HappySessionInfo {
+  sessionId: string;
+  startedAt: string;
+  trackName?: string;
+  trackIcon?: string;
 }
 
 contextBridge.exposeInMainWorld('agent', {
@@ -148,6 +174,48 @@ contextBridge.exposeInMainWorld('agent', {
       return () => ipcRenderer.removeListener('agent:analytics', handler);
     },
   },
+});
+
+// ============================================================================
+// Expose Happy Coder API for mobile companion integration
+// ============================================================================
+
+contextBridge.exposeInMainWorld('happy', {
+  /**
+   * Detect if Happy Coder CLI is installed
+   */
+  detect: (): Promise<HappyDetectionResult> =>
+    ipcRenderer.invoke('happy:detect'),
+
+  /**
+   * Clear detection cache (call after user installs)
+   */
+  clearCache: (): Promise<{ success: boolean }> =>
+    ipcRenderer.invoke('happy:clear-cache'),
+
+  /**
+   * Get active Happy session count and info
+   */
+  getActiveSessions: (): Promise<{ count: number; sessions: HappySessionInfo[] }> =>
+    ipcRenderer.invoke('happy:active-sessions'),
+
+  /**
+   * Check if a specific session is using Happy
+   */
+  isHappySession: (sessionId: string): Promise<boolean> =>
+    ipcRenderer.invoke('happy:is-session', { sessionId }),
+
+  /**
+   * Get Happy web app URL for QR pairing
+   */
+  getWebAppUrl: (customUrl?: string): Promise<string> =>
+    ipcRenderer.invoke('happy:get-webapp-url', { customUrl }),
+
+  /**
+   * Get installation instructions
+   */
+  getInstallInstructions: (): Promise<string> =>
+    ipcRenderer.invoke('happy:install-instructions'),
 });
 
 // ============================================================================
