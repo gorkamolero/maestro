@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Toaster } from 'sonner';
 import { CommandPalettePortal } from '@/components/CommandPalettePortal';
 import { StatusBar } from '@/components/StatusBar';
 import { ControlRoom } from '@/components/ControlRoom';
@@ -127,6 +128,17 @@ function App() {
       </div>
       <StatusBar />
       <CommandPalettePortal isOpen={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} />
+      <Toaster
+        theme="dark"
+        position="bottom-right"
+        toastOptions={{
+          style: {
+            background: 'hsl(var(--card))',
+            border: '1px solid hsl(var(--border))',
+            color: 'hsl(var(--foreground))',
+          },
+        }}
+      />
     </div>
   );
 }

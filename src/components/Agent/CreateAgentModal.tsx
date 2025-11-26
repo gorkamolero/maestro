@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { FolderOpen } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { FolderOpen, History } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import type { PermissionMode } from '@/stores/agent.store';
+import { spacesActions } from '@/stores/spaces.store';
 import { cn } from '@/lib/utils';
 
 interface CreateAgentModalProps {
@@ -18,6 +19,7 @@ interface CreateAgentModalProps {
     permissionMode: PermissionMode;
   }) => void;
   defaultWorkDir?: string;
+  spaceId?: string;
 }
 
 const PERMISSION_OPTIONS: {
@@ -47,13 +49,31 @@ export function CreateAgentModal({
   onClose,
   onSubmit,
   defaultWorkDir = '',
+  spaceId,
 }: CreateAgentModalProps) {
   const [prompt, setPrompt] = useState('');
   const [workDir, setWorkDir] = useState(defaultWorkDir);
   const [permissionMode, setPermissionMode] = useState<PermissionMode>('askUser');
+  const [recentPaths, setRecentPaths] = useState<string[]>([]);
+
+  // Load recent paths when modal opens
+  useEffect(() => {
+    if (open && spaceId) {
+      const paths = spacesActions.getRecentCodingPaths(spaceId);
+      setRecentPaths(paths);
+      // Auto-select most recent path if no default provided
+      if (!defaultWorkDir && paths.length > 0) {
+        setWorkDir(paths[0]);
+      }
+    }
+  }, [open, spaceId, defaultWorkDir]);
 
   const handleSubmit = () => {
     if (!prompt.trim() || !workDir.trim()) return;
+    // Save the path to recent paths
+    if (spaceId) {
+      spacesActions.addRecentCodingPath(spaceId, workDir.trim());
+    }
     onSubmit({ prompt: prompt.trim(), workDir: workDir.trim(), permissionMode });
     setPrompt('');
     onClose();
@@ -99,6 +119,33 @@ export function CreateAgentModal({
             <label className="text-sm text-muted-foreground mb-2 block">
               Working directory
             </label>
+
+            {/* Recent paths */}
+            {recentPaths.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {recentPaths.map((path) => {
+                  const isSelected = workDir === path;
+                  const displayName = path.split('/').pop() || path;
+                  return (
+                    <button
+                      key={path}
+                      onClick={() => setWorkDir(path)}
+                      className={cn(
+                        'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs transition-colors',
+                        isSelected
+                          ? 'bg-white/[0.12] text-foreground border border-white/[0.15]'
+                          : 'bg-white/[0.04] text-muted-foreground hover:bg-white/[0.08] hover:text-foreground'
+                      )}
+                      title={path}
+                    >
+                      <History className="w-3 h-3" />
+                      {displayName}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
             <div className="flex gap-2">
               <input
                 type="text"

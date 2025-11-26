@@ -1,4 +1,5 @@
 import { BrowserWindow } from 'electron';
+import { execSync } from 'child_process';
 import {
   query,
   type Options,
@@ -14,6 +15,51 @@ import {
   type SubagentStartHookInput,
   type SubagentStopHookInput,
 } from '@anthropic-ai/claude-agent-sdk';
+import * as fs from 'fs';
+import * as path from 'path';
+
+/**
+ * Find the Claude Code CLI executable path.
+ * Tries multiple methods to locate it.
+ */
+function findClaudeCodeExecutable(): string | undefined {
+  // Method 1: Check if claude is in PATH and resolve symlink
+  try {
+    const claudePath = execSync('which claude', { encoding: 'utf-8' }).trim();
+    if (claudePath) {
+      // Resolve symlink to get actual path
+      const realPath = fs.realpathSync(claudePath);
+      if (fs.existsSync(realPath)) {
+        console.log('[AgentService] Found Claude Code at:', realPath);
+        return realPath;
+      }
+    }
+  } catch {
+    // claude not in PATH
+  }
+
+  // Method 2: Common installation paths
+  const commonPaths = [
+    // Volta
+    path.join(process.env.HOME || '', '.volta/tools/image/node/*/lib/node_modules/@anthropic-ai/claude-code/cli.js'),
+    // npm global
+    path.join(process.env.HOME || '', '.npm-global/lib/node_modules/@anthropic-ai/claude-code/cli.js'),
+    // yarn global
+    path.join(process.env.HOME || '', '.config/yarn/global/node_modules/@anthropic-ai/claude-code/cli.js'),
+    // pnpm global
+    path.join(process.env.HOME || '', '.pnpm-global/5/node_modules/@anthropic-ai/claude-code/cli.js'),
+  ];
+
+  for (const p of commonPaths) {
+    if (fs.existsSync(p)) {
+      console.log('[AgentService] Found Claude Code at:', p);
+      return p;
+    }
+  }
+
+  console.warn('[AgentService] Could not find Claude Code executable');
+  return undefined;
+}
 
 // Types matching the agent store
 type AgentStatus =
@@ -42,6 +88,7 @@ interface ActiveSession {
   abortController: AbortController;
   sessionId: string;
   subagentCount: number;
+  hadResultError: boolean; // Track if we got an error in the result message
 }
 
 // Map our permission modes to SDK permission modes
@@ -82,6 +129,7 @@ export class AgentService {
       abortController,
       sessionId,
       subagentCount: 0,
+      hadResultError: false,
     };
     this.sessions.set(sessionId, session);
 
@@ -228,6 +276,13 @@ export class AgentService {
         abortController,
         maxTurns: 50,
         allowedTools,
+        // Point to the globally installed Claude Code CLI
+        pathToClaudeCodeExecutable: findClaudeCodeExecutable(),
+        // Enable stderr to see what's happening
+        stderr: (message: string) => {
+          console.error('[AgentService] STDERR:', message);
+          this.emitTerminalLine(window, sessionId, `[stderr] ${message.trim()}`);
+        },
         // Hook callbacks for real-time updates (proper SDK signatures)
         hooks: {
           PreToolUse: [{ hooks: [preToolUseHook] }],
@@ -266,7 +321,13 @@ export class AgentService {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('[AgentService] Error:', errorMessage);
 
-      if (!abortController.signal.aborted) {
+      // Check if we already handled an error from the result message
+      const currentSession = this.sessions.get(sessionId);
+      const alreadyHandledError = currentSession?.hadResultError ?? false;
+
+      // Don't emit duplicate errors if we already got one from the SDK result
+      // The "process exited with code 1" error happens after billing/API errors
+      if (!abortController.signal.aborted && !alreadyHandledError) {
         this.emit(window, sessionId, {
           status: 'error' as AgentStatus,
           error: errorMessage,
@@ -300,9 +361,27 @@ export class AgentService {
         );
         break;
 
-      case 'result':
-        // Query completed
-        if (message.subtype === 'success') {
+      case 'result': {
+        // Query completed - check is_error first as subtype can be 'success' even with errors
+        const currentSession = this.sessions.get(sessionId);
+        if (message.is_error) {
+          // Error result - could be billing, API error, etc.
+          const errorMsg = 'result' in message && message.result
+            ? message.result
+            : ('errors' in message ? message.errors.join(', ') : message.subtype);
+
+          // Mark that we already handled an error
+          if (currentSession) {
+            currentSession.hadResultError = true;
+          }
+
+          this.emit(window, sessionId, {
+            status: 'error' as AgentStatus,
+            error: errorMsg,
+            costUSD: message.total_cost_usd,
+          });
+          this.emitTerminalLine(window, sessionId, `✕ ${errorMsg}`);
+        } else if (message.subtype === 'success') {
           this.emit(window, sessionId, {
             status: 'completed' as AgentStatus,
             costUSD: message.total_cost_usd,
@@ -314,8 +393,11 @@ export class AgentService {
             `✓ Completed (${message.num_turns} turns, $${message.total_cost_usd.toFixed(4)})`
           );
         } else {
-          // Error result
+          // Other error subtypes (error_max_turns, error_max_budget_usd, etc.)
           const errorMsg = 'errors' in message ? message.errors.join(', ') : message.subtype;
+          if (currentSession) {
+            currentSession.hadResultError = true;
+          }
           this.emit(window, sessionId, {
             status: 'error' as AgentStatus,
             error: errorMsg,
@@ -324,6 +406,7 @@ export class AgentService {
           this.emitTerminalLine(window, sessionId, `✕ ${errorMsg}`);
         }
         break;
+      }
 
       case 'system':
         if (message.subtype === 'init') {

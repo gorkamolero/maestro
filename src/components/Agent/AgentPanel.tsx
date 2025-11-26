@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSnapshot } from 'valtio';
 import { Play, Square, Eye } from 'lucide-react';
+import { toast } from 'sonner';
 import { agentStore, agentActions, type AgentStatus, type PermissionMode } from '@/stores/agent.store';
 import { notificationsActions } from '@/stores/notifications.store';
 import type { Tab } from '@/stores/workspace.store';
@@ -72,7 +73,7 @@ export function AgentPanel({ tab }: AgentPanelProps) {
     };
   }, [session]);
 
-  // Trigger notifications on completion/error
+  // Trigger notifications and toasts on completion/error
   useEffect(() => {
     if (session?.status === 'completed') {
       notificationsActions.add({
@@ -81,12 +82,19 @@ export function AgentPanel({ tab }: AgentPanelProps) {
         type: 'agent-done',
         message: 'Agent completed task',
       });
+      toast.success('Agent completed task');
     } else if (session?.status === 'error') {
+      const errorMessage = session.error || 'Agent encountered an error';
       notificationsActions.add({
         spaceId: session.spaceId,
         tabId: session.tabId,
         type: 'agent-error',
-        message: session.error || 'Agent encountered an error',
+        message: errorMessage,
+      });
+      // Show toast with the error - important for billing/API errors
+      toast.error('Agent Error', {
+        description: errorMessage,
+        duration: 10000, // Show longer for errors
       });
     }
   }, [session?.status, session?.spaceId, session?.tabId, session?.error]);
@@ -230,6 +238,7 @@ export function AgentPanel({ tab }: AgentPanelProps) {
         onClose={() => setShowCreateModal(false)}
         onSubmit={handleStart}
         defaultWorkDir={tab.agentConfig?.workDir}
+        spaceId={tab.spaceId}
       />
     </div>
   );

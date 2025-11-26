@@ -109,6 +109,8 @@ export interface Space {
   next: string | null;
   /** Last active timestamp for warmth calculation */
   lastActiveAt: string | null;
+  /** Recently used coding paths for agent tasks (most recent first) */
+  recentCodingPaths?: string[];
 }
 
 // Color palette for spaces - 8 professional color pairs

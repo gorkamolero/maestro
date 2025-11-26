@@ -174,4 +174,28 @@ export const spacesActions = {
       space.lastActiveAt = new Date().toISOString();
     }
   },
+
+  /**
+   * Add a coding path to a space's recent paths (keeps last 5, most recent first)
+   */
+  addRecentCodingPath: (spaceId: string, path: string) => {
+    const store = getSpacesStore();
+    const space = store.spaces.find((s) => s.id === spaceId);
+    if (space) {
+      const paths = space.recentCodingPaths || [];
+      // Remove if already exists (will re-add at front)
+      const filtered = paths.filter((p) => p !== path);
+      // Add to front and keep max 5
+      space.recentCodingPaths = [path, ...filtered].slice(0, 5);
+    }
+  },
+
+  /**
+   * Get recent coding paths for a space
+   */
+  getRecentCodingPaths: (spaceId: string): string[] => {
+    const store = getSpacesStore();
+    const space = store.spaces.find((s) => s.id === spaceId);
+    return space?.recentCodingPaths || [];
+  },
 };
