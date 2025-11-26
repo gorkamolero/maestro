@@ -35,8 +35,12 @@ export function NotesSidebar({ spaceId }: NotesSidebarProps) {
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [newItemName, setNewItemName] = useState('');
 
+  // Subscribe to store changes to trigger re-renders when notes/folders change
+  const snap = useSnapshot(notesStore);
+
+  // Build tree from snapshot data to ensure reactivity
   const tree = notesComputed.buildTree(spaceId);
-  const pinnedNotes = notesComputed.getNotesBySpace(spaceId).filter((n) => n.isPinned);
+  const pinnedNotes = snap.notes.filter((n) => n.spaceId === spaceId && n.isPinned);
 
   const handleNewNote = () => {
     setIsCreatingNote(true);
@@ -221,6 +225,15 @@ interface TreeNodeComponentProps {
 function TreeNodeComponent({ node, level }: TreeNodeComponentProps) {
   const snap = useSnapshot(notesStore);
 
+  // Get the current name from the store (reactive) instead of the static node object
+  const currentItem = node.type === 'note'
+    ? snap.notes.find((n) => n.id === node.id)
+    : snap.folders.find((f) => f.id === node.id);
+
+  const displayName = currentItem?.name ?? node.name;
+  const isPinned = node.type === 'note' ? (currentItem as typeof snap.notes[0])?.isPinned : false;
+  const isExpanded = node.type === 'folder' ? (currentItem as typeof snap.folders[0])?.expanded : false;
+
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (node.type === 'folder') {
@@ -235,7 +248,7 @@ function TreeNodeComponent({ node, level }: TreeNodeComponentProps) {
   };
 
   const handleDelete = () => {
-    if (confirm(`Delete ${node.name}?`)) {
+    if (confirm(`Delete ${displayName}?`)) {
       if (node.type === 'note') {
         notesActions.deleteNote(node.id);
       } else {
@@ -245,8 +258,8 @@ function TreeNodeComponent({ node, level }: TreeNodeComponentProps) {
   };
 
   const handleRename = () => {
-    const newName = window.prompt('Rename:', node.name);
-    if (newName) {
+    const newName = window.prompt('Rename:', displayName);
+    if (newName && newName !== displayName) {
       if (node.type === 'note') {
         notesActions.renameNote(node.id, newName);
       } else {
@@ -262,7 +275,6 @@ function TreeNodeComponent({ node, level }: TreeNodeComponentProps) {
   };
 
   const isActive = snap.activeNoteId === node.id;
-  const isExpanded = node.isExpanded || false;
 
   return (
     <>
@@ -297,10 +309,10 @@ function TreeNodeComponent({ node, level }: TreeNodeComponentProps) {
         )}
 
         {/* Name */}
-        <span className="flex-1 truncate">{node.name}</span>
+        <span className="flex-1 truncate">{displayName}</span>
 
         {/* Pin indicator */}
-        {node.isPinned && <Pin size={12} className="text-primary shrink-0" />}
+        {isPinned && <Pin size={12} className="text-primary shrink-0" />}
 
         {/* Context menu */}
         <DropdownMenu>
@@ -316,7 +328,7 @@ function TreeNodeComponent({ node, level }: TreeNodeComponentProps) {
             <DropdownMenuItem onClick={handleRename}>Rename</DropdownMenuItem>
             {node.type === 'note' && (
               <DropdownMenuItem onClick={handlePin}>
-                {node.isPinned ? 'Unpin' : 'Pin'}
+                {isPinned ? 'Unpin' : 'Pin'}
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
@@ -342,8 +354,8 @@ function TreeNodeComponent({ node, level }: TreeNodeComponentProps) {
 
 // Note Item (for pinned section)
 function NoteItem({ noteId }: { noteId: string }) {
-  const note = notesComputed.getNoteById(noteId);
   const snap = useSnapshot(notesStore);
+  const note = snap.notes.find((n) => n.id === noteId);
 
   if (!note) return null;
 

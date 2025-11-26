@@ -6,6 +6,7 @@ import { MaximizedWorkspace } from './MaximizedWorkspace';
 import { MaximizedTab } from './MaximizedTab';
 import { spacesActions } from '@/stores/spaces.store';
 import { workspaceActions } from '@/stores/workspace.store';
+import { platform } from '@/lib/platform';
 import {
   ExpandableScreen,
   ExpandableScreenContent,
@@ -102,6 +103,8 @@ export function SpaceCardExpandable({ space, tabs }: SpaceCardExpandableProps) {
     (expanded: boolean) => {
       if (!expanded) {
         handleModeReset();
+        // Hide any active BrowserViews so they don't block clicks on the control room UI
+        platform.hideAllBrowserViews().catch(console.error);
       }
     },
     [handleModeReset]

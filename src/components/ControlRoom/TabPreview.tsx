@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useSnapshot } from 'valtio';
-import { Terminal, Globe, FileText, AppWindow, Bot, Trash2, Settings, Save, CheckSquare, StickyNote } from 'lucide-react';
+import { Terminal, Globe, FileText, AppWindow, Bot, Trash2, Settings, Save, CheckSquare, StickyNote, FolderOpen, Link } from 'lucide-react';
 import type { Tab } from '@/stores/workspace.store';
 import { workspaceActions } from '@/stores/workspace.store';
 import { agentStore } from '@/stores/agent.store';
+import { launcherActions } from '@/stores/launcher.store';
 import { cn } from '@/lib/utils';
 import { launchTab } from '@/hooks/useTabClick';
 import {
@@ -15,6 +16,8 @@ import {
 } from '@/components/ui/context-menu';
 import { TerminalStatus } from './TerminalStatus';
 import { AgentStatusBadge, TerminalPreview, AgentDrawer } from '@/components/Agent';
+import { SaveContextModal } from './SaveContextModal';
+import { getAppPreset } from '@/lib/app-presets';
 
 interface TabPreviewProps {
   tab: Tab;
@@ -62,7 +65,7 @@ function TabIconButton({
 }) {
   const appIcon = tab.type === 'app-launcher' && tab.appLauncherConfig?.icon;
   const label = tab.type === 'app-launcher'
-    ? (tab.appLauncherConfig?.appName || tab.title).split(' ')[0]
+    ? tab.title.split(' ')[0]
     : TAB_TYPE_LABELS[tab.type];
 
   return (
@@ -105,12 +108,39 @@ function TabIconButton({
 // Icon + label button view (for Control Room cards)
 export function TabPreviewIcon({ tab, onClick }: TabPreviewProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const [isContextModalOpen, setIsContextModalOpen] = useState(false);
   const { sessions } = useSnapshot(agentStore);
 
   // Get agent session for hover preview
   const agentSession = tab.type === 'agent'
     ? sessions.find(s => s.tabId === tab.id)
     : null;
+
+  // Check if app has context set
+  const hasContext = tab.type === 'app-launcher' && (
+    tab.appLauncherConfig?.launchConfig.filePath ||
+    tab.appLauncherConfig?.launchConfig.deepLink
+  );
+
+  // Get context type for the app (for showing appropriate icon)
+  const getContextIcon = () => {
+    if (tab.type !== 'app-launcher' || !tab.appLauncherConfig?.connectedAppId) {
+      return hasContext ? <FolderOpen className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />;
+    }
+    const connectedApp = launcherActions.getConnectedApp(tab.appLauncherConfig.connectedAppId);
+    if (!connectedApp) {
+      return hasContext ? <FolderOpen className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />;
+    }
+    const preset = getAppPreset(connectedApp);
+    if (!hasContext) return <Save className="w-3.5 h-3.5" />;
+    switch (preset.contextType) {
+      case 'folder': return <FolderOpen className="w-3.5 h-3.5" />;
+      case 'file': return <FileText className="w-3.5 h-3.5" />;
+      case 'deeplink': return <Link className="w-3.5 h-3.5" />;
+      case 'url': return <Globe className="w-3.5 h-3.5" />;
+      default: return <Save className="w-3.5 h-3.5" />;
+    }
+  };
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -129,8 +159,7 @@ export function TabPreviewIcon({ tab, onClick }: TabPreviewProps) {
   };
 
   const handleSaveContext = () => {
-    // TODO: Implement save context functionality
-    console.log('Save context for tab:', tab.id);
+    setIsContextModalOpen(true);
   };
 
   const handleEdit = () => {
@@ -194,38 +223,55 @@ export function TabPreviewIcon({ tab, onClick }: TabPreviewProps) {
 
   // For all other tabs
   return (
-    <div
-      className="relative"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <ContextMenu>
-        <ContextMenuTrigger asChild>
-          <TabIconButton tab={tab} onClick={handleClick} />
-        </ContextMenuTrigger>
-        <ContextMenuContent onClick={(e) => e.stopPropagation()}>
-          <ContextMenuItem className="text-xs" disabled>
-            {tab.title}
-          </ContextMenuItem>
-          <ContextMenuSeparator />
-          {tab.type === 'app-launcher' && (
-            <ContextMenuItem onClick={handleSaveContext} className="gap-2">
-              <Save className="w-3.5 h-3.5" />
-              Save Context
+    <>
+      <div
+        className="relative"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <ContextMenu>
+          <ContextMenuTrigger asChild>
+            <div className="relative">
+              <TabIconButton tab={tab} onClick={handleClick} />
+              {/* Context indicator dot */}
+              {hasContext && (
+                <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary" />
+              )}
+            </div>
+          </ContextMenuTrigger>
+          <ContextMenuContent onClick={(e) => e.stopPropagation()}>
+            <ContextMenuItem className="text-xs" disabled>
+              {tab.title}
             </ContextMenuItem>
-          )}
-          <ContextMenuItem onClick={handleEdit} className="gap-2">
-            <Settings className="w-3.5 h-3.5" />
-            Edit
-          </ContextMenuItem>
-          <ContextMenuSeparator />
-          <ContextMenuItem onClick={handleRemove} className="gap-2 text-destructive focus:text-destructive">
-            <Trash2 className="w-3.5 h-3.5" />
-            Remove
-          </ContextMenuItem>
-        </ContextMenuContent>
-      </ContextMenu>
-    </div>
+            <ContextMenuSeparator />
+            {tab.type === 'app-launcher' && (
+              <ContextMenuItem onClick={handleSaveContext} className="gap-2">
+                {getContextIcon()}
+                {hasContext ? 'Edit Context' : 'Set Context'}
+              </ContextMenuItem>
+            )}
+            <ContextMenuItem onClick={handleEdit} className="gap-2">
+              <Settings className="w-3.5 h-3.5" />
+              Edit
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+            <ContextMenuItem onClick={handleRemove} className="gap-2 text-destructive focus:text-destructive">
+              <Trash2 className="w-3.5 h-3.5" />
+              Remove
+            </ContextMenuItem>
+          </ContextMenuContent>
+        </ContextMenu>
+      </div>
+
+      {/* Save Context Modal */}
+      {tab.type === 'app-launcher' && (
+        <SaveContextModal
+          tab={tab}
+          open={isContextModalOpen}
+          onOpenChange={setIsContextModalOpen}
+        />
+      )}
+    </>
   );
 }
 

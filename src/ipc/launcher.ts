@@ -169,4 +169,23 @@ export function registerLauncherHandlers() {
 
     return result.canceled ? null : result.filePaths[0];
   });
+
+  /**
+   * Open native file picker
+   */
+  ipcMain.handle(
+    'dialog:openFile',
+    async (
+      _event,
+      filters?: { name: string; extensions: string[] }[]
+    ): Promise<string | null> => {
+      const result = await dialog.showOpenDialog({
+        title: 'Select File',
+        properties: ['openFile'],
+        filters: filters || undefined,
+      });
+
+      return result.canceled ? null : result.filePaths[0];
+    }
+  );
 }

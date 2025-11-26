@@ -1,5 +1,6 @@
 import { useSnapshot } from 'valtio';
 import { persistWithHistory } from '@/lib/persist-with-history';
+import { platform } from '@/lib/platform';
 import type { LaunchConfig, SavedState } from '@/types/launcher';
 
 export type TabType = 'terminal' | 'browser' | 'agent' | 'app-launcher' | 'tasks' | 'notes';
@@ -336,5 +337,36 @@ export const workspaceActions = {
   returnToControlRoom: () => {
     const store = getWorkspaceStore();
     store.appViewMode = 'control-room';
+    // Hide any active BrowserViews so they don't block clicks on the control room UI
+    platform.hideAllBrowserViews().catch(console.error);
+  },
+
+  /**
+   * Update app launcher config for a tab (e.g., save project context)
+   */
+  updateAppLauncherConfig: (tabId: string, updates: Partial<Tab['appLauncherConfig']>) => {
+    const store = getWorkspaceStore();
+    const tab = store.tabs.find((t) => t.id === tabId);
+    if (tab && tab.appLauncherConfig) {
+      tab.appLauncherConfig = {
+        ...tab.appLauncherConfig,
+        ...updates,
+      };
+    }
+  },
+
+  /**
+   * Set the project/file path for an app launcher tab
+   */
+  setAppLauncherFilePath: (tabId: string, filePath: string | null) => {
+    const store = getWorkspaceStore();
+    const tab = store.tabs.find((t) => t.id === tabId);
+    if (tab && tab.appLauncherConfig) {
+      tab.appLauncherConfig.launchConfig = {
+        ...tab.appLauncherConfig.launchConfig,
+        filePath,
+        launchMethod: filePath ? 'file' : 'app-only',
+      };
+    }
   },
 };
