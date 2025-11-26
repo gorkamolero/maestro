@@ -1,5 +1,4 @@
 import { BrowserWindow } from 'electron';
-import { execSync } from 'child_process';
 import {
   query,
   type Options,
@@ -15,50 +14,17 @@ import {
   type SubagentStartHookInput,
   type SubagentStopHookInput,
 } from '@anthropic-ai/claude-agent-sdk';
-import * as fs from 'fs';
-import * as path from 'path';
 
 /**
- * Find the Claude Code CLI executable path.
- * Tries multiple methods to locate it.
+ * Get the path to the bundled Claude Code CLI.
+ * Uses the @anthropic-ai/claude-code package installed as a dependency.
+ * This CLI has access to the user's keychain auth from their interactive claude login.
  */
-function findClaudeCodeExecutable(): string | undefined {
-  // Method 1: Check if claude is in PATH and resolve symlink
-  try {
-    const claudePath = execSync('which claude', { encoding: 'utf-8' }).trim();
-    if (claudePath) {
-      // Resolve symlink to get actual path
-      const realPath = fs.realpathSync(claudePath);
-      if (fs.existsSync(realPath)) {
-        console.log('[AgentService] Found Claude Code at:', realPath);
-        return realPath;
-      }
-    }
-  } catch {
-    // claude not in PATH
-  }
-
-  // Method 2: Common installation paths
-  const commonPaths = [
-    // Volta
-    path.join(process.env.HOME || '', '.volta/tools/image/node/*/lib/node_modules/@anthropic-ai/claude-code/cli.js'),
-    // npm global
-    path.join(process.env.HOME || '', '.npm-global/lib/node_modules/@anthropic-ai/claude-code/cli.js'),
-    // yarn global
-    path.join(process.env.HOME || '', '.config/yarn/global/node_modules/@anthropic-ai/claude-code/cli.js'),
-    // pnpm global
-    path.join(process.env.HOME || '', '.pnpm-global/5/node_modules/@anthropic-ai/claude-code/cli.js'),
-  ];
-
-  for (const p of commonPaths) {
-    if (fs.existsSync(p)) {
-      console.log('[AgentService] Found Claude Code at:', p);
-      return p;
-    }
-  }
-
-  console.warn('[AgentService] Could not find Claude Code executable');
-  return undefined;
+function getClaudeCodePath(): string {
+  // Use require.resolve to find the installed package
+  const cliPath = require.resolve('@anthropic-ai/claude-code/cli.js');
+  console.log('[AgentService] Using bundled Claude Code CLI at:', cliPath);
+  return cliPath;
 }
 
 // Types matching the agent store
@@ -276,8 +242,8 @@ export class AgentService {
         abortController,
         maxTurns: 50,
         allowedTools,
-        // Point to the globally installed Claude Code CLI
-        pathToClaudeCodeExecutable: findClaudeCodeExecutable(),
+        // Use bundled Claude Code CLI (inherits keychain auth from interactive login)
+        pathToClaudeCodeExecutable: getClaudeCodePath(),
         // Enable stderr to see what's happening
         stderr: (message: string) => {
           console.error('[AgentService] STDERR:', message);
