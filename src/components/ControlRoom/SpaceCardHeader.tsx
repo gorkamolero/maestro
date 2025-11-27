@@ -1,3 +1,4 @@
+import { useMemo, useCallback } from 'react';
 import { Play, Pencil } from 'lucide-react';
 import { useEditableTitle } from '@/hooks/useEditableTitle';
 import { cn } from '@/lib/utils';
@@ -33,25 +34,28 @@ export function SpaceCardHeader({
     handleKeyDown: handleTitleKeyDown,
   } = useEditableTitle({ spaceId: space.id, spaceName: space.name });
 
-  const handleLaunchAll = async (): Promise<void> => {
+  const handleLaunchAll = useCallback(async (): Promise<void> => {
     for (const tab of tabs) {
       if (tab.type === 'app-launcher' && tab.appLauncherConfig) {
         await workspaceActions.launchApp(tab);
       }
     }
-  };
+  }, [tabs]);
 
-  const handleIconClick = (e: React.MouseEvent): void => {
+  const handleIconClick = useCallback((e: React.MouseEvent): void => {
     e.stopPropagation();
     setIsEmojiPickerOpen(true);
-  };
+  }, [setIsEmojiPickerOpen]);
 
-  const handleIconChange = (emoji: string): void => {
+  const handleIconChange = useCallback((emoji: string): void => {
     spacesActions.updateSpace(space.id, { icon: emoji });
     setIsEmojiPickerOpen(false);
-  };
+  }, [space.id, setIsEmojiPickerOpen]);
 
-  const hasLaunchableTabs = tabs.some((t) => t.type === 'app-launcher');
+  const hasLaunchableTabs = useMemo(
+    () => tabs.some((t) => t.type === 'app-launcher'),
+    [tabs]
+  );
 
   return (
     <div className="flex flex-col gap-2 px-3 pt-3 pb-2">

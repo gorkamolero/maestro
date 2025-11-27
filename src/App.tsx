@@ -125,26 +125,18 @@ function App() {
         }
       }
 
-      // Cmd+` - Cycle through floating windows
-      if (e.key === '`' && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
-        const floatingWindows = windowsStore.windows.filter(
+      // Cmd+` or Cmd+Shift+` - Cycle through floating windows
+      if (e.key === '`' && (e.metaKey || e.ctrlKey)) {
+        const hasFloatingWindows = windowsStore.windows.some(
           (w) => w.mode === 'floating' && !w.isMinimized
         );
-        if (floatingWindows.length > 0) {
+        if (hasFloatingWindows) {
           e.preventDefault();
-          windowsActions.cycleFocusNext();
-          return;
-        }
-      }
-
-      // Cmd+Shift+` - Cycle backwards through floating windows
-      if (e.key === '`' && (e.metaKey || e.ctrlKey) && e.shiftKey) {
-        const floatingWindows = windowsStore.windows.filter(
-          (w) => w.mode === 'floating' && !w.isMinimized
-        );
-        if (floatingWindows.length > 0) {
-          e.preventDefault();
-          windowsActions.cycleFocusPrev();
+          if (e.shiftKey) {
+            windowsActions.cycleFocusPrev();
+          } else {
+            windowsActions.cycleFocusNext();
+          }
           return;
         }
       }

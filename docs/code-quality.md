@@ -133,7 +133,28 @@ removeSpace: (spaceId: string) => { ... }
 
 ### Performance Opportunities
 - ~~`usePerformance.ts` aggregations could be memoized~~ ✅ Fixed
-- Multiple `useCallback` hooks in SpaceCard could be consolidated
+- ~~Multiple `useCallback` hooks in SpaceCard could be consolidated~~ ✅ Reviewed - hooks are appropriate as-is
+- ~~`NotesSidebar.buildTree()` missing memoization~~ ✅ Fixed - added useMemo
+- ~~`CommandPalette` unmemoized search filters~~ ✅ Fixed - wrapped in useMemo
+- ~~`useSpaceTasks` double filtering~~ ✅ Fixed - single-pass computation
+- ~~`NotesSidebar` double `getAllTags()` calls~~ ✅ Fixed - memoized result
+- ~~`TabPreview.getContextIcon()` store lookup in render~~ ✅ Fixed - memoized connectedApp
+- ~~`useSpaceTabsPerformance` double iteration~~ ✅ Fixed - single-pass aggregation
+- ~~`App.tsx` duplicate floating window filters~~ ✅ Fixed - combined into single check
+- ~~`WindowManager` multiple useMemo filter passes~~ ✅ Fixed - single-pass categorization
+- ~~`StatusBar` completedToday not memoized~~ ✅ Fixed - wrapped in useMemo
+- ~~`SpaceCardHeader` hasLaunchableTabs not memoized~~ ✅ Fixed - wrapped in useMemo
+- ~~`SpaceTasksSection` chained useMemo calls~~ ✅ Fixed - combined into single memo
+- ~~`BrowserPanel` quickLinks array recreated on render~~ ✅ Fixed - extracted to constant
+
+### React.memo Applied
+Components wrapped with React.memo to prevent unnecessary re-renders:
+- `TaskItem` - list item in task sections
+- `SortableTaskItem` - draggable task wrapper
+- `SpacePane` - sliding pane component
+- `SpacePaneHeaderContent` - pane header
+- `MaximizedView` - maximized window view
+- `MinimizedDock` - minimized windows dock
 
 ---
 

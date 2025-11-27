@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo, memo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   DndContext,
@@ -36,11 +36,16 @@ export function SpaceTasksSection({ spaceId }: SpaceTasksSectionProps) {
   const { tasks: allTasks } = useWorkspaceTasksStore();
 
   // Get tasks for this space, sorted by position (lower = higher in list)
-  const tasks = useMemo(() => {
-    return allTasks.filter((t) => t.spaceId === spaceId).sort((a, b) => a.position - b.position);
+  // Combined into single useMemo to avoid chained memoization
+  const { tasks, taskIds } = useMemo(() => {
+    const filtered = allTasks
+      .filter((t) => t.spaceId === spaceId)
+      .sort((a, b) => a.position - b.position);
+    return {
+      tasks: filtered,
+      taskIds: filtered.map((t) => t.id),
+    };
   }, [spaceId, allTasks]);
-
-  const taskIds = useMemo(() => tasks.map((t) => t.id), [tasks]);
 
   // DnD sensors
   const sensors = useSensors(
@@ -151,7 +156,7 @@ interface SortableTaskItemProps {
   task: WorkspaceTask;
 }
 
-function SortableTaskItem({ task }: SortableTaskItemProps) {
+const SortableTaskItem = memo(function SortableTaskItem({ task }: SortableTaskItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
   });
@@ -168,16 +173,17 @@ function SortableTaskItem({ task }: SortableTaskItemProps) {
       <TaskItem task={task} isDragging={isDragging} />
     </div>
   );
-}
+});
 
 interface TaskItemProps {
   task: WorkspaceTask;
   isDragging?: boolean;
 }
 
-function TaskItem({ task, isDragging }: TaskItemProps) {
+const TaskItem = memo(function TaskItem({ task, isDragging }: TaskItemProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  // Use task.content as the initial/reset value - editValue resets when entering edit mode
   const [editValue, setEditValue] = useState(task.content);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -310,4 +316,4 @@ function TaskItem({ task, isDragging }: TaskItemProps) {
       </AnimatePresence>
     </motion.div>
   );
-}
+});

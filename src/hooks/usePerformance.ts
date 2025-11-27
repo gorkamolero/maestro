@@ -150,25 +150,30 @@ export function useSpaceTabsPerformance(spaceId: string | null) {
       };
     }
 
-    const spaceTabs = tabs.filter((t) => t.spaceId === spaceId);
-    const tabsWithMetrics = spaceTabs.map((tab) => ({
-      tab,
-      metrics: performance.tabs[tab.id],
-      appMetrics: performance.apps[`browser-${tab.id}`],
-    }));
+    // Single pass: filter, map, and aggregate in one iteration
+    const tabsWithMetrics = [];
+    let totalMemoryKB = 0;
+    let totalCpuPercent = 0;
+    let activeTabCount = 0;
 
-    const totalMemoryKB = tabsWithMetrics.reduce((sum, t) => sum + (t.metrics?.memoryKB || 0), 0);
+    for (const tab of tabs) {
+      if (tab.spaceId !== spaceId) continue;
 
-    const activeTabs = tabsWithMetrics.filter((t) => t.metrics?.memoryKB);
-    const avgCpuPercent =
-      activeTabs.length > 0
-        ? activeTabs.reduce((sum, t) => sum + (t.metrics?.cpuPercent || 0), 0) / activeTabs.length
-        : 0;
+      const metrics = performance.tabs[tab.id];
+      const appMetrics = performance.apps[`browser-${tab.id}`];
+      tabsWithMetrics.push({ tab, metrics, appMetrics });
+
+      if (metrics?.memoryKB) {
+        totalMemoryKB += metrics.memoryKB;
+        totalCpuPercent += metrics.cpuPercent || 0;
+        activeTabCount++;
+      }
+    }
 
     return {
       tabs: tabsWithMetrics,
       totalMemoryKB,
-      avgCpuPercent,
+      avgCpuPercent: activeTabCount > 0 ? totalCpuPercent / activeTabCount : 0,
     };
   }, [spaceId, tabs, performance.tabs, performance.apps]);
 }

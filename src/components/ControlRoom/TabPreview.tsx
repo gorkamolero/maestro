@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useSnapshot } from 'valtio';
 import {
   Terminal,
@@ -132,12 +132,17 @@ export function TabPreviewIcon({ tab, onClick }: TabPreviewProps) {
     tab.type === 'app-launcher' &&
     (tab.appLauncherConfig?.launchConfig.filePath || tab.appLauncherConfig?.launchConfig.deepLink);
 
+  // Memoize connected app lookup to avoid store lookup on every render
+  const connectedAppId = tab.appLauncherConfig?.connectedAppId;
+  const connectedApp = useMemo(() => {
+    if (tab.type !== 'app-launcher' || !connectedAppId) {
+      return null;
+    }
+    return launcherActions.getConnectedApp(connectedAppId);
+  }, [tab.type, connectedAppId]);
+
   // Get context type for the app (for showing appropriate icon)
   const getContextIcon = () => {
-    if (tab.type !== 'app-launcher' || !tab.appLauncherConfig?.connectedAppId) {
-      return hasContext ? <FolderOpen className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />;
-    }
-    const connectedApp = launcherActions.getConnectedApp(tab.appLauncherConfig.connectedAppId);
     if (!connectedApp) {
       return hasContext ? <FolderOpen className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />;
     }
@@ -179,7 +184,6 @@ export function TabPreviewIcon({ tab, onClick }: TabPreviewProps) {
 
   const handleEdit = () => {
     // TODO: Implement edit functionality
-    console.log('Edit tab:', tab.id);
   };
 
   const handleEmojiChange = (emoji: string) => {

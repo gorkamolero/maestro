@@ -1,4 +1,4 @@
-import { useRef, useCallback, useState } from 'react';
+import { useRef, useCallback, useState, memo } from 'react';
 import { Plus, CheckSquare, FileText } from 'lucide-react';
 import { useSpacesStore, spacesActions } from '@/stores/spaces.store';
 import { useWorkspaceStore } from '@/stores/workspace.store';
@@ -118,7 +118,7 @@ interface SpacePaneProps {
  * A single pane with its spine. The entire pane uses position:sticky
  * so it pins to the left edge as the user scrolls, creating the stacking effect.
  */
-function SpacePane({ space, tabs, index, totalPanes, isFocused, onClick }: SpacePaneProps) {
+const SpacePane = memo(function SpacePane({ space, tabs, index, totalPanes, isFocused, onClick }: SpacePaneProps) {
   // Calculate right offset for right-side stacking
   const rightOffset = (totalPanes - 1 - index) * SPINE_WIDTH;
 
@@ -225,7 +225,7 @@ function SpacePane({ space, tabs, index, totalPanes, isFocused, onClick }: Space
       </div>
     </div>
   );
-}
+});
 
 interface SpacePaneHeaderContentProps {
   space: Space;
@@ -236,7 +236,7 @@ interface SpacePaneHeaderContentProps {
  * Header content - icon + editable title + tab count.
  * Rendered inside the header row which has the gradient background.
  */
-function SpacePaneHeaderContent({ space, tabs }: SpacePaneHeaderContentProps) {
+const SpacePaneHeaderContent = memo(function SpacePaneHeaderContent({ space, tabs }: SpacePaneHeaderContentProps) {
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
 
   // Use shared editable title hook
@@ -311,4 +311,4 @@ function SpacePaneHeaderContent({ space, tabs }: SpacePaneHeaderContentProps) {
       <TagSelector spaceId={space.id} spaceTags={space.tags || []} className="ml-auto" />
     </>
   );
-}
+});

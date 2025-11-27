@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useSnapshot } from 'valtio';
 import { Command } from 'cmdk';
 import {
@@ -203,35 +203,42 @@ export function CommandPalette({ onClose, isExiting = false }: CommandPalettePro
     [activeSpaceId, onClose]
   );
 
-  // Filter apps based on search
-  const filteredApps = connectedApps.filter((app) =>
-    app.name.toLowerCase().includes(search.toLowerCase())
+  // Memoize search results to avoid recomputing on every render
+  const searchResults = useMemo(() => {
+    const lowerSearch = search.toLowerCase();
+
+    // Filter apps based on search
+    const filteredApps = connectedApps.filter((app) =>
+      app.name.toLowerCase().includes(lowerSearch)
+    );
+
+    // Get URL history suggestions
+    const urlSuggestions = urlHistoryActions.searchHistory(search);
+
+    // Filter installed apps based on search
+    const filteredInstalledApps = installedApps.filter((app) =>
+      app.name.toLowerCase().includes(lowerSearch)
+    );
+
+    return {
+      tabs: tabs.filter((t) => t.title.toLowerCase().includes(lowerSearch)),
+      spaces: spaces.filter((s) => s.name.toLowerCase().includes(lowerSearch)),
+      apps: filteredApps,
+      installedApps: filteredInstalledApps.slice(0, 10), // Limit to 10 results
+      urls: urlSuggestions,
+    };
+  }, [search, connectedApps, installedApps, tabs, spaces]);
+
+  const hasSearchResults = useMemo(
+    () =>
+      search.length > 0 &&
+      (searchResults.tabs.length > 0 ||
+        searchResults.spaces.length > 0 ||
+        searchResults.apps.length > 0 ||
+        searchResults.installedApps.length > 0 ||
+        searchResults.urls.length > 0),
+    [search, searchResults]
   );
-
-  // Get URL history suggestions
-  const urlSuggestions = urlHistoryActions.searchHistory(search);
-
-  // Filter installed apps based on search
-  const filteredInstalledApps = installedApps.filter((app) =>
-    app.name.toLowerCase().includes(search.toLowerCase())
-  );
-
-  // Search everything results
-  const searchResults = {
-    tabs: tabs.filter((t) => t.title.toLowerCase().includes(search.toLowerCase())),
-    spaces: spaces.filter((s) => s.name.toLowerCase().includes(search.toLowerCase())),
-    apps: filteredApps,
-    installedApps: filteredInstalledApps.slice(0, 10), // Limit to 10 results
-    urls: urlSuggestions,
-  };
-
-  const hasSearchResults =
-    search.length > 0 &&
-    (searchResults.tabs.length > 0 ||
-      searchResults.spaces.length > 0 ||
-      searchResults.apps.length > 0 ||
-      searchResults.installedApps.length > 0 ||
-      searchResults.urls.length > 0);
 
   // Normalize URL - add protocol if missing
   const normalizeUrl = (input: string): string => {

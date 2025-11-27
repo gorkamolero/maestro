@@ -8,15 +8,25 @@ import { useWorkspaceTasksStore } from '@/stores/workspace-tasks.store';
 export function useSpaceTasks(spaceId: string) {
   const { tasks: allTasks } = useWorkspaceTasksStore();
 
-  const spaceTasks = useMemo(
-    () => allTasks.filter((t) => t.spaceId === spaceId),
-    [allTasks, spaceId]
-  );
+  // Compute all derived values in a single pass to avoid multiple iterations
+  return useMemo(() => {
+    const tasks = [];
+    let completedCount = 0;
 
-  return {
-    tasks: spaceTasks,
-    count: spaceTasks.length,
-    hasIncompleteTasks: spaceTasks.some((t) => !t.completed),
-    completedCount: spaceTasks.filter((t) => t.completed).length,
-  };
+    for (const task of allTasks) {
+      if (task.spaceId === spaceId) {
+        tasks.push(task);
+        if (task.completed) {
+          completedCount++;
+        }
+      }
+    }
+
+    return {
+      tasks,
+      count: tasks.length,
+      hasIncompleteTasks: completedCount < tasks.length,
+      completedCount,
+    };
+  }, [allTasks, spaceId]);
 }

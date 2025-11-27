@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useSnapshot } from 'valtio';
 import {
   ChevronRight,
@@ -38,9 +38,21 @@ export function NotesSidebar({ spaceId }: NotesSidebarProps) {
   // Subscribe to store changes to trigger re-renders when notes/folders change
   const snap = useSnapshot(notesStore);
 
-  // Build tree from snapshot data to ensure reactivity
-  const tree = notesComputed.buildTree(spaceId);
-  const pinnedNotes = snap.notes.filter((n) => n.spaceId === spaceId && n.isPinned);
+  // Memoize expensive tree building - only recompute when notes/folders change
+  const tree = useMemo(
+    () => notesComputed.buildTree(spaceId),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- snap.notes/folders trigger rebuilds
+    [spaceId, snap.notes, snap.folders]
+  );
+
+  const pinnedNotes = useMemo(
+    () => snap.notes.filter((n) => n.spaceId === spaceId && n.isPinned),
+    [snap.notes, spaceId]
+  );
+
+  // Memoize tags to avoid double computation
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- snap.notes triggers rebuilds
+  const allTags = useMemo(() => notesComputed.getAllTags(), [snap.notes]);
 
   const handleNewNote = () => {
     setIsCreatingNote(true);
@@ -191,11 +203,11 @@ export function NotesSidebar({ spaceId }: NotesSidebarProps) {
       </div>
 
       {/* Tags Section */}
-      {notesComputed.getAllTags().length > 0 && (
+      {allTags.length > 0 && (
         <div className="border-t border-border p-3">
           <div className="text-xs font-medium text-muted-foreground mb-2">TAGS</div>
           <div className="flex flex-wrap gap-1">
-            {notesComputed.getAllTags().map((tag) => (
+            {allTags.map((tag) => (
               <span
                 key={tag}
                 className="px-2 py-0.5 text-xs bg-muted rounded-full hover:bg-muted/80 cursor-pointer"

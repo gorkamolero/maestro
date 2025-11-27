@@ -16,6 +16,14 @@ interface BrowserPanelProps {
   isActive: boolean;
 }
 
+// Quick links constant - defined outside component to avoid recreating on each render
+const QUICK_LINKS = [
+  { name: 'Google', url: 'https://google.com', icon: '🔍' },
+  { name: 'GitHub', url: 'https://github.com', icon: '🐙' },
+  { name: 'YouTube', url: 'https://youtube.com', icon: '▶️' },
+  { name: 'Twitter', url: 'https://twitter.com', icon: '🐦' },
+] as const;
+
 // New Tab Page component
 function NewTabPage({ onNavigate }: { onNavigate: (url: string) => void }) {
   const [inputValue, setInputValue] = useState('');
@@ -26,13 +34,6 @@ function NewTabPage({ onNavigate }: { onNavigate: (url: string) => void }) {
       onNavigate(inputValue.trim());
     }
   };
-
-  const quickLinks = [
-    { name: 'Google', url: 'https://google.com', icon: '🔍' },
-    { name: 'GitHub', url: 'https://github.com', icon: '🐙' },
-    { name: 'YouTube', url: 'https://youtube.com', icon: '▶️' },
-    { name: 'Twitter', url: 'https://twitter.com', icon: '🐦' },
-  ];
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center bg-background p-8">
@@ -59,7 +60,7 @@ function NewTabPage({ onNavigate }: { onNavigate: (url: string) => void }) {
 
         {/* Quick links */}
         <div className="flex gap-3 flex-wrap justify-center">
-          {quickLinks.map((link) => (
+          {QUICK_LINKS.map((link) => (
             <button
               key={link.url}
               onClick={() => onNavigate(link.url)}

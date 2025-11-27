@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, memo } from 'react';
 import { PictureInPicture2, X } from 'lucide-react';
 import { useWindowsStore, windowsActions } from '@/stores/windows.store';
 import { useWorkspaceStore } from '@/stores/workspace.store';
@@ -19,25 +19,32 @@ export function WindowManager() {
     windowsActions.validateWindows();
   }, []);
 
-  // Sort windows by z-index for correct rendering order
-  const sortedWindows = useMemo(() => {
-    return [...windows].filter((w) => !w.isMinimized).sort((a, b) => a.zIndex - b.zIndex);
-  }, [windows]);
+  // Compute all window categories in a single pass
+  const { floatingWindows, maximizedWindow, minimizedWindows } = useMemo(() => {
+    const floating: typeof windows = [];
+    const maximized: typeof windows = [];
+    const minimized: typeof windows = [];
 
-  // Get floating windows (not maximized)
-  const floatingWindows = useMemo(() => {
-    return sortedWindows.filter((w) => w.mode === 'floating');
-  }, [sortedWindows]);
+    for (const w of windows) {
+      if (w.isMinimized) {
+        minimized.push(w);
+      } else if (w.mode === 'floating') {
+        floating.push(w);
+      } else if (w.mode === 'maximized') {
+        maximized.push(w);
+      }
+    }
 
-  // Get maximized window (only show the topmost one)
-  const maximizedWindow = useMemo(() => {
-    const maximizedWindows = sortedWindows.filter((w) => w.mode === 'maximized');
-    return maximizedWindows.length > 0 ? maximizedWindows[maximizedWindows.length - 1] : null;
-  }, [sortedWindows]);
+    // Sort floating by z-index for correct rendering order
+    floating.sort((a, b) => a.zIndex - b.zIndex);
+    // Get topmost maximized window
+    maximized.sort((a, b) => a.zIndex - b.zIndex);
 
-  // Get minimized windows for the dock
-  const minimizedWindows = useMemo(() => {
-    return windows.filter((w) => w.isMinimized);
+    return {
+      floatingWindows: floating,
+      maximizedWindow: maximized[maximized.length - 1] || null,
+      minimizedWindows: minimized,
+    };
   }, [windows]);
 
   // Helper to get tab for a window
@@ -83,7 +90,7 @@ export function WindowManager() {
 /**
  * MaximizedView renders a single tab in full-screen mode
  */
-function MaximizedView({
+const MaximizedView = memo(function MaximizedView({
   window,
   tab,
   isFocused,
@@ -144,12 +151,12 @@ function MaximizedView({
       </div>
     </div>
   );
-}
+});
 
 /**
  * MinimizedDock shows minimized windows as small buttons at the bottom
  */
-function MinimizedDock({
+const MinimizedDock = memo(function MinimizedDock({
   windows,
   tabs,
 }: {
@@ -187,4 +194,4 @@ function MinimizedDock({
       })}
     </div>
   );
-}
+});

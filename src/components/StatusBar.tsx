@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useSpacesStore } from '@/stores/spaces.store';
 import { useTasksStore } from '@/stores/tasks.store';
 import { useWorkspaceStore } from '@/stores/workspace.store';
@@ -13,16 +14,29 @@ export function StatusBar() {
   const { formatSpaceMemory, formatSpaceCpu } = usePerformanceFormatters();
 
   // Get active space name
-  const activeSpace = spaces.find((s) => s.id === activeSpaceId);
-  const activeSpaceTabs = tabs.filter((t) => t.spaceId === activeSpaceId);
+  const activeSpace = useMemo(
+    () => spaces.find((s) => s.id === activeSpaceId),
+    [spaces, activeSpaceId]
+  );
 
-  // Total tasks across all spaces
-  const totalTasks = tasks.length;
-  const completedToday = tasks.filter((t) => {
-    if (t.status !== 'done' || !t.completedAt) return false;
+  const activeSpaceTabs = useMemo(
+    () => tabs.filter((t) => t.spaceId === activeSpaceId),
+    [tabs, activeSpaceId]
+  );
+
+  // Total tasks across all spaces - memoize to avoid recalculating on each render
+  const { totalTasks, completedToday } = useMemo(() => {
     const today = new Date().toDateString();
-    return new Date(t.completedAt).toDateString() === today;
-  }).length;
+    let completed = 0;
+    for (const t of tasks) {
+      if (t.status === 'done' && t.completedAt) {
+        if (new Date(t.completedAt).toDateString() === today) {
+          completed++;
+        }
+      }
+    }
+    return { totalTasks: tasks.length, completedToday: completed };
+  }, [tasks]);
 
   return (
     <div className="h-7 bg-sidebar flex items-center justify-between px-4 text-[11px] text-muted-foreground tracking-tight select-none">
