@@ -30,54 +30,43 @@ export function StatusBar() {
   }).length;
 
   return (
-    <div className="h-6 glass-bg border-t border-border flex items-center justify-between px-3 text-[10px] text-muted-foreground">
+    <div className="h-7 bg-sidebar flex items-center justify-between px-4 text-[11px] text-muted-foreground tracking-tight select-none">
       {/* Left side - Context */}
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-1.5">
-          <span className="text-foreground font-medium">📦 Maestro v1.0.1</span>
-        </div>
+      <div className="flex items-center gap-4">
+        <span className="text-foreground font-medium">Maestro</span>
 
-        <div className="w-px h-3 bg-border" />
-        <span>Control Room</span>
+        <span className="opacity-60">Control Room</span>
 
-        <div className="w-px h-3 bg-border" />
-        <span>{spaces.length} spaces</span>
+        <span className="opacity-60">{spaces.length} spaces</span>
 
         {totalTasks > 0 && (
           <>
-            <div className="w-px h-3 bg-border" />
-            <span>{totalTasks} tasks</span>
+            <span className="opacity-60">{totalTasks} tasks</span>
             {completedToday > 0 && (
-              <span className="text-green-600">· {completedToday} completed today</span>
+              <span className="text-primary">{completedToday} done today</span>
             )}
           </>
         )}
       </div>
 
       {/* Right side - Performance */}
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-1">
+      <div className="flex items-center gap-4 font-mono text-[10px]">
+        <div className="flex items-center gap-1.5 opacity-60">
           <Cpu className="w-3 h-3" />
-          <span>CPU: {cpuUsage}%</span>
+          <span>{cpuUsage}%</span>
         </div>
 
-        <div className="w-px h-3 bg-border" />
-
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5 opacity-60">
           <HardDrive className="w-3 h-3" />
-          <span>RAM: {memoryUsage}%</span>
+          <span>{memoryUsage}%</span>
         </div>
 
-        <div className="w-px h-3 bg-border" />
-
-        <div className="flex items-center gap-1">
-          <Activity className="w-3 h-3 text-green-500" />
-          <span>Active</span>
+        <div className="flex items-center gap-1.5">
+          <Activity className="w-3 h-3 text-primary" />
+          <span className="text-primary">Active</span>
         </div>
 
-        <div className="w-px h-3 bg-border" />
-
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5 opacity-60">
           <Wifi className="w-3 h-3" />
           <span>Connected</span>
         </div>

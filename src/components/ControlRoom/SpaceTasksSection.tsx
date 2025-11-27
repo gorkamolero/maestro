@@ -114,9 +114,9 @@ export function SpaceTasksSection({ spaceId }: SpaceTasksSectionProps) {
           onKeyDown={handleInputKeyDown}
           placeholder="Add a task..."
           className={cn(
-            'w-full bg-black/5 border-0 rounded-lg px-3 py-2',
-            'text-xs text-black/70 placeholder:text-black/30',
-            'focus:outline-none focus:ring-1 focus:ring-black/20',
+            'w-full bg-muted/50 border-0 rounded-lg px-3 py-2',
+            'text-xs text-foreground placeholder:text-muted-foreground',
+            'focus:outline-none focus:ring-1 focus:ring-ring',
             'transition-colors'
           )}
         />
@@ -144,7 +144,7 @@ export function SpaceTasksSection({ spaceId }: SpaceTasksSectionProps) {
             </SortableContext>
           </DndContext>
         ) : (
-          <p className="text-xs text-black/30 text-center py-4">
+          <p className="text-xs text-center py-4 text-muted-foreground">
             No tasks yet
           </p>
         )}
@@ -264,9 +264,9 @@ function TaskItem({ task, dragHandleProps, isDragging }: TaskItemProps) {
       exit={{ opacity: 0, x: -20 }}
       transition={{ duration: 0.2 }}
       className={cn(
-        'group/task flex items-start gap-2 p-2 rounded-lg',
-        'bg-black/[0.03] hover:bg-black/[0.06] transition-colors',
-        isDragging && 'bg-black/[0.08] shadow-lg'
+        'group/task flex items-start gap-2 p-2 rounded-lg transition-colors',
+        'bg-muted/30 hover:bg-muted/50',
+        isDragging && 'bg-muted/60 shadow-lg'
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -275,8 +275,8 @@ function TaskItem({ task, dragHandleProps, isDragging }: TaskItemProps) {
       <div
         {...dragHandleProps}
         className={cn(
-          'flex-shrink-0 cursor-grab active:cursor-grabbing mt-0.5',
-          'text-black/20 hover:text-black/40 transition-colors',
+          'flex-shrink-0 cursor-grab active:cursor-grabbing mt-0.5 transition-colors',
+          'text-muted-foreground/50 hover:text-muted-foreground',
           'opacity-0 group-hover/task:opacity-100'
         )}
       >
@@ -290,12 +290,12 @@ function TaskItem({ task, dragHandleProps, isDragging }: TaskItemProps) {
           'flex-shrink-0 w-4 h-4 mt-0.5 rounded border-2 transition-all cursor-pointer',
           'flex items-center justify-center',
           task.completed
-            ? 'bg-black/60 border-black/60'
-            : 'border-black/20 hover:border-black/40'
+            ? 'bg-primary border-primary'
+            : 'border-muted-foreground/30 hover:border-muted-foreground/50'
         )}
       >
         {task.completed && (
-          <Check className="w-3 h-3 text-white" strokeWidth={3} />
+          <Check className="w-3 h-3 text-primary-foreground" strokeWidth={3} />
         )}
       </div>
 
@@ -309,17 +309,16 @@ function TaskItem({ task, dragHandleProps, isDragging }: TaskItemProps) {
           onKeyDown={handleKeyDown}
           onBlur={handleSave}
           onClick={(e) => e.stopPropagation()}
-          className={cn(
-            'flex-1 bg-transparent text-xs outline-none min-w-0',
-            'text-black/80'
-          )}
+          className="flex-1 bg-transparent text-xs text-foreground outline-none min-w-0"
         />
       ) : (
         <span
           onClick={handleStartEdit}
           className={cn(
             'flex-1 text-xs leading-relaxed break-words cursor-text',
-            task.completed ? 'line-through text-black/30' : 'text-black/70'
+            task.completed
+              ? 'line-through text-muted-foreground'
+              : 'text-foreground'
           )}
         >
           {task.content}
@@ -335,10 +334,7 @@ function TaskItem({ task, dragHandleProps, isDragging }: TaskItemProps) {
             exit={{ opacity: 0, scale: 0.8 }}
             transition={{ duration: 0.1 }}
             onClick={handleDelete}
-            className={cn(
-              'flex-shrink-0 p-1 rounded transition-colors',
-              'text-black/30 hover:text-red-500 hover:bg-red-500/10'
-            )}
+            className="flex-shrink-0 p-1 rounded transition-colors text-muted-foreground hover:text-red-500 hover:bg-red-500/10"
           >
             <Trash2 className="w-3 h-3" />
           </motion.button>

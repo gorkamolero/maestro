@@ -31,6 +31,7 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleValue, setTitleValue] = useState(space.name);
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const { notifications } = useSnapshot(notificationsStore);
 
@@ -54,6 +55,7 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
   const hasRunningAgent = useMemo(() => {
     return tabs.some(t => (t.type === 'agent' || t.type === 'terminal') && t.status === 'running');
   }, [tabs]);
+
 
 
   // ============================================================================
@@ -119,10 +121,31 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
         className={cn(
           'group relative flex flex-col flex-shrink-0',
           'w-[280px] h-full rounded-xl overflow-hidden',
-          'transition-shadow hover:shadow-lg'
+          'backdrop-blur-xl',
+          'transition-all duration-300'
         )}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
         style={{
-          backgroundColor: space.primaryColor || 'hsl(var(--card))',
+          // Glassmorphism + left accent bar with subtle color tint
+          borderLeft: space.primaryColor
+            ? `3px solid ${space.primaryColor}${isHovered ? '' : 'D9'}`
+            : undefined,
+          boxShadow: isHovered
+            ? `
+              inset 0 1px 0 0 rgba(255,255,255,0.08),
+              inset 0 0 0 1px rgba(255,255,255,0.12),
+              0 12px 40px -8px rgba(0,0,0,0.6)
+              ${space.primaryColor ? `, 0 0 30px -10px ${space.primaryColor}50` : ''}
+            `
+            : `
+              inset 0 1px 0 0 rgba(255,255,255,0.05),
+              inset 0 0 0 1px rgba(255,255,255,0.08),
+              0 8px 32px -8px rgba(0,0,0,0.5)
+            `,
+          background: space.primaryColor
+            ? `linear-gradient(180deg, ${space.primaryColor}${isHovered ? '18' : '10'} 0%, transparent 50%), rgba(25, 25, 28, ${isHovered ? '0.85' : '0.8'})`
+            : `rgba(25, 25, 28, ${isHovered ? '0.85' : '0.8'})`,
         }}
       >
         {/* Attention bubble for notifications */}
@@ -165,12 +188,12 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
               onClick={(e) => e.stopPropagation()}
               className={cn(
                 'flex-1 bg-transparent font-medium text-sm outline-none min-w-0',
-                'border-b border-black/20 text-black/80'
+                'border-b border-foreground/20 text-foreground'
               )}
             />
           ) : (
             <h3
-              className="flex-1 font-medium text-sm truncate text-black/80 cursor-pointer"
+              className="flex-1 font-medium text-sm truncate cursor-pointer text-foreground"
               onClick={(e) => e.stopPropagation()}
               onDoubleClick={handleTitleDoubleClick}
             >
@@ -188,9 +211,9 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
                       e.stopPropagation();
                       handleLaunchAll();
                     }}
-                    className="p-1.5 hover:bg-black/10 rounded transition-colors"
+                    className="p-1.5 rounded transition-colors hover:bg-accent"
                   >
-                    <Play className="w-3.5 h-3.5 text-black/50" />
+                    <Play className="w-3.5 h-3.5 text-muted-foreground" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">
@@ -207,9 +230,9 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
                     setTitleValue(space.name);
                     setIsEditingTitle(true);
                   }}
-                  className="p-1.5 hover:bg-black/10 rounded transition-colors opacity-0 group-hover:opacity-100"
+                  className="p-1.5 rounded transition-colors opacity-0 group-hover:opacity-100 hover:bg-accent"
                 >
-                  <Pencil className="w-3.5 h-3.5 text-black/50" />
+                  <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
                 </button>
               </TooltipTrigger>
               <TooltipContent side="bottom">
@@ -235,7 +258,7 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-3 py-2 border-t border-black/5">
+        <div className="flex items-center justify-between px-3 py-2 border-t border-border/50">
           <Tooltip>
             <TooltipTrigger asChild>
               <button
@@ -245,9 +268,9 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
                   const input = document.querySelector(`[data-space-task-input="${space.id}"]`) as HTMLInputElement;
                   input?.focus();
                 }}
-                className="p-1.5 hover:bg-black/10 rounded transition-colors"
+                className="p-1.5 rounded transition-colors hover:bg-accent"
               >
-                <Plus className="w-4 h-4 text-black/50" />
+                <Plus className="w-4 h-4 text-muted-foreground" />
               </button>
             </TooltipTrigger>
             <TooltipContent side="top">
@@ -257,8 +280,8 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="p-1.5 hover:bg-black/10 rounded transition-colors">
-                <MoreHorizontal className="w-4 h-4 text-black/50" />
+              <button className="p-1.5 rounded transition-colors hover:bg-accent">
+                <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
