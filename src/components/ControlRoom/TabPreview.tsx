@@ -46,16 +46,7 @@ function TabTypeIcon({ type, className }: { type: Tab['type']; className?: strin
   }
 }
 
-const TAB_TYPE_LABELS: Record<Tab['type'], string> = {
-  terminal: 'Terminal',
-  browser: 'Browser',
-  'app-launcher': 'App',
-  tasks: 'Tasks',
-  notes: 'Notes',
-  agent: 'Agent',
-};
-
-// Shared button component for tab icons
+// Shared button component for tab icons - Arc-style rounded tile
 function TabIconButton({
   tab,
   onClick,
@@ -66,46 +57,49 @@ function TabIconButton({
   className?: string;
 }) {
   const appIcon = tab.type === 'app-launcher' && tab.appLauncherConfig?.icon;
-  const label = tab.type === 'app-launcher'
-    ? tab.title.split(' ')[0]
-    : TAB_TYPE_LABELS[tab.type];
 
   return (
     <button
       onClick={onClick}
       className={cn(
-        'flex flex-col items-center gap-1 p-1.5 rounded-lg w-[52px] h-[52px]',
-        'bg-white/[0.04] hover:bg-white/[0.08] transition-colors',
+        // Arc-style tile: rounded rectangle with subtle background
+        'group relative flex items-center justify-center',
+        'w-[52px] h-[52px] rounded-xl',
+        'bg-white/[0.06] hover:bg-white/[0.10]',
+        'transition-all duration-150 ease-out',
         'text-muted-foreground hover:text-foreground',
         tab.disabled && 'opacity-40',
         className
       )}
     >
-      <div className="relative w-7 h-7 rounded-md bg-white/[0.06] flex items-center justify-center">
-        {/* Show emoji if set, otherwise show app icon or type icon */}
+      {/* Icon - centered, larger */}
+      <div className="relative flex items-center justify-center">
         {tab.emoji ? (
-          <span className="text-base leading-none">{tab.emoji}</span>
+          <span className="text-xl leading-none">{tab.emoji}</span>
         ) : appIcon ? (
-          <img src={appIcon} alt={tab.title} className="w-5 h-5 rounded" />
+          <img
+            src={appIcon}
+            alt={tab.title}
+            className="w-6 h-6 rounded"
+          />
         ) : (
-          <TabTypeIcon type={tab.type} className="w-4 h-4" />
+          <TabTypeIcon type={tab.type} className="w-5 h-5" />
         )}
+
         {/* Status indicator for terminal tabs */}
         {tab.type === 'terminal' && (
-          <div className="absolute -top-0.5 -right-0.5">
+          <div className="absolute -top-2 -right-2">
             <TerminalStatus tabId={tab.id} />
           </div>
         )}
+
         {/* Status indicator for agent tabs */}
         {tab.type === 'agent' && (
-          <div className="absolute -top-0.5 -right-0.5">
+          <div className="absolute -top-2 -right-2">
             <AgentStatusBadge tabId={tab.id} />
           </div>
         )}
       </div>
-      <span className="text-[10px] leading-tight truncate max-w-[48px]">
-        {label}
-      </span>
     </button>
   );
 }

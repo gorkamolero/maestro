@@ -22,7 +22,7 @@ export function TabPreviewList({
   const hiddenCount = tabs.length - maxVisible;
 
   return (
-    <div className="flex flex-wrap gap-2 content-start">
+    <div className="grid grid-cols-4 gap-1.5">
       {visibleTabs.map((tab) => (
         <TabPreviewIcon
           key={tab.id}
@@ -32,11 +32,8 @@ export function TabPreviewList({
       ))}
 
       {hiddenCount > 0 && (
-        <div className="flex flex-col items-center gap-1 p-1.5 rounded-lg w-[52px] h-[52px] bg-white/[0.04] text-muted-foreground">
-          <div className="w-7 h-7 rounded-md bg-white/[0.06] flex items-center justify-center text-xs font-medium">
-            +{hiddenCount}
-          </div>
-          <span className="text-[10px] leading-tight">more</span>
+        <div className="flex items-center justify-center w-[52px] h-[52px] rounded-xl bg-white/[0.06] text-muted-foreground">
+          <span className="text-xs font-medium">+{hiddenCount}</span>
         </div>
       )}
 
@@ -44,18 +41,15 @@ export function TabPreviewList({
         <AddTabPopover spaceId={spaceId}>
           <button
             onClick={(e) => e.stopPropagation()}
-            className="flex flex-col items-center gap-1 p-1.5 rounded-lg w-[52px] h-[52px] bg-white/[0.04] hover:bg-white/[0.08] text-muted-foreground hover:text-foreground transition-colors"
+            className="flex items-center justify-center w-[52px] h-[52px] rounded-xl bg-white/[0.06] hover:bg-white/[0.10] text-muted-foreground hover:text-foreground transition-colors"
           >
-            <div className="w-7 h-7 rounded-md bg-white/[0.06] flex items-center justify-center">
-              <Plus className="w-4 h-4" />
-            </div>
-            <span className="text-[10px] leading-tight">Add</span>
+            <Plus className="w-5 h-5" />
           </button>
         </AddTabPopover>
       )}
 
       {tabs.length === 0 && !showAddButton && (
-        <p className="text-xs text-muted-foreground py-1">No tabs yet</p>
+        <p className="text-xs text-muted-foreground py-1 col-span-4">No tabs yet</p>
       )}
     </div>
   );

@@ -1,13 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { useSnapshot } from 'valtio';
-import { Globe, Search } from 'lucide-react';
+import { Globe, Search, WifiOff, RotateCw } from 'lucide-react';
 import { useWebview } from './useWebview';
 import { BrowserToolbar } from './BrowserToolbar';
 import { browserStore, getBrowserState } from '@/stores/browser.store';
 import { useSpacesStore } from '@/stores/spaces.store';
 import { getProfileById } from '@/stores/profile.store';
 import { platform } from '@/lib/platform';
+import { Button } from '@/components/ui/button';
 import type { Tab } from '@/stores/workspace.store';
 
 interface BrowserPanelProps {
@@ -187,14 +188,44 @@ export function BrowserPanel({ tab, isActive }: BrowserPanelProps) {
           </div>
         )}
         {error && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-background p-6">
-            <div className="text-destructive mb-2">⚠️ {error}</div>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded"
-            >
-              Retry
-            </button>
+          <div className="absolute inset-0 flex items-center justify-center p-8">
+            <div className="max-w-md w-full text-center">
+              {/* Icon container with glassmorphism */}
+              <div className="mx-auto mb-6 w-20 h-20 rounded-2xl glass-crystal border border-border/50 flex items-center justify-center">
+                <WifiOff className="w-10 h-10 text-muted-foreground" />
+              </div>
+
+              {/* Error heading */}
+              <h2 className="text-xl font-semibold mb-2 text-foreground">
+                Unable to load page
+              </h2>
+
+              {/* Error message */}
+              <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+                {error}
+              </p>
+
+              {/* Retry button */}
+              <Button
+                onClick={() => window.location.reload()}
+                variant="primary"
+                size="lg"
+                className="gap-2"
+              >
+                <RotateCw className="w-4 h-4" />
+                Try Again
+              </Button>
+
+              {/* Helpful tips */}
+              <div className="mt-8 text-xs text-muted-foreground">
+                <p className="mb-2 font-medium">Possible solutions:</p>
+                <ul className="space-y-1 text-left mx-auto inline-block">
+                  <li>• Check your internet connection</li>
+                  <li>• Verify the URL is correct</li>
+                  <li>• Try refreshing the page</li>
+                </ul>
+              </div>
+            </div>
           </div>
         )}
       </div>
