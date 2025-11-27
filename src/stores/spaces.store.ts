@@ -241,4 +241,50 @@ export const spacesActions = {
     const space = store.spaces.find((s) => s.id === spaceId);
     return space?.notesContent;
   },
+
+  /**
+   * Add a tag to a space
+   */
+  addTag: (spaceId: string, tagId: string) => {
+    const store = getSpacesStore();
+    const space = store.spaces.find((s) => s.id === spaceId);
+    if (space) {
+      if (!space.tags) {
+        space.tags = [];
+      }
+      if (!space.tags.includes(tagId)) {
+        space.tags.push(tagId);
+      }
+    }
+  },
+
+  /**
+   * Remove a tag from a space
+   */
+  removeTag: (spaceId: string, tagId: string) => {
+    const store = getSpacesStore();
+    const space = store.spaces.find((s) => s.id === spaceId);
+    if (space && space.tags) {
+      space.tags = space.tags.filter((t) => t !== tagId);
+    }
+  },
+
+  /**
+   * Toggle a tag on a space
+   */
+  toggleTag: (spaceId: string, tagId: string) => {
+    const store = getSpacesStore();
+    const space = store.spaces.find((s) => s.id === spaceId);
+    if (space) {
+      if (!space.tags) {
+        space.tags = [];
+      }
+      const index = space.tags.indexOf(tagId);
+      if (index === -1) {
+        space.tags.push(tagId);
+      } else {
+        space.tags.splice(index, 1);
+      }
+    }
+  },
 };

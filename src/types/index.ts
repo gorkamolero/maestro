@@ -86,6 +86,31 @@ export interface Workspace {
 }
 
 // =============================================================================
+// Tag - Category/label for organizing spaces
+// =============================================================================
+
+export interface Tag {
+  id: string;
+  name: string;
+  /** Color for the tag badge */
+  color: string;
+}
+
+/** Default tag color palette */
+export const TAG_COLOR_PALETTE = [
+  '#3b82f6', // Blue
+  '#10b981', // Emerald
+  '#f59e0b', // Amber
+  '#ef4444', // Red
+  '#8b5cf6', // Violet
+  '#ec4899', // Pink
+  '#14b8a6', // Teal
+  '#f97316', // Orange
+  '#6366f1', // Indigo
+  '#84cc16', // Lime
+] as const;
+
+// =============================================================================
 // Space - Organizational unit within a Workspace
 // =============================================================================
 
@@ -118,6 +143,8 @@ export interface Space {
   contentMode?: SpaceContentMode;
   /** Serialized Lexical editor state for notes */
   notesContent?: string;
+  /** Tag IDs assigned to this space */
+  tags?: string[];
 }
 
 // Color palette for spaces - 8 professional color pairs

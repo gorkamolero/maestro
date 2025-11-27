@@ -9,6 +9,7 @@ import type { Tab } from '@/stores/workspace.store';
 import { TabPreviewList } from './TabPreviewList';
 import { SpaceTasksSection } from './SpaceTasksSection';
 import { SpaceNotesEditor } from './SpaceNotesEditor';
+import { TagSelector } from './TagSelector';
 import { EmojiPickerComponent } from '@/components/ui/emoji-picker';
 import { cn } from '@/lib/utils';
 
@@ -327,6 +328,9 @@ function SpacePaneHeaderContent({ space, tabs }: SpacePaneHeaderContentProps) {
           {tabs.length}
         </span>
       )}
+
+      {/* Tags */}
+      <TagSelector spaceId={space.id} spaceTags={space.tags || []} className="ml-auto" />
     </>
   );
 }
