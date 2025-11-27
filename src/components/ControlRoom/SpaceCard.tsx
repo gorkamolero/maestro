@@ -21,6 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { TagSelector } from './TagSelector';
 
 interface SpaceCardProps {
   space: Space;
@@ -137,86 +138,94 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
         </AnimatePresence>
 
         {/* Header */}
-        <div className="flex items-center gap-2 px-3 pt-3 pb-2">
-          {/* Icon */}
-          <EmojiPickerComponent
-            value={space.icon}
-            onChange={handleIconChange}
-            open={isEmojiPickerOpen}
-            onOpenChange={setIsEmojiPickerOpen}
-          >
-            <span
-              className="text-lg cursor-pointer hover:scale-110 transition-transform"
-              onClick={handleIconClick}
+        <div className="flex flex-col gap-1 px-3 pt-3 pb-2">
+          <div className="flex items-center gap-2">
+            {/* Icon */}
+            <EmojiPickerComponent
+              value={space.icon}
+              onChange={handleIconChange}
+              open={isEmojiPickerOpen}
+              onOpenChange={setIsEmojiPickerOpen}
             >
-              {space.icon || '📁'}
-            </span>
-          </EmojiPickerComponent>
+              <span
+                className="text-lg cursor-pointer hover:scale-110 transition-transform"
+                onClick={handleIconClick}
+              >
+                {space.icon || '📁'}
+              </span>
+            </EmojiPickerComponent>
 
-          {/* Title */}
-          {isEditingTitle ? (
-            <input
-              ref={titleInputRef}
-              type="text"
-              value={titleValue}
-              onChange={(e) => setTitleValue(e.target.value)}
-              onKeyDown={handleTitleKeyDown}
-              onBlur={handleTitleSave}
-              onClick={(e) => e.stopPropagation()}
-              className={cn(
-                'flex-1 bg-transparent font-medium text-sm outline-none min-w-0',
-                'border-b border-black/20 text-black/80'
+            {/* Title */}
+            {isEditingTitle ? (
+              <input
+                ref={titleInputRef}
+                type="text"
+                value={titleValue}
+                onChange={(e) => setTitleValue(e.target.value)}
+                onKeyDown={handleTitleKeyDown}
+                onBlur={handleTitleSave}
+                onClick={(e) => e.stopPropagation()}
+                className={cn(
+                  'flex-1 bg-transparent font-medium text-sm outline-none min-w-0',
+                  'border-b border-black/20 text-black/80'
+                )}
+              />
+            ) : (
+              <h3
+                className="flex-1 font-medium text-sm truncate text-black/80 cursor-pointer"
+                onClick={(e) => e.stopPropagation()}
+                onDoubleClick={handleTitleDoubleClick}
+              >
+                {space.name}
+              </h3>
+            )}
+
+            {/* Action buttons */}
+            <div className="flex items-center gap-0.5">
+              {tabs.some(t => t.type === 'app-launcher') && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleLaunchAll();
+                      }}
+                      className="p-1.5 hover:bg-black/10 rounded transition-colors"
+                    >
+                      <Play className="w-3.5 h-3.5 text-black/50" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p className="text-xs">Launch all apps</p>
+                  </TooltipContent>
+                </Tooltip>
               )}
-            />
-          ) : (
-            <h3
-              className="flex-1 font-medium text-sm truncate text-black/80 cursor-pointer"
-              onClick={(e) => e.stopPropagation()}
-              onDoubleClick={handleTitleDoubleClick}
-            >
-              {space.name}
-            </h3>
-          )}
 
-          {/* Action buttons */}
-          <div className="flex items-center gap-0.5">
-            {tabs.some(t => t.type === 'app-launcher') && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleLaunchAll();
+                      setTitleValue(space.name);
+                      setIsEditingTitle(true);
                     }}
-                    className="p-1.5 hover:bg-black/10 rounded transition-colors"
+                    className="p-1.5 hover:bg-black/10 rounded transition-colors opacity-0 group-hover:opacity-100"
                   >
-                    <Play className="w-3.5 h-3.5 text-black/50" />
+                    <Pencil className="w-3.5 h-3.5 text-black/50" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">
-                  <p className="text-xs">Launch all apps</p>
+                  <p className="text-xs">Edit space</p>
                 </TooltipContent>
               </Tooltip>
-            )}
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setTitleValue(space.name);
-                    setIsEditingTitle(true);
-                  }}
-                  className="p-1.5 hover:bg-black/10 rounded transition-colors opacity-0 group-hover:opacity-100"
-                >
-                  <Pencil className="w-3.5 h-3.5 text-black/50" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                <p className="text-xs">Edit space</p>
-              </TooltipContent>
-            </Tooltip>
+            </div>
           </div>
+
+          {/* Tags */}
+          <TagSelector
+            spaceId={space.id}
+            spaceTags={space.tags || []}
+          />
         </div>
 
         {/* Tabs / Favorites */}

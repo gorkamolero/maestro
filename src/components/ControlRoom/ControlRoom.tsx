@@ -1,13 +1,28 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { Plus } from 'lucide-react';
 import { useSpacesStore, spacesActions } from '@/stores/spaces.store';
 import { useWorkspaceStore } from '@/stores/workspace.store';
+import { useTagsStore } from '@/stores/tags.store';
 import { SpaceCard } from './SpaceCard';
+import { TagFilter } from './TagFilter';
 import { cn } from '@/lib/utils';
 
 export function ControlRoom() {
   const { spaces } = useSpacesStore();
   const { tabs } = useWorkspaceStore();
+  const { tags, activeFilters } = useTagsStore();
+
+  // Filter spaces by active tag filters
+  const filteredSpaces = useMemo(() => {
+    if (activeFilters.length === 0) {
+      return spaces;
+    }
+    return spaces.filter((space) => {
+      const spaceTags = space.tags || [];
+      // Space must have at least one of the active filter tags
+      return activeFilters.some((filterId) => spaceTags.includes(filterId));
+    });
+  }, [spaces, activeFilters]);
 
   const handleNewSpace = useCallback(() => {
     const name = `Space ${spaces.length + 1}`;
@@ -16,9 +31,16 @@ export function ControlRoom() {
 
   return (
     <div className="flex flex-col h-full bg-background">
+      {/* Filter bar - only show if tags exist */}
+      {tags.length > 0 && (
+        <div className="px-4 pt-3 pb-0">
+          <TagFilter />
+        </div>
+      )}
+
       {/* Horizontal scrolling spaces */}
       <div className="flex-1 flex items-stretch overflow-x-auto overflow-y-hidden px-4 py-4 gap-3">
-        {spaces.map((space) => {
+        {filteredSpaces.map((space) => {
           const spaceTabs = tabs.filter((t) => t.spaceId === space.id);
           return (
             <SpaceCard

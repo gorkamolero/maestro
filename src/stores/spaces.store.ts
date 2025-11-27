@@ -45,6 +45,12 @@ const migrateSpaces = () => {
       needsMigration = true;
       space.lastActiveAt = null;
     }
+
+    // Add `tags` field if missing
+    if (space.tags === undefined) {
+      needsMigration = true;
+      space.tags = [];
+    }
   });
 
   if (needsMigration) {
@@ -197,5 +203,79 @@ export const spacesActions = {
     const store = getSpacesStore();
     const space = store.spaces.find((s) => s.id === spaceId);
     return space?.recentCodingPaths || [];
+  },
+
+  /**
+   * Add a tag to a space
+   */
+  addTag: (spaceId: string, tagId: string) => {
+    const store = getSpacesStore();
+    const space = store.spaces.find((s) => s.id === spaceId);
+    if (space) {
+      if (!space.tags) {
+        space.tags = [];
+      }
+      if (!space.tags.includes(tagId)) {
+        space.tags.push(tagId);
+      }
+    }
+  },
+
+  /**
+   * Remove a tag from a space
+   */
+  removeTag: (spaceId: string, tagId: string) => {
+    const store = getSpacesStore();
+    const space = store.spaces.find((s) => s.id === spaceId);
+    if (space && space.tags) {
+      space.tags = space.tags.filter((t) => t !== tagId);
+    }
+  },
+
+  /**
+   * Toggle a tag on a space (add if not present, remove if present)
+   */
+  toggleTag: (spaceId: string, tagId: string) => {
+    const store = getSpacesStore();
+    const space = store.spaces.find((s) => s.id === spaceId);
+    if (space) {
+      if (!space.tags) {
+        space.tags = [];
+      }
+      const index = space.tags.indexOf(tagId);
+      if (index === -1) {
+        space.tags.push(tagId);
+      } else {
+        space.tags.splice(index, 1);
+      }
+    }
+  },
+
+  /**
+   * Set all tags for a space (replace existing)
+   */
+  setTags: (spaceId: string, tagIds: string[]) => {
+    const store = getSpacesStore();
+    const space = store.spaces.find((s) => s.id === spaceId);
+    if (space) {
+      space.tags = tagIds;
+    }
+  },
+
+  /**
+   * Check if a space has a specific tag
+   */
+  hasTag: (spaceId: string, tagId: string): boolean => {
+    const store = getSpacesStore();
+    const space = store.spaces.find((s) => s.id === spaceId);
+    return space?.tags?.includes(tagId) || false;
+  },
+
+  /**
+   * Delete space (alias for removeSpace for consistency)
+   */
+  deleteSpace: (spaceId: string) => {
+    const store = getSpacesStore();
+    store.spaces = store.spaces.filter((t) => t.id !== spaceId);
   },
 };
