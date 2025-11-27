@@ -6,6 +6,22 @@ interface UseEditableTitleOptions {
   spaceName: string;
 }
 
+/**
+ * Hook for inline title editing with save/cancel functionality.
+ * Handles focus, keyboard navigation (Enter/Escape), and persists to store.
+ *
+ * @example
+ * const { isEditing, value, inputRef, startEditing, save, handleKeyDown } = useEditableTitle({
+ *   spaceId: space.id,
+ *   spaceName: space.name
+ * });
+ *
+ * {isEditing ? (
+ *   <input ref={inputRef} value={value} onKeyDown={handleKeyDown} onBlur={save} />
+ * ) : (
+ *   <span onDoubleClick={startEditing}>{value}</span>
+ * )}
+ */
 export function useEditableTitle({ spaceId, spaceName }: UseEditableTitleOptions) {
   const [isEditing, setIsEditing] = useState(false);
   const [value, setValue] = useState(spaceName);

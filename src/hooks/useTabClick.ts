@@ -2,6 +2,13 @@ import { useCallback } from 'react';
 import { workspaceActions, getWorkspaceStore, type Tab } from '@/stores/workspace.store';
 import { launcherActions } from '@/stores/launcher.store';
 
+/**
+ * Hook that returns a click handler for a tab.
+ * Handles app launching for app-launcher tabs, sets active for others.
+ *
+ * @param tab - The tab to create a click handler for
+ * @returns Click handler function
+ */
 export function useTabClick(tab: Tab) {
   const handleClick = useCallback(() => {
     // Don't launch disabled tabs

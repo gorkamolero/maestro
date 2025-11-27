@@ -16,7 +16,6 @@ export interface Tab {
   emoji?: string; // Optional emoji icon for the tab
   disabled?: boolean; // Disabled tabs won't launch when clicked
   segmentId?: string; // Link to timeline segment
-  content?: unknown; // Type-specific content
   terminalState?: {
     buffer: string;
     workingDir: string | null;

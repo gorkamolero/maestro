@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef, useMemo } from 'react';
 import { platform } from '@/lib/platform';
 import type { PerformanceData } from '@/lib/platform/interface';
 import {
@@ -135,39 +135,42 @@ export function useTabPerformance(tabId: string | null) {
 
 /**
  * Hook to get performance data for all tabs in a space.
+ * Aggregations are memoized to prevent recalculation on every render.
  */
 export function useSpaceTabsPerformance(spaceId: string | null) {
   const performance = usePerformanceStore();
   const { tabs } = useWorkspaceStore();
 
-  if (!spaceId) {
+  return useMemo(() => {
+    if (!spaceId) {
+      return {
+        tabs: [],
+        totalMemoryKB: 0,
+        avgCpuPercent: 0,
+      };
+    }
+
+    const spaceTabs = tabs.filter((t) => t.spaceId === spaceId);
+    const tabsWithMetrics = spaceTabs.map((tab) => ({
+      tab,
+      metrics: performance.tabs[tab.id],
+      appMetrics: performance.apps[`browser-${tab.id}`],
+    }));
+
+    const totalMemoryKB = tabsWithMetrics.reduce((sum, t) => sum + (t.metrics?.memoryKB || 0), 0);
+
+    const activeTabs = tabsWithMetrics.filter((t) => t.metrics?.memoryKB);
+    const avgCpuPercent =
+      activeTabs.length > 0
+        ? activeTabs.reduce((sum, t) => sum + (t.metrics?.cpuPercent || 0), 0) / activeTabs.length
+        : 0;
+
     return {
-      tabs: [],
-      totalMemoryKB: 0,
-      avgCpuPercent: 0,
+      tabs: tabsWithMetrics,
+      totalMemoryKB,
+      avgCpuPercent,
     };
-  }
-
-  const spaceTabs = tabs.filter((t) => t.spaceId === spaceId);
-  const tabsWithMetrics = spaceTabs.map((tab) => ({
-    tab,
-    metrics: performance.tabs[tab.id],
-    appMetrics: performance.apps[`browser-${tab.id}`],
-  }));
-
-  const totalMemoryKB = tabsWithMetrics.reduce((sum, t) => sum + (t.metrics?.memoryKB || 0), 0);
-
-  const activeTabs = tabsWithMetrics.filter((t) => t.metrics?.memoryKB);
-  const avgCpuPercent =
-    activeTabs.length > 0
-      ? activeTabs.reduce((sum, t) => sum + (t.metrics?.cpuPercent || 0), 0) / activeTabs.length
-      : 0;
-
-  return {
-    tabs: tabsWithMetrics,
-    totalMemoryKB,
-    avgCpuPercent,
-  };
+  }, [spaceId, tabs, performance.tabs, performance.apps]);
 }
 
 /**
