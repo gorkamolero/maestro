@@ -6,6 +6,46 @@ All notable changes to Maestro will be documented in this file.
 
 ### Added
 
+#### Component Refactoring (2025-11-27)
+- **AgentDrawer refactored**: 732 → 103 lines (main component)
+  - Extracted `AgentDrawerContext.tsx` - Context and hook for child views
+  - Extracted `AgentDrawerUtils.tsx` - Shared utilities, constants, CostDisplay component
+  - Extracted views to `src/components/Agent/views/`:
+    - `DefaultView.tsx` - Idle state view
+    - `CreateView.tsx` - Task creation form with permission/tool selectors
+    - `RunningView.tsx` - Active task monitoring
+    - `CompletedView.tsx` - Success state with cost breakdown
+    - `ErrorView.tsx` - Error state with retry option
+- **CommandPalette refactored**: 560 → 207 lines (main component)
+  - Extracted `useCommandPaletteActions.ts` - All action handlers as custom hook
+  - Extracted `CommandGroups.tsx` - Reusable command group components:
+    - `UrlHistoryGroup`, `TabsGroup`, `SpacesGroup`
+    - `ConnectedAppsGroup`, `InstalledAppsGroup`
+    - `CreateGroup`, `ProfilesGroup`, `LaunchGroup`
+    - `NavigateGroup`, `CurrentTabGroup`, `RecentlyClosedGroup`
+
+#### Performance Optimizations (2025-11-27)
+- **Memoization improvements**:
+  - `CommandPalette` search filtering wrapped in useMemo
+  - `NotesSidebar` tree building and getAllTags memoized
+  - `StatusBar` completedToday calculation memoized
+  - `SpaceCardHeader` hasLaunchableTabs wrapped in useMemo
+  - `SpaceTasksSection` chained useMemos combined into single computation
+  - `TabPreview` connectedApp lookup memoized
+- **React.memo applied** to prevent unnecessary re-renders:
+  - `TaskItem`, `SortableTaskItem` - Task list items
+  - `SpacePane`, `SpacePaneHeaderContent` - Pane components
+  - `MaximizedView`, `MinimizedDock` - Window manager components
+- **Single-pass algorithms** replacing multiple iterations:
+  - `usePerformance.ts` - Combined filter/map/reduce into single loop
+  - `useSpaceTasks.ts` - Single-pass task filtering and counting
+  - `WindowManager` - Single-pass window categorization
+  - `App.tsx` - Combined Cmd+` and Cmd+Shift+` handlers
+- **Constants extraction**:
+  - `BrowserPanel` QUICK_LINKS moved outside component
+- **Dead code removal**:
+  - Removed console.log in TabPreview
+
 #### Code Quality Improvements (2025-11-27)
 - New hooks: `useStopPropagation`, `useModal` for common patterns
 - Centralized constants in `src/lib/constants.ts` (magic numbers, durations, limits)
