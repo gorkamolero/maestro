@@ -164,6 +164,36 @@ export interface IPlatformBridge {
   spawnTerminal(shell: string, args: string[], options: TerminalOptions): Promise<Terminal>;
 
   // ============================================================================
+  // Performance Monitoring
+  // ============================================================================
+
+  /**
+   * Start collecting performance metrics at regular intervals
+   * @param intervalMs Collection interval in milliseconds (default: 2000)
+   * @returns True if collection started successfully
+   */
+  startPerformanceCollection(intervalMs?: number): Promise<boolean>;
+
+  /**
+   * Stop collecting performance metrics
+   * @returns True if collection stopped successfully
+   */
+  stopPerformanceCollection(): Promise<boolean>;
+
+  /**
+   * Get a single snapshot of performance metrics
+   * @returns Current performance metrics
+   */
+  getPerformanceMetrics(): Promise<PerformanceData>;
+
+  /**
+   * Get metrics for a specific browser view
+   * @param label Browser view identifier
+   * @returns Metrics for the view, or null if not found
+   */
+  getViewMetrics(label: string): Promise<ViewMetrics | null>;
+
+  // ============================================================================
   // Platform Info
   // ============================================================================
 
@@ -172,4 +202,28 @@ export interface IPlatformBridge {
    * @returns Platform name ('tauri' | 'electron')
    */
   getPlatformName(): string;
+}
+
+// Performance monitoring types
+export interface ViewMetrics {
+  label: string;
+  tabId: string;
+  memoryKB: number;
+  cpuPercent: number;
+  pid?: number;
+  createdAt: number;
+}
+
+export interface SystemMetrics {
+  cpuPercent: number;
+  memoryMB: number;
+  memoryPercent: number;
+  viewCount: number;
+  isConnected: boolean;
+}
+
+export interface PerformanceData {
+  apps: Record<string, ViewMetrics>;
+  system: SystemMetrics;
+  timestamp: number;
 }

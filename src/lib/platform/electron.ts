@@ -5,7 +5,7 @@
  * For now, this is a placeholder/skeleton.
  */
 
-import type { IPlatformBridge } from './interface';
+import type { IPlatformBridge, PerformanceData, ViewMetrics } from './interface';
 import type {
   BrowserViewOptions,
   Terminal,
@@ -115,6 +115,26 @@ export class ElectronBridge implements IPlatformBridge {
   async spawnTerminal(shell: string, args: string[], options: TerminalOptions): Promise<Terminal> {
     // @ts-expect-error - window.pty is added by preload
     return await window.pty.spawn(shell, args, options);
+  }
+
+  // ============================================================================
+  // Performance Monitoring
+  // ============================================================================
+
+  async startPerformanceCollection(intervalMs = 2000): Promise<boolean> {
+    return this.invoke<boolean>('start_performance_collection', { intervalMs });
+  }
+
+  async stopPerformanceCollection(): Promise<boolean> {
+    return this.invoke<boolean>('stop_performance_collection');
+  }
+
+  async getPerformanceMetrics(): Promise<PerformanceData> {
+    return this.invoke<PerformanceData>('get_performance_metrics');
+  }
+
+  async getViewMetrics(label: string): Promise<ViewMetrics | null> {
+    return this.invoke<ViewMetrics | null>('get_view_metrics', { label });
   }
 
   // ============================================================================

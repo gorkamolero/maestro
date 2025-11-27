@@ -1,11 +1,12 @@
 import { app, BrowserWindow } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
-import { registerBrowserHandlers } from './ipc/browser';
+import { registerBrowserHandlers, getBrowserViewsMap } from './ipc/browser';
 import { registerTerminalHandlers } from './ipc/terminal';
 import { registerLauncherHandlers } from './ipc/launcher';
 import { registerPortalHandler } from './ipc/portal';
 import { registerAgentHandlers } from './ipc/agent';
+import { registerPerformanceHandlers, cleanupPerformanceHandlers } from './ipc/performance';
 
 // Get icon path - different in dev vs production
 const getIconPath = () => {
@@ -68,9 +69,11 @@ app.on('ready', () => {
   registerTerminalHandlers(getMainWindow);
   registerLauncherHandlers();
   registerAgentHandlers(getMainWindow);
+  registerPerformanceHandlers(getMainWindow, getBrowserViewsMap);
 });
 
 app.on('window-all-closed', () => {
+  cleanupPerformanceHandlers();
   if (process.platform !== 'darwin') {
     app.quit();
   }

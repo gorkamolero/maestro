@@ -8,6 +8,7 @@ import { useWorkspaceStore, workspaceActions } from '@/stores/workspace.store';
 import { useWindowsStore, windowsActions, getWindowsStore } from '@/stores/windows.store';
 import { historyActions } from '@/stores/history.store';
 import { agentActions, type AgentStatus } from '@/stores/agent.store';
+import { usePerformanceMonitor } from '@/hooks/usePerformance';
 import { startAutoBackup } from '@/lib/backup';
 import '@/components/editor/themes/editor-theme.css';
 
@@ -43,6 +44,9 @@ function App() {
 
   // Subscribe to agent IPC events globally
   useAgentIpcSubscription();
+
+  // Initialize performance monitoring (collects metrics every 2s)
+  usePerformanceMonitor(2000);
 
   // Dark mode
   useEffect(() => {

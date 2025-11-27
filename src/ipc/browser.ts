@@ -20,6 +20,17 @@ const browserViews = new Map<string, ViewInfo>();
 const creatingViews = new Set<string>();
 let nextZIndex = 1;
 
+/**
+ * Get the browser views map for external access (e.g., performance monitoring)
+ */
+export function getBrowserViewsMap(): Map<string, { view: BrowserView; label: string }> {
+  const result = new Map<string, { view: BrowserView; label: string }>();
+  for (const [label, info] of browserViews) {
+    result.set(label, { view: info.view, label: info.label });
+  }
+  return result;
+}
+
 // ============================================================================
 // Helpers
 // ============================================================================

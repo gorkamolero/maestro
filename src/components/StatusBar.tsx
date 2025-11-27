@@ -1,25 +1,23 @@
 import { useSpacesStore } from '@/stores/spaces.store';
 import { useTasksStore } from '@/stores/tasks.store';
-import { Activity, Cpu, HardDrive, Wifi } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useWorkspaceStore } from '@/stores/workspace.store';
+import {
+  useActiveSpacePerformance,
+  usePerformanceFormatters,
+} from '@/hooks/usePerformance';
+import { formatMemory, formatCpu } from '@/stores/performance.store';
+import { Activity, Cpu, HardDrive, Wifi, Layers } from 'lucide-react';
 
 export function StatusBar() {
   const { spaces } = useSpacesStore();
   const { tasks } = useTasksStore();
+  const { tabs, activeSpaceId } = useWorkspaceStore();
+  const { spaceMetrics, systemMetrics, isConnected } = useActiveSpacePerformance();
+  const { formatSpaceMemory, formatSpaceCpu } = usePerformanceFormatters();
 
-  // Mock performance metrics
-  const [cpuUsage, setCpuUsage] = useState(0);
-  const [memoryUsage, setMemoryUsage] = useState(0);
-
-  useEffect(() => {
-    // Simulate performance monitoring
-    const interval = setInterval(() => {
-      setCpuUsage(Math.floor(Math.random() * 30) + 10); // 10-40%
-      setMemoryUsage(Math.floor(Math.random() * 20) + 60); // 60-80%
-    }, 2000);
-
-    return () => clearInterval(interval);
-  }, []);
+  // Get active space name
+  const activeSpace = spaces.find(s => s.id === activeSpaceId);
+  const activeSpaceTabs = tabs.filter(t => t.spaceId === activeSpaceId);
 
   // Total tasks across all spaces
   const totalTasks = tasks.length;
@@ -35,7 +33,11 @@ export function StatusBar() {
       <div className="flex items-center gap-4">
         <span className="text-foreground font-medium">Maestro</span>
 
-        <span className="opacity-60">Control Room</span>
+        {activeSpace ? (
+          <span className="text-primary">{activeSpace.name}</span>
+        ) : (
+          <span className="opacity-60">No space selected</span>
+        )}
 
         <span className="opacity-60">{spaces.length} spaces</span>
 
@@ -49,26 +51,51 @@ export function StatusBar() {
         )}
       </div>
 
-      {/* Right side - Performance */}
+      {/* Right side - Performance (Active Space) */}
       <div className="flex items-center gap-4 font-mono text-[10px]">
-        <div className="flex items-center gap-1.5 opacity-60">
+        {/* Active space tab count and memory */}
+        {activeSpace && (
+          <div className="flex items-center gap-1.5 opacity-60" title={`${activeSpaceTabs.length} tabs in ${activeSpace.name}`}>
+            <Layers className="w-3 h-3" />
+            <span>{activeSpaceTabs.length}</span>
+          </div>
+        )}
+
+        {/* Space CPU (average across tabs) */}
+        <div
+          className="flex items-center gap-1.5 opacity-60"
+          title={`CPU usage for ${activeSpace?.name || 'space'}`}
+        >
           <Cpu className="w-3 h-3" />
-          <span>{cpuUsage}%</span>
+          <span>{formatSpaceCpu(spaceMetrics)}</span>
         </div>
 
-        <div className="flex items-center gap-1.5 opacity-60">
+        {/* Space Memory (total for space tabs) */}
+        <div
+          className="flex items-center gap-1.5 opacity-60"
+          title={`Memory usage for ${activeSpace?.name || 'space'}`}
+        >
           <HardDrive className="w-3 h-3" />
-          <span>{memoryUsage}%</span>
+          <span>{formatSpaceMemory(spaceMetrics)}</span>
         </div>
 
+        {/* System-wide metrics */}
+        <div className="flex items-center gap-1.5 border-l border-border pl-3 opacity-40" title="Total app memory">
+          <span>{formatMemory(systemMetrics.memoryMB * 1024)}</span>
+        </div>
+
+        {/* Activity status */}
         <div className="flex items-center gap-1.5">
-          <Activity className="w-3 h-3 text-primary" />
-          <span className="text-primary">Active</span>
+          <Activity className={`w-3 h-3 ${spaceMetrics?.activeAppCount ? 'text-primary' : 'opacity-40'}`} />
+          <span className={spaceMetrics?.activeAppCount ? 'text-primary' : 'opacity-40'}>
+            {spaceMetrics?.activeAppCount || 0} active
+          </span>
         </div>
 
-        <div className="flex items-center gap-1.5 opacity-60">
+        {/* Connection status */}
+        <div className={`flex items-center gap-1.5 ${isConnected ? 'opacity-60' : 'text-destructive'}`}>
           <Wifi className="w-3 h-3" />
-          <span>Connected</span>
+          <span>{isConnected ? 'Connected' : 'Disconnected'}</span>
         </div>
       </div>
     </div>

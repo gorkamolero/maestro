@@ -1,7 +1,9 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useSnapshot } from 'valtio';
 import { AnimatePresence } from 'motion/react';
-import { Play, Pencil, MoreHorizontal, Plus, Palette } from 'lucide-react';
+import { Play, Pencil, MoreHorizontal, Plus, Palette, Cpu, HardDrive } from 'lucide-react';
+import { useSpaceTabsPerformance } from '@/hooks/usePerformance';
+import { formatMemory, formatCpu } from '@/stores/performance.store';
 import type { Space } from '@/types';
 import { SPACE_COLOR_PALETTE } from '@/types';
 import type { Tab } from '@/stores/workspace.store';
@@ -40,6 +42,7 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const { notifications } = useSnapshot(notificationsStore);
+  const { totalMemoryKB, avgCpuPercent } = useSpaceTabsPerformance(space.id);
 
   // Get latest notification for this space
   const latestNotification = useMemo(() => {
@@ -296,6 +299,20 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
               <p className="text-xs">Add task</p>
             </TooltipContent>
           </Tooltip>
+
+          {/* Performance metrics */}
+          {totalMemoryKB > 0 && (
+            <div className="flex items-center gap-3 text-[10px] font-mono text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <Cpu className="w-3 h-3" />
+                {formatCpu(avgCpuPercent)}
+              </span>
+              <span className="flex items-center gap-1">
+                <HardDrive className="w-3 h-3" />
+                {formatMemory(totalMemoryKB)}
+              </span>
+            </div>
+          )}
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
