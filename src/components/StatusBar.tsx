@@ -1,11 +1,9 @@
-import { useWorkspaceStore } from '@/stores/workspace.store';
 import { useSpacesStore } from '@/stores/spaces.store';
 import { useTasksStore } from '@/stores/tasks.store';
 import { Activity, Cpu, HardDrive, Wifi } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export function StatusBar() {
-  const { activeSpaceId, tabs, activeTabId, appViewMode } = useWorkspaceStore();
   const { spaces } = useSpacesStore();
   const { tasks } = useTasksStore();
 
@@ -23,12 +21,9 @@ export function StatusBar() {
     return () => clearInterval(interval);
   }, []);
 
-  const activeSpace = spaces.find(s => s.id === activeSpaceId);
-  const activeTab = tabs.find(t => t.id === activeTabId);
-
-  // Get tasks stats for active space
-  const spaceTasks = activeSpaceId ? tasks.filter(t => t.spaceId === activeSpaceId) : [];
-  const completedToday = spaceTasks.filter(t => {
+  // Total tasks across all spaces
+  const totalTasks = tasks.length;
+  const completedToday = tasks.filter(t => {
     if (t.status !== 'done' || !t.completedAt) return false;
     const today = new Date().toDateString();
     return new Date(t.completedAt).toDateString() === today;
@@ -43,23 +38,15 @@ export function StatusBar() {
         </div>
 
         <div className="w-px h-3 bg-border" />
-        {appViewMode === 'control-room' ? (
-          <span>Control Room</span>
-        ) : (
-          <span>{activeSpace?.name || 'Workspace'}</span>
-        )}
+        <span>Control Room</span>
 
-        {appViewMode === 'workspace' && activeTab && (
+        <div className="w-px h-3 bg-border" />
+        <span>{spaces.length} spaces</span>
+
+        {totalTasks > 0 && (
           <>
             <div className="w-px h-3 bg-border" />
-            <span className="capitalize">{activeTab.type} View</span>
-          </>
-        )}
-
-        {spaceTasks.length > 0 && (
-          <>
-            <div className="w-px h-3 bg-border" />
-            <span>{spaceTasks.length} tasks</span>
+            <span>{totalTasks} tasks</span>
             {completedToday > 0 && (
               <span className="text-green-600">· {completedToday} completed today</span>
             )}

@@ -80,6 +80,22 @@ export class ElectronBridge implements IPlatformBridge {
     await this.invoke('hide_all_browser_views');
   }
 
+  async bringViewToFront(label: string): Promise<void> {
+    await this.invoke('bring_view_to_front', { label });
+  }
+
+  async showBrowserView(label: string): Promise<void> {
+    await this.invoke('show_browser_view', { label });
+  }
+
+  async hideBrowserView(label: string): Promise<void> {
+    await this.invoke('hide_browser_view', { label });
+  }
+
+  async setBrowserViewMode(label: string, mode: 'maximized' | 'floating'): Promise<void> {
+    await this.invoke('set_browser_view_mode', { label, mode });
+  }
+
   async showModalOverlay(): Promise<void> {
     await this.invoke('show_modal_overlay');
   }

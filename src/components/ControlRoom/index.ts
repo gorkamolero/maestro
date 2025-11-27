@@ -1,8 +1,5 @@
 export { ControlRoom } from './ControlRoom';
 export { SpaceCard } from './SpaceCard';
-export { SpaceCardExpandable } from './SpaceCardExpandable';
-export { MaximizedWorkspace } from './MaximizedWorkspace';
-export { MaximizedTab } from './MaximizedTab';
 export { NextBubble } from './NextBubble';
 export { WarmthIndicator, getWarmth } from './WarmthIndicator';
 export type { Warmth } from './WarmthIndicator';

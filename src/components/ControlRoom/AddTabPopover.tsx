@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Terminal, Globe, AppWindow, CheckSquare, StickyNote, Bot } from 'lucide-react';
 import { workspaceActions } from '@/stores/workspace.store';
+import { windowsActions } from '@/stores/windows.store';
 import { launcherActions } from '@/stores/launcher.store';
 import {
   Popover,
@@ -59,7 +60,7 @@ export function AddTabPopover({ spaceId, children }: AddTabPopoverProps) {
         const path = await launcherActions.pickApp();
         if (path) {
           const app = await launcherActions.registerApp(path);
-          // Create app-launcher tab
+          // Create app-launcher tab (no window needed - just launches the app)
           workspaceActions.openTab(spaceId, 'app-launcher', app.name, {
             appLauncherConfig: {
               connectedAppId: app.id,
@@ -81,21 +82,25 @@ export function AddTabPopover({ spaceId, children }: AddTabPopoverProps) {
       }
     } else if (type === 'agent') {
       // Agent tab with default config
-      workspaceActions.openTab(spaceId, 'agent', 'Agent', {
+      const newTab = workspaceActions.openTab(spaceId, 'agent', 'Agent', {
         agentConfig: {
           workDir: '', // Will be set in AgentDrawer
           permissionMode: 'askUser',
         },
       });
+      // Open window for the agent
+      windowsActions.openWindow(newTab.id, 'floating');
     } else {
-      // Native tab types
+      // Native tab types - open in floating window
       const titles: Record<string, string> = {
         terminal: 'Terminal',
         browser: 'New Tab',
         notes: 'Notes',
         tasks: 'Tasks',
       };
-      workspaceActions.openTab(spaceId, type, titles[type] || type);
+      const newTab = workspaceActions.openTab(spaceId, type, titles[type] || type);
+      // Open window for the tab
+      windowsActions.openWindow(newTab.id, 'floating');
     }
     setOpen(false);
   };

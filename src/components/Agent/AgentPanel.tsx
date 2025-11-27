@@ -31,29 +31,11 @@ export function AgentPanel({ tab }: AgentPanelProps) {
 
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  // Subscribe to agent events from main process
+  // Subscribe to SDK notification events (warnings, errors, info from hooks)
+  // Note: Status and terminal line subscriptions are handled globally in App.tsx
   useEffect(() => {
     if (!session) return;
 
-    const unsubStatus = window.agent.onStatus((data) => {
-      if (data.sessionId === session.id) {
-        agentActions.updateStatus(data.sessionId, data.status as AgentStatus, {
-          currentTool: data.currentTool,
-          currentFile: data.currentFile,
-          error: data.error,
-          costUSD: data.costUSD,
-          usage: data.usage,
-        });
-      }
-    });
-
-    const unsubTerminal = window.agent.onTerminalLine((data) => {
-      if (data.sessionId === session.id) {
-        agentActions.appendTerminalLine(data.sessionId, data.line);
-      }
-    });
-
-    // Subscribe to SDK notification events (warnings, errors, info from hooks)
     const unsubNotification = window.agent.onNotification((data) => {
       if (data.sessionId === session.id) {
         notificationsActions.add({
@@ -67,8 +49,6 @@ export function AgentPanel({ tab }: AgentPanelProps) {
     });
 
     return () => {
-      unsubStatus();
-      unsubTerminal();
       unsubNotification();
     };
   }, [session]);

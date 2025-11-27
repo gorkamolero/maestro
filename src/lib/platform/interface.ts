@@ -111,6 +111,31 @@ export interface IPlatformBridge {
   hideAllBrowserViews(): Promise<void>;
 
   /**
+   * Bring a specific browser view to the front
+   * @param label Webview identifier
+   */
+  bringViewToFront(label: string): Promise<void>;
+
+  /**
+   * Show a specific browser view (restore from hidden)
+   * @param label Webview identifier
+   */
+  showBrowserView(label: string): Promise<void>;
+
+  /**
+   * Hide a specific browser view (without destroying)
+   * @param label Webview identifier
+   */
+  hideBrowserView(label: string): Promise<void>;
+
+  /**
+   * Set the mode of a browser view
+   * @param label Webview identifier
+   * @param mode 'maximized' | 'floating'
+   */
+  setBrowserViewMode(label: string, mode: 'maximized' | 'floating'): Promise<void>;
+
+  /**
    * Show modal overlay (creates a top-level BrowserView for modal dialogs)
    */
   showModalOverlay(): Promise<void>;

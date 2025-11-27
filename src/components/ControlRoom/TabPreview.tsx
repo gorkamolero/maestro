@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useSnapshot } from 'valtio';
-import { Terminal, Globe, FileText, AppWindow, Bot, Trash2, Settings, Save, CheckSquare, StickyNote, FolderOpen, Link } from 'lucide-react';
+import { Terminal, Globe, FileText, AppWindow, Bot, Trash2, Settings, Save, CheckSquare, StickyNote, FolderOpen, Link, Smile, X, PictureInPicture2, Maximize2 } from 'lucide-react';
 import type { Tab } from '@/stores/workspace.store';
 import { workspaceActions } from '@/stores/workspace.store';
+import { windowsActions } from '@/stores/windows.store';
+import { EmojiPickerComponent } from '@/components/ui/emoji-picker';
 import { agentStore } from '@/stores/agent.store';
 import { launcherActions } from '@/stores/launcher.store';
 import { cn } from '@/lib/utils';
@@ -80,7 +82,10 @@ function TabIconButton({
       )}
     >
       <div className="relative w-7 h-7 rounded-md bg-white/[0.06] flex items-center justify-center">
-        {appIcon ? (
+        {/* Show emoji if set, otherwise show app icon or type icon */}
+        {tab.emoji ? (
+          <span className="text-base leading-none">{tab.emoji}</span>
+        ) : appIcon ? (
           <img src={appIcon} alt={tab.title} className="w-5 h-5 rounded" />
         ) : (
           <TabTypeIcon type={tab.type} className="w-4 h-4" />
@@ -109,6 +114,7 @@ function TabIconButton({
 export function TabPreviewIcon({ tab, onClick }: TabPreviewProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isContextModalOpen, setIsContextModalOpen] = useState(false);
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const { sessions } = useSnapshot(agentStore);
 
   // Get agent session for hover preview
@@ -148,9 +154,9 @@ export function TabPreviewIcon({ tab, onClick }: TabPreviewProps) {
     if (tab.type === 'app-launcher') {
       launchTab(tab);
     } else if (tab.type !== 'agent') {
-      // For non-agent tabs, use the provided onClick (maximize)
+      // For non-agent tabs, open in a floating window
       // Agent tabs are handled by the AgentDrawer
-      onClick();
+      windowsActions.openWindow(tab.id, 'floating');
     }
   };
 
@@ -166,6 +172,26 @@ export function TabPreviewIcon({ tab, onClick }: TabPreviewProps) {
     // TODO: Implement edit functionality
     console.log('Edit tab:', tab.id);
   };
+
+  const handleEmojiChange = (emoji: string) => {
+    workspaceActions.setTabEmoji(tab.id, emoji);
+    setIsEmojiPickerOpen(false);
+  };
+
+  const handleRemoveEmoji = () => {
+    workspaceActions.setTabEmoji(tab.id, null);
+  };
+
+  const handleOpenInWindow = () => {
+    windowsActions.openWindow(tab.id, 'floating');
+  };
+
+  const handleOpenMaximized = () => {
+    windowsActions.openWindow(tab.id, 'maximized');
+  };
+
+  // Check if this tab type can be windowed
+  const canBeWindowed = ['browser', 'terminal', 'agent', 'tasks', 'notes'].includes(tab.type);
 
   // For agent tabs, wrap with AgentDrawer
   // The AgentDrawer's FamilyDrawerTrigger handles opening the drawer on click.
@@ -196,6 +222,29 @@ export function TabPreviewIcon({ tab, onClick }: TabPreviewProps) {
               {tab.title}
             </ContextMenuItem>
             <ContextMenuSeparator />
+            {canBeWindowed && (
+              <>
+                <ContextMenuItem onClick={handleOpenInWindow} className="gap-2">
+                  <PictureInPicture2 className="w-3.5 h-3.5" />
+                  Open in Window
+                </ContextMenuItem>
+                <ContextMenuItem onClick={handleOpenMaximized} className="gap-2">
+                  <Maximize2 className="w-3.5 h-3.5" />
+                  Open Maximized
+                </ContextMenuItem>
+                <ContextMenuSeparator />
+              </>
+            )}
+            <ContextMenuItem onClick={() => setIsEmojiPickerOpen(true)} className="gap-2">
+              <Smile className="w-3.5 h-3.5" />
+              {tab.emoji ? 'Change Emoji' : 'Add Emoji'}
+            </ContextMenuItem>
+            {tab.emoji && (
+              <ContextMenuItem onClick={handleRemoveEmoji} className="gap-2">
+                <X className="w-3.5 h-3.5" />
+                Remove Emoji
+              </ContextMenuItem>
+            )}
             <ContextMenuItem onClick={handleEdit} className="gap-2">
               <Settings className="w-3.5 h-3.5" />
               Edit
@@ -207,6 +256,16 @@ export function TabPreviewIcon({ tab, onClick }: TabPreviewProps) {
             </ContextMenuItem>
           </ContextMenuContent>
         </ContextMenu>
+
+        {/* Emoji picker popover */}
+        <EmojiPickerComponent
+          value={tab.emoji}
+          onChange={handleEmojiChange}
+          open={isEmojiPickerOpen}
+          onOpenChange={setIsEmojiPickerOpen}
+        >
+          <span />
+        </EmojiPickerComponent>
 
         {/* Terminal preview on hover */}
         {agentSession && agentSession.terminalLines.length > 0 && (
@@ -244,6 +303,29 @@ export function TabPreviewIcon({ tab, onClick }: TabPreviewProps) {
               {tab.title}
             </ContextMenuItem>
             <ContextMenuSeparator />
+            {canBeWindowed && (
+              <>
+                <ContextMenuItem onClick={handleOpenInWindow} className="gap-2">
+                  <PictureInPicture2 className="w-3.5 h-3.5" />
+                  Open in Window
+                </ContextMenuItem>
+                <ContextMenuItem onClick={handleOpenMaximized} className="gap-2">
+                  <Maximize2 className="w-3.5 h-3.5" />
+                  Open Maximized
+                </ContextMenuItem>
+                <ContextMenuSeparator />
+              </>
+            )}
+            <ContextMenuItem onClick={() => setIsEmojiPickerOpen(true)} className="gap-2">
+              <Smile className="w-3.5 h-3.5" />
+              {tab.emoji ? 'Change Emoji' : 'Add Emoji'}
+            </ContextMenuItem>
+            {tab.emoji && (
+              <ContextMenuItem onClick={handleRemoveEmoji} className="gap-2">
+                <X className="w-3.5 h-3.5" />
+                Remove Emoji
+              </ContextMenuItem>
+            )}
             {tab.type === 'app-launcher' && (
               <ContextMenuItem onClick={handleSaveContext} className="gap-2">
                 {getContextIcon()}
@@ -261,6 +343,16 @@ export function TabPreviewIcon({ tab, onClick }: TabPreviewProps) {
             </ContextMenuItem>
           </ContextMenuContent>
         </ContextMenu>
+
+        {/* Emoji picker popover */}
+        <EmojiPickerComponent
+          value={tab.emoji}
+          onChange={handleEmojiChange}
+          open={isEmojiPickerOpen}
+          onOpenChange={setIsEmojiPickerOpen}
+        >
+          <span />
+        </EmojiPickerComponent>
       </div>
 
       {/* Save Context Modal */}

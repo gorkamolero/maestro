@@ -6,7 +6,7 @@ import { AddTabPopover } from './AddTabPopover';
 interface TabPreviewListProps {
   tabs: Tab[];
   spaceId: string;
-  onTabClick: (tabId: string) => void;
+  onTabClick?: (tabId: string) => void;
   showAddButton?: boolean;
   maxVisible?: number;
 }
@@ -27,7 +27,7 @@ export function TabPreviewList({
         <TabPreviewIcon
           key={tab.id}
           tab={tab}
-          onClick={() => onTabClick(tab.id)}
+          onClick={onTabClick ? () => onTabClick(tab.id) : undefined}
         />
       ))}
 

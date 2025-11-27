@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { FolderOpen, History } from 'lucide-react';
 import {
   Dialog,
@@ -54,19 +54,25 @@ export function CreateAgentModal({
   const [prompt, setPrompt] = useState('');
   const [workDir, setWorkDir] = useState(defaultWorkDir);
   const [permissionMode, setPermissionMode] = useState<PermissionMode>('askUser');
-  const [recentPaths, setRecentPaths] = useState<string[]>([]);
+  const [prevOpen, setPrevOpen] = useState(false);
 
-  // Load recent paths when modal opens
-  useEffect(() => {
-    if (open && spaceId) {
-      const paths = spacesActions.getRecentCodingPaths(spaceId);
-      setRecentPaths(paths);
-      // Auto-select most recent path if no default provided
-      if (!defaultWorkDir && paths.length > 0) {
-        setWorkDir(paths[0]);
-      }
+  // Compute recent paths synchronously during render
+  const recentPaths = useMemo(() => {
+    if (!spaceId) return [];
+    return spacesActions.getRecentCodingPaths(spaceId);
+  }, [spaceId]);
+
+  // Initialize state when modal opens (during render, not in effect)
+  if (open && !prevOpen) {
+    setPrevOpen(true);
+    // Auto-select most recent path if no default provided
+    if (!defaultWorkDir && recentPaths.length > 0) {
+      setWorkDir(recentPaths[0]);
     }
-  }, [open, spaceId, defaultWorkDir]);
+  }
+  if (!open && prevOpen) {
+    setPrevOpen(false);
+  }
 
   const handleSubmit = () => {
     if (!prompt.trim() || !workDir.trim()) return;

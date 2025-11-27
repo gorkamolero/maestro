@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
 import { Plus } from 'lucide-react';
 import { useSpacesStore, spacesActions } from '@/stores/spaces.store';
-import { useWorkspaceStore, workspaceActions } from '@/stores/workspace.store';
-import { SpaceCardExpandable } from './SpaceCardExpandable';
+import { useWorkspaceStore } from '@/stores/workspace.store';
+import { SpaceCard } from './SpaceCard';
 import { cn } from '@/lib/utils';
 
 export function ControlRoom() {
@@ -11,55 +11,39 @@ export function ControlRoom() {
 
   const handleNewSpace = useCallback(() => {
     const name = `Space ${spaces.length + 1}`;
-    const newSpace = spacesActions.addSpace(name);
-    // Immediately maximize the new space
-    spacesActions.updateSpaceLastActive(newSpace.id);
-    workspaceActions.maximizeSpace(newSpace.id);
+    spacesActions.addSpace(name);
   }, [spaces.length]);
 
   return (
     <div className="flex flex-col h-full bg-background">
-      {/* Minimal header - no border, subdued */}
-      <div className="flex items-center justify-between px-6 py-5">
-        <h1 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-          Spaces
-        </h1>
-      </div>
+      {/* Horizontal scrolling spaces */}
+      <div className="flex-1 flex items-stretch overflow-x-auto overflow-y-hidden px-4 py-4 gap-3">
+        {spaces.map((space) => {
+          const spaceTabs = tabs.filter((t) => t.spaceId === space.id);
+          return (
+            <SpaceCard
+              key={space.id}
+              space={space}
+              tabs={spaceTabs}
+            />
+          );
+        })}
 
-      {/* Grid */}
-      <div className="flex-1 overflow-auto px-6 pb-6">
-        <div
+        {/* New Space button */}
+        <button
+          type="button"
+          onClick={handleNewSpace}
           className={cn(
-            'grid gap-3',
-            'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+            'flex-shrink-0 flex flex-col items-center justify-center gap-2',
+            'w-[280px] rounded-xl',
+            'text-muted-foreground hover:text-foreground',
+            'border-2 border-dashed border-white/[0.08] hover:border-white/[0.15]',
+            'hover:bg-white/[0.02] transition-all'
           )}
         >
-          {spaces.map((space) => {
-            const spaceTabs = tabs.filter((t) => t.spaceId === space.id);
-            return (
-              <SpaceCardExpandable
-                key={space.id}
-                space={space}
-                tabs={spaceTabs}
-              />
-            );
-          })}
-
-          {/* New Space - just text, minimal */}
-          <button
-            type="button"
-            onClick={handleNewSpace}
-            className={cn(
-              'flex items-center justify-center gap-2 p-4 rounded-lg',
-              'text-muted-foreground hover:text-foreground',
-              'hover:bg-accent/50 transition-colors',
-              'min-h-[120px]'
-            )}
-          >
-            <Plus className="w-4 h-4" />
-            <span className="text-sm">New space</span>
-          </button>
-        </div>
+          <Plus className="w-6 h-6" />
+          <span className="text-sm">New space</span>
+        </button>
       </div>
     </div>
   );

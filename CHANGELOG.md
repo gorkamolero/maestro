@@ -6,6 +6,45 @@ All notable changes to Maestro will be documented in this file.
 
 ### Added
 
+#### Windowed View System (2025-11-27)
+- **Floating Windows**: Open any tab (browser, terminal, agent) as a draggable, resizable floating window
+- **Maximized View**: Full-screen mode for focused work with minimal header
+- **Window Management**:
+  - Right-click tab → "Open in Window" or "Open Maximized"
+  - Drag windows by title bar, resize from edges/corners
+  - Window positions persist across app restarts (IndexedDB)
+  - Toggle between floating and maximized modes
+- **Keyboard Shortcuts**:
+  - `ESC` - Close focused floating window
+  - `Cmd+\`` - Cycle through floating windows
+  - `Cmd+Enter` - Toggle maximized/floating mode
+- **Multi-View BrowserView Support**:
+  - Refactored browser.ts to support multiple simultaneous BrowserViews
+  - Z-order management: floating windows always above maximized
+  - Proper view stacking with `setTopBrowserView()`
+
+**New Files:**
+- `src/stores/windows.store.ts` - Window state management with persistence
+- `src/components/Window/` - WindowManager, FloatingWindow, WindowTitleBar, ResizeHandles, WindowContent
+
+#### Tab Emoji Support (2025-11-27)
+- Add custom emoji icons to any tab via right-click → "Add Emoji"
+- Searchable emoji picker using frimousse library
+- Emoji displays in place of default tab icon
+- Remove emoji option in context menu
+
+**Technical Details:**
+- Added `emoji?: string` field to Tab interface
+- Added `setTabEmoji()` action to workspace store
+
+### Changed
+
+#### Simplified App Architecture (2025-11-27)
+- Removed legacy workspace view mode (`appViewMode`, `maximizeSpace`, `returnToControlRoom`)
+- Removed unused Workspace components (WorkspacePanel, MaximizedTab, MaximizedWorkspace, etc.)
+- ControlRoom is now the single main view, windows layer on top
+- Deleted expandable-screen.tsx and related expandable card patterns
+
 #### Bundled Claude Code CLI for Keychain Auth (2025-11-26)
 - Added `@anthropic-ai/claude-code` as dependency for bundled CLI
 - Agent now uses bundled CLI which inherits keychain auth from interactive login

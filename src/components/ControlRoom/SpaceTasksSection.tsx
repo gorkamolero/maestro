@@ -17,21 +17,19 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { ChevronDown, Plus, Check, Trash2, GripVertical } from 'lucide-react';
+import { Check, Trash2, GripVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   useWorkspaceTasksStore,
   workspaceTasksActions,
   type WorkspaceTask,
 } from '@/stores/workspace-tasks.store';
-import { Expandable, ExpandableContent } from '@/components/ui/expandable';
 
 interface SpaceTasksSectionProps {
   spaceId: string;
 }
 
 export function SpaceTasksSection({ spaceId }: SpaceTasksSectionProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
   const [newTaskContent, setNewTaskContent] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const { tasks: allTasks } = useWorkspaceTasksStore();
@@ -44,10 +42,6 @@ export function SpaceTasksSection({ spaceId }: SpaceTasksSectionProps) {
   }, [spaceId, allTasks]);
 
   const taskIds = useMemo(() => tasks.map((t) => t.id), [tasks]);
-
-  const incompleteCount = useMemo(() => {
-    return tasks.filter((t) => !t.completed).length;
-  }, [tasks]);
 
   // DnD sensors
   const sensors = useSensors(
@@ -75,11 +69,6 @@ export function SpaceTasksSection({ spaceId }: SpaceTasksSectionProps) {
     [spaceId, taskIds]
   );
 
-  const handleToggle = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsExpanded((prev) => !prev);
-  }, []);
-
   const handleAddTask = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
@@ -96,8 +85,7 @@ export function SpaceTasksSection({ spaceId }: SpaceTasksSectionProps) {
   const handleInputKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       e.stopPropagation();
-      // Cmd+Enter or Ctrl+Enter to submit
-      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      if (e.key === 'Enter') {
         e.preventDefault();
         if (newTaskContent.trim()) {
           workspaceTasksActions.addTask(spaceId, newTaskContent.trim());
@@ -112,110 +100,56 @@ export function SpaceTasksSection({ spaceId }: SpaceTasksSectionProps) {
     e.stopPropagation();
   }, []);
 
-  // Focus input when expanded
-  useEffect(() => {
-    if (isExpanded) {
-      const timer = setTimeout(() => {
-        inputRef.current?.focus();
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [isExpanded]);
-
   return (
-    <Expandable
-      expanded={isExpanded}
-      onToggle={() => setIsExpanded((prev) => !prev)}
-      className="w-full"
-    >
-      {/* Trigger header */}
-      <div
-        onClick={handleToggle}
-        className={cn(
-          'flex items-center gap-2 py-2 px-1 -mx-1 rounded cursor-pointer',
-          'text-xs text-muted-foreground hover:text-foreground transition-colors',
-          'hover:bg-white/[0.04]'
-        )}
-      >
-        <motion.div
-          animate={{ rotate: isExpanded ? 180 : 0 }}
-          transition={{ duration: 0.2 }}
-        >
-          <ChevronDown className="w-3 h-3" />
-        </motion.div>
-        <span className="font-medium">Tasks</span>
-        {incompleteCount > 0 && (
-          <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-primary/20 text-primary">
-            {incompleteCount}
-          </span>
+    <div className="flex flex-col h-full" onClick={(e) => e.stopPropagation()}>
+      {/* Add new task input */}
+      <form onSubmit={handleAddTask} className="flex-shrink-0 mb-2">
+        <input
+          ref={inputRef}
+          data-space-task-input={spaceId}
+          type="text"
+          value={newTaskContent}
+          onChange={(e) => setNewTaskContent(e.target.value)}
+          onClick={handleInputClick}
+          onKeyDown={handleInputKeyDown}
+          placeholder="Add a task..."
+          className={cn(
+            'w-full bg-black/5 border-0 rounded-lg px-3 py-2',
+            'text-xs text-black/70 placeholder:text-black/30',
+            'focus:outline-none focus:ring-1 focus:ring-black/20',
+            'transition-colors'
+          )}
+        />
+      </form>
+
+      {/* Tasks list - scrollable */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
+        {tasks.length > 0 ? (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={taskIds}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-1 pb-2">
+                <AnimatePresence initial={false}>
+                  {tasks.map((task) => (
+                    <SortableTaskItem key={task.id} task={task} />
+                  ))}
+                </AnimatePresence>
+              </div>
+            </SortableContext>
+          </DndContext>
+        ) : (
+          <p className="text-xs text-black/30 text-center py-4">
+            No tasks yet
+          </p>
         )}
       </div>
-
-      {/* Expandable content */}
-      <ExpandableContent preset="fade">
-        <div
-          className="pt-2 space-y-2"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Add new task input */}
-          <form onSubmit={handleAddTask} className="flex items-center gap-2">
-            <input
-              ref={inputRef}
-              type="text"
-              value={newTaskContent}
-              onChange={(e) => setNewTaskContent(e.target.value)}
-              onClick={handleInputClick}
-              onKeyDown={handleInputKeyDown}
-              placeholder="Add a task... (⌘↵)"
-              className={cn(
-                'flex-1 bg-white/[0.04] border border-white/[0.08] rounded px-2 py-1.5',
-                'text-xs placeholder:text-muted-foreground/50',
-                'focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50',
-                'transition-colors'
-              )}
-            />
-            <button
-              type="submit"
-              disabled={!newTaskContent.trim()}
-              className={cn(
-                'p-1.5 rounded transition-colors',
-                'hover:bg-white/[0.08] disabled:opacity-50 disabled:cursor-not-allowed'
-              )}
-            >
-              <Plus className="w-3.5 h-3.5" />
-            </button>
-          </form>
-
-          {/* Tasks list - scrollable with drag and drop */}
-          {tasks.length > 0 && (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext
-                items={taskIds}
-                strategy={verticalListSortingStrategy}
-              >
-                <div className="max-h-[200px] overflow-y-auto space-y-1 scrollbar-thin">
-                  <AnimatePresence initial={false}>
-                    {tasks.map((task) => (
-                      <SortableTaskItem key={task.id} task={task} />
-                    ))}
-                  </AnimatePresence>
-                </div>
-              </SortableContext>
-            </DndContext>
-          )}
-
-          {tasks.length === 0 && (
-            <p className="text-xs text-muted-foreground/50 text-center py-2">
-              No tasks yet
-            </p>
-          )}
-        </div>
-      </ExpandableContent>
-    </Expandable>
+    </div>
   );
 }
 
@@ -330,9 +264,9 @@ function TaskItem({ task, dragHandleProps, isDragging }: TaskItemProps) {
       exit={{ opacity: 0, x: -20 }}
       transition={{ duration: 0.2 }}
       className={cn(
-        'group flex items-start gap-2 p-2 rounded',
-        'bg-white/[0.02] hover:bg-white/[0.04] transition-colors',
-        isDragging && 'bg-white/[0.06] shadow-lg'
+        'group/task flex items-start gap-2 p-2 rounded-lg',
+        'bg-black/[0.03] hover:bg-black/[0.06] transition-colors',
+        isDragging && 'bg-black/[0.08] shadow-lg'
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -341,9 +275,9 @@ function TaskItem({ task, dragHandleProps, isDragging }: TaskItemProps) {
       <div
         {...dragHandleProps}
         className={cn(
-          'flex-shrink-0 cursor-grab active:cursor-grabbing',
-          'text-muted-foreground/30 hover:text-muted-foreground/50 transition-colors',
-          'opacity-0 group-hover:opacity-100'
+          'flex-shrink-0 cursor-grab active:cursor-grabbing mt-0.5',
+          'text-black/20 hover:text-black/40 transition-colors',
+          'opacity-0 group-hover/task:opacity-100'
         )}
       >
         <GripVertical className="w-3 h-3" />
@@ -353,14 +287,15 @@ function TaskItem({ task, dragHandleProps, isDragging }: TaskItemProps) {
       <div
         onClick={handleToggle}
         className={cn(
-          'flex-shrink-0 w-4 h-4 mt-0.5 rounded border transition-colors cursor-pointer',
+          'flex-shrink-0 w-4 h-4 mt-0.5 rounded border-2 transition-all cursor-pointer',
+          'flex items-center justify-center',
           task.completed
-            ? 'bg-primary border-primary'
-            : 'border-muted-foreground/30 hover:border-muted-foreground/50'
+            ? 'bg-black/60 border-black/60'
+            : 'border-black/20 hover:border-black/40'
         )}
       >
         {task.completed && (
-          <Check className="w-4 h-4 text-primary-foreground" strokeWidth={3} />
+          <Check className="w-3 h-3 text-white" strokeWidth={3} />
         )}
       </div>
 
@@ -376,7 +311,7 @@ function TaskItem({ task, dragHandleProps, isDragging }: TaskItemProps) {
           onClick={(e) => e.stopPropagation()}
           className={cn(
             'flex-1 bg-transparent text-xs outline-none min-w-0',
-            'text-foreground'
+            'text-black/80'
           )}
         />
       ) : (
@@ -384,7 +319,7 @@ function TaskItem({ task, dragHandleProps, isDragging }: TaskItemProps) {
           onClick={handleStartEdit}
           className={cn(
             'flex-1 text-xs leading-relaxed break-words cursor-text',
-            task.completed && 'line-through text-muted-foreground/50'
+            task.completed ? 'line-through text-black/30' : 'text-black/70'
           )}
         >
           {task.content}
@@ -402,7 +337,7 @@ function TaskItem({ task, dragHandleProps, isDragging }: TaskItemProps) {
             onClick={handleDelete}
             className={cn(
               'flex-shrink-0 p-1 rounded transition-colors',
-              'text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10'
+              'text-black/30 hover:text-red-500 hover:bg-red-500/10'
             )}
           >
             <Trash2 className="w-3 h-3" />

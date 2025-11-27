@@ -3,11 +3,11 @@ import { Toaster } from 'sonner';
 import { CommandPalettePortal } from '@/components/CommandPalettePortal';
 import { StatusBar } from '@/components/StatusBar';
 import { ControlRoom } from '@/components/ControlRoom';
+import { WindowManager } from '@/components/Window';
 import { useWorkspaceStore, workspaceActions } from '@/stores/workspace.store';
+import { useWindowsStore, windowsActions, getWindowsStore } from '@/stores/windows.store';
 import { historyActions } from '@/stores/history.store';
-import { useSpacesStore, spacesActions } from '@/stores/spaces.store';
 import { agentActions, type AgentStatus } from '@/stores/agent.store';
-import { applySpaceTheme, resetSpaceTheme } from '@/lib/space-theme';
 import { startAutoBackup } from '@/lib/backup';
 import '@/components/editor/themes/editor-theme.css';
 
@@ -37,29 +37,12 @@ function useAgentIpcSubscription() {
 function App() {
   const [darkMode] = useState(true);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
-  const { activeSpaceId, activeTabId, appViewMode } = useWorkspaceStore();
-  const { spaces } = useSpacesStore();
+  const { activeTabId } = useWorkspaceStore();
+  // Windows store subscription (focusedWindowId used for potential future focus indicators)
+  useWindowsStore();
 
   // Subscribe to agent IPC events globally
   useAgentIpcSubscription();
-
-  const activeSpace = spaces.find((s) => s.id === activeSpaceId);
-
-  // Update lastActiveAt when switching to a space
-  useEffect(() => {
-    if (activeSpaceId && appViewMode === 'workspace') {
-      spacesActions.updateSpaceLastActive(activeSpaceId);
-    }
-  }, [activeSpaceId, appViewMode]);
-
-  // Apply space theme when active space changes
-  useEffect(() => {
-    if (activeSpace) {
-      applySpaceTheme(activeSpace.primaryColor, activeSpace.secondaryColor);
-    } else {
-      resetSpaceTheme();
-    }
-  }, [activeSpace]);
 
   // Dark mode
   useEffect(() => {
@@ -114,19 +97,76 @@ function App() {
         setCommandPaletteOpen((open) => !open);
         return;
       }
+
+      // ============================================================================
+      // Window Management Shortcuts
+      // ============================================================================
+
+      const windowsStore = getWindowsStore();
+
+      // ESC - Close focused floating window
+      if (e.key === 'Escape' && windowsStore.focusedWindowId) {
+        const focusedWindow = windowsStore.windows.find(w => w.id === windowsStore.focusedWindowId);
+        if (focusedWindow?.mode === 'floating') {
+          e.preventDefault();
+          windowsActions.closeWindow(windowsStore.focusedWindowId);
+          return;
+        }
+      }
+
+      // Cmd+` - Cycle through floating windows
+      if (e.key === '`' && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
+        const floatingWindows = windowsStore.windows.filter(w => w.mode === 'floating' && !w.isMinimized);
+        if (floatingWindows.length > 0) {
+          e.preventDefault();
+          windowsActions.cycleFocusNext();
+          return;
+        }
+      }
+
+      // Cmd+Shift+` - Cycle backwards through floating windows
+      if (e.key === '`' && (e.metaKey || e.ctrlKey) && e.shiftKey) {
+        const floatingWindows = windowsStore.windows.filter(w => w.mode === 'floating' && !w.isMinimized);
+        if (floatingWindows.length > 0) {
+          e.preventDefault();
+          windowsActions.cycleFocusPrev();
+          return;
+        }
+      }
+
+      // Cmd+M - Minimize focused window
+      if (e.key === 'm' && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
+        if (windowsStore.focusedWindowId) {
+          e.preventDefault();
+          windowsActions.minimizeWindow(windowsStore.focusedWindowId);
+          return;
+        }
+      }
+
+      // Cmd+Enter - Toggle maximized/floating for focused window
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+        if (windowsStore.focusedWindowId) {
+          e.preventDefault();
+          windowsActions.toggleMode(windowsStore.focusedWindowId);
+          return;
+        }
+      }
     };
 
     document.addEventListener('keydown', down);
     return () => document.removeEventListener('keydown', down);
   }, [activeTabId]);
 
-  // ControlRoom is always rendered - ExpandableScreen handles workspace view
   return (
     <div className="h-screen bg-background text-foreground flex flex-col">
       <div className="flex-1 overflow-hidden">
         <ControlRoom />
       </div>
       <StatusBar />
+
+      {/* Window Manager - renders all floating and maximized windows */}
+      <WindowManager />
+
       <CommandPalettePortal isOpen={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} />
       <Toaster
         theme="dark"

@@ -1,11 +1,10 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 
 interface ActivityLine {
   id: string;
   text: string;
-  timestamp: Date;
 }
 
 interface AgentActivityLogProps {
@@ -14,6 +13,9 @@ interface AgentActivityLogProps {
   autoScroll?: boolean;
   className?: string;
 }
+
+// Global counter for generating unique IDs
+let lineIdCounter = 0;
 
 function getLineStyle(line: string): string {
   if (line.startsWith('✓')) return 'text-green-400';
@@ -47,14 +49,24 @@ export function AgentActivityLog({
   className,
 }: AgentActivityLogProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const visibleLines = lines.slice(-maxLines);
+  // Track stable IDs for each line by its original index in the full array
+  const lineIdsRef = useRef<Map<number, string>>(new Map());
 
-  // Convert to activity lines with IDs for animation
-  const activityLines: ActivityLine[] = visibleLines.map((text, index) => ({
-    id: `${lines.length - visibleLines.length + index}-${text.slice(0, 20)}`,
-    text,
-    timestamp: new Date(),
-  }));
+  // Generate stable IDs for lines
+  const activityLines = useMemo(() => {
+    const startIndex = Math.max(0, lines.length - maxLines);
+    const visibleLines = lines.slice(-maxLines);
+
+    return visibleLines.map((text, i): ActivityLine => {
+      const originalIndex = startIndex + i;
+      let id = lineIdsRef.current.get(originalIndex);
+      if (!id) {
+        id = `line-${++lineIdCounter}`;
+        lineIdsRef.current.set(originalIndex, id);
+      }
+      return { id, text };
+    });
+  }, [lines, maxLines]);
 
   // Auto-scroll to bottom when new lines arrive
   useEffect(() => {
