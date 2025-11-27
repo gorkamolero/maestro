@@ -17,7 +17,7 @@ export function WindowContent({ tab, width, height }: WindowContentProps) {
   // For browser tabs
   if (tab.type === 'browser') {
     return (
-      <div className="w-full h-full" style={{ width, height }}>
+      <div className="flex flex-col" style={{ width, height }}>
         <BrowserPanel tab={tab} isActive={true} />
       </div>
     );
@@ -26,7 +26,7 @@ export function WindowContent({ tab, width, height }: WindowContentProps) {
   // For terminal tabs
   if (tab.type === 'terminal') {
     return (
-      <div className="w-full h-full" style={{ width, height }}>
+      <div className="flex flex-col" style={{ width, height }}>
         <TerminalPanel segmentId={tab.id} />
       </div>
     );
@@ -35,7 +35,7 @@ export function WindowContent({ tab, width, height }: WindowContentProps) {
   // For agent tabs
   if (tab.type === 'agent') {
     return (
-      <div className="w-full h-full" style={{ width, height }}>
+      <div className="flex flex-col" style={{ width, height }}>
         <AgentPanel tab={tab} />
       </div>
     );
