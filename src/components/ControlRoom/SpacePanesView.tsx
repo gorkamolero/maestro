@@ -1,8 +1,9 @@
-import { useEffect, useRef, useCallback, useState, useMemo } from 'react';
+import { useRef, useCallback, useState } from 'react';
 import { Plus, CheckSquare, FileText } from 'lucide-react';
 import { useSpacesStore, spacesActions } from '@/stores/spaces.store';
 import { useWorkspaceStore } from '@/stores/workspace.store';
-import { useWorkspaceTasksStore } from '@/stores/workspace-tasks.store';
+import { useEditableTitle } from '@/hooks/useEditableTitle';
+import { useSpaceTasks } from '@/hooks/useSpaceTasks';
 import type { Space } from '@/types';
 import type { Tab } from '@/stores/workspace.store';
 import { TabPreviewList } from './TabPreviewList';
@@ -126,11 +127,7 @@ function SpacePane({ space, tabs, index, totalPanes, isFocused, onClick }: Space
   }, [onClick]);
 
   // Get tasks for this space to determine if section should be open
-  const { tasks: allTasks } = useWorkspaceTasksStore();
-  const spaceTasks = useMemo(
-    () => allTasks.filter((t) => t.spaceId === space.id),
-    [allTasks, space.id]
-  );
+  const { tasks: spaceTasks } = useSpaceTasks(space.id);
 
   return (
     <div
@@ -244,34 +241,22 @@ interface SpacePaneHeaderContentProps {
  */
 function SpacePaneHeaderContent({ space, tabs }: SpacePaneHeaderContentProps) {
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [titleValue, setTitleValue] = useState(space.name);
-  const titleInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (isEditingTitle && titleInputRef.current) {
-      titleInputRef.current.focus();
-      titleInputRef.current.select();
-    }
-  }, [isEditingTitle]);
+  // Use shared editable title hook
+  const {
+    isEditing: isEditingTitle,
+    value: titleValue,
+    setValue: setTitleValue,
+    inputRef: titleInputRef,
+    startEditing: startEditingTitle,
+    save: saveTitle,
+    handleKeyDown: handleTitleKeyDown,
+  } = useEditableTitle({ spaceId: space.id, spaceName: space.name });
 
   const handleIconChange = useCallback((emoji: string) => {
     spacesActions.updateSpace(space.id, { icon: emoji });
     setIsEmojiPickerOpen(false);
   }, [space.id]);
-
-  const handleTitleSave = useCallback(() => {
-    const trimmed = titleValue.trim();
-    if (trimmed && trimmed !== space.name) {
-      spacesActions.updateSpace(space.id, { name: trimmed });
-    }
-    setIsEditingTitle(false);
-  }, [titleValue, space.id, space.name]);
-
-  const handleTitleCancel = useCallback(() => {
-    setTitleValue(space.name);
-    setIsEditingTitle(false);
-  }, [space.name]);
 
   return (
     <>
@@ -300,12 +285,8 @@ function SpacePaneHeaderContent({ space, tabs }: SpacePaneHeaderContentProps) {
           type="text"
           value={titleValue}
           onChange={(e) => setTitleValue(e.target.value)}
-          onKeyDown={(e) => {
-            e.stopPropagation();
-            if (e.key === 'Enter') handleTitleSave();
-            else if (e.key === 'Escape') handleTitleCancel();
-          }}
-          onBlur={handleTitleSave}
+          onKeyDown={handleTitleKeyDown}
+          onBlur={saveTitle}
           onClick={(e) => e.stopPropagation()}
           className="flex-1 bg-transparent text-[11px] font-medium outline-none min-w-0 border-b border-foreground/20"
         />
@@ -314,8 +295,7 @@ function SpacePaneHeaderContent({ space, tabs }: SpacePaneHeaderContentProps) {
           className="flex-1 font-medium truncate cursor-pointer hover:text-foreground text-foreground/80"
           onDoubleClick={(e) => {
             e.stopPropagation();
-            setTitleValue(space.name);
-            setIsEditingTitle(true);
+            startEditingTitle();
           }}
         >
           {space.name}

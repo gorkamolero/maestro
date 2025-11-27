@@ -5,7 +5,7 @@ import {
   useActiveSpacePerformance,
   usePerformanceFormatters,
 } from '@/hooks/usePerformance';
-import { formatMemory, formatCpu } from '@/stores/performance.store';
+import { formatMemory } from '@/stores/performance.store';
 import { Activity, Cpu, HardDrive, Wifi, Layers } from 'lucide-react';
 
 export function StatusBar() {

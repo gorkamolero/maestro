@@ -1,10 +1,11 @@
-import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useSnapshot } from 'valtio';
 import { AnimatePresence } from 'motion/react';
 import { Play, Pencil, MoreHorizontal, Plus, Palette, Cpu, HardDrive, CheckSquare, FileText } from 'lucide-react';
 import { useSpaceTabsPerformance } from '@/hooks/usePerformance';
+import { useEditableTitle } from '@/hooks/useEditableTitle';
+import { useSpaceTasks } from '@/hooks/useSpaceTasks';
 import { formatMemory, formatCpu } from '@/stores/performance.store';
-import { useWorkspaceTasksStore } from '@/stores/workspace-tasks.store';
 import type { Space } from '@/types';
 import { SPACE_COLOR_PALETTE } from '@/types';
 import type { Tab } from '@/stores/workspace.store';
@@ -38,20 +39,24 @@ interface SpaceCardProps {
 }
 
 export function SpaceCard({ space, tabs }: SpaceCardProps) {
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [titleValue, setTitleValue] = useState(space.name);
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const titleInputRef = useRef<HTMLInputElement>(null);
   const { notifications } = useSnapshot(notificationsStore);
   const { totalMemoryKB, avgCpuPercent } = useSpaceTabsPerformance(space.id);
-  const { tasks: allTasks } = useWorkspaceTasksStore();
+
+  // Editable title hook
+  const {
+    isEditing: isEditingTitle,
+    value: titleValue,
+    setValue: setTitleValue,
+    inputRef: titleInputRef,
+    startEditing: startEditingTitle,
+    save: saveTitle,
+    handleKeyDown: handleTitleKeyDown,
+  } = useEditableTitle({ spaceId: space.id, spaceName: space.name });
 
   // Get tasks for this space
-  const spaceTasks = useMemo(
-    () => allTasks.filter((t) => t.spaceId === space.id),
-    [allTasks, space.id]
-  );
+  const { tasks: spaceTasks } = useSpaceTasks(space.id);
 
   // Get latest notification for this space
   const latestNotification = useMemo(() => {
@@ -76,44 +81,6 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
 
 
 
-  // ============================================================================
-  // Inline Title Editing
-  // ============================================================================
-
-  useEffect(() => {
-    if (isEditingTitle && titleInputRef.current) {
-      titleInputRef.current.focus();
-      titleInputRef.current.select();
-    }
-  }, [isEditingTitle]);
-
-  const handleTitleDoubleClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    setTitleValue(space.name);
-    setIsEditingTitle(true);
-  }, [space.name]);
-
-  const handleTitleSave = useCallback(() => {
-    const trimmed = titleValue.trim();
-    if (trimmed && trimmed !== space.name) {
-      spacesActions.updateSpace(space.id, { name: trimmed });
-    }
-    setIsEditingTitle(false);
-  }, [titleValue, space.id, space.name]);
-
-  const handleTitleCancel = useCallback(() => {
-    setTitleValue(space.name);
-    setIsEditingTitle(false);
-  }, [space.name]);
-
-  const handleTitleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    e.stopPropagation();
-    if (e.key === 'Enter') {
-      handleTitleSave();
-    } else if (e.key === 'Escape') {
-      handleTitleCancel();
-    }
-  }, [handleTitleSave, handleTitleCancel]);
 
   // ============================================================================
   // Icon/Emoji Picker
@@ -207,7 +174,7 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
                 value={titleValue}
                 onChange={(e) => setTitleValue(e.target.value)}
                 onKeyDown={handleTitleKeyDown}
-                onBlur={handleTitleSave}
+                onBlur={saveTitle}
                 onClick={(e) => e.stopPropagation()}
                 className={cn(
                   'flex-1 bg-transparent font-medium text-sm outline-none min-w-0',
@@ -218,7 +185,10 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
               <h3
                 className="flex-1 font-medium text-sm truncate cursor-pointer text-foreground"
                 onClick={(e) => e.stopPropagation()}
-                onDoubleClick={handleTitleDoubleClick}
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  startEditingTitle();
+                }}
               >
                 {space.name}
               </h3>
@@ -250,8 +220,7 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      setTitleValue(space.name);
-                      setIsEditingTitle(true);
+                      startEditingTitle();
                     }}
                     className="p-1.5 rounded transition-colors opacity-0 group-hover:opacity-100 hover:bg-accent"
                   >
@@ -345,7 +314,7 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setIsEditingTitle(true)}>
+              <DropdownMenuItem onClick={() => startEditingTitle()}>
                 <Pencil className="w-4 h-4 mr-2" />
                 Rename
               </DropdownMenuItem>
