@@ -1,8 +1,9 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useSnapshot } from 'valtio';
 import { AnimatePresence } from 'motion/react';
-import { Play, Pencil, MoreHorizontal, Plus } from 'lucide-react';
+import { Play, Pencil, MoreHorizontal, Plus, Palette } from 'lucide-react';
 import type { Space } from '@/types';
+import { SPACE_COLOR_PALETTE } from '@/types';
 import type { Tab } from '@/stores/workspace.store';
 import { workspaceActions } from '@/stores/workspace.store';
 import { spacesActions } from '@/stores/spaces.store';
@@ -20,6 +21,9 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
 } from '@/components/ui/dropdown-menu';
 
 interface SpaceCardProps {
@@ -111,8 +115,12 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
     setIsEmojiPickerOpen(false);
   }, [space.id]);
 
+  const handleColorChange = useCallback((primary: string, secondary: string) => {
+    spacesActions.updateSpace(space.id, { primaryColor: primary, secondaryColor: secondary });
+  }, [space.id]);
+
   const handleDeleteSpace = useCallback(() => {
-    spacesActions.deleteSpace(space.id);
+    spacesActions.removeSpace(space.id);
   }, [space.id]);
 
   return (
@@ -292,6 +300,28 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
               <DropdownMenuItem onClick={handleIconClick}>
                 Change icon
               </DropdownMenuItem>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <Palette className="w-4 h-4 mr-2" />
+                  Change color
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  <div className="grid grid-cols-4 gap-1 p-2">
+                    {SPACE_COLOR_PALETTE.map((color) => (
+                      <button
+                        key={color.name}
+                        onClick={() => handleColorChange(color.primary, color.secondary)}
+                        className={cn(
+                          'w-6 h-6 rounded-full transition-transform hover:scale-110',
+                          space.primaryColor === color.primary && 'ring-2 ring-offset-2 ring-offset-popover ring-primary'
+                        )}
+                        style={{ backgroundColor: color.primary }}
+                        title={color.name}
+                      />
+                    ))}
+                  </div>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={handleDeleteSpace}

@@ -17,8 +17,9 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Check, Trash2, GripVertical } from 'lucide-react';
+import { Check, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   useWorkspaceTasksStore,
   workspaceTasksActions,
@@ -123,7 +124,7 @@ export function SpaceTasksSection({ spaceId }: SpaceTasksSectionProps) {
       </form>
 
       {/* Tasks list - scrollable */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
+      <ScrollArea className="flex-1 min-h-0">
         {tasks.length > 0 ? (
           <DndContext
             sensors={sensors}
@@ -134,7 +135,7 @@ export function SpaceTasksSection({ spaceId }: SpaceTasksSectionProps) {
               items={taskIds}
               strategy={verticalListSortingStrategy}
             >
-              <div className="space-y-1 pb-2">
+              <div className="space-y-1 pb-2 pr-2">
                 <AnimatePresence initial={false}>
                   {tasks.map((task) => (
                     <SortableTaskItem key={task.id} task={task} />
@@ -148,7 +149,7 @@ export function SpaceTasksSection({ spaceId }: SpaceTasksSectionProps) {
             No tasks yet
           </p>
         )}
-      </div>
+      </ScrollArea>
     </div>
   );
 }
@@ -175,10 +176,9 @@ function SortableTaskItem({ task }: SortableTaskItemProps) {
   };
 
   return (
-    <div ref={setNodeRef} style={style}>
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
       <TaskItem
         task={task}
-        dragHandleProps={{ ...attributes, ...listeners }}
         isDragging={isDragging}
       />
     </div>
@@ -187,11 +187,10 @@ function SortableTaskItem({ task }: SortableTaskItemProps) {
 
 interface TaskItemProps {
   task: WorkspaceTask;
-  dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
   isDragging?: boolean;
 }
 
-function TaskItem({ task, dragHandleProps, isDragging }: TaskItemProps) {
+function TaskItem({ task, isDragging }: TaskItemProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(task.content);
@@ -264,25 +263,13 @@ function TaskItem({ task, dragHandleProps, isDragging }: TaskItemProps) {
       exit={{ opacity: 0, x: -20 }}
       transition={{ duration: 0.2 }}
       className={cn(
-        'group/task flex items-start gap-2 p-2 rounded-lg transition-colors',
+        'group/task flex items-start gap-2 px-2 py-1.5 rounded-md transition-colors cursor-grab active:cursor-grabbing',
         'bg-muted/30 hover:bg-muted/50',
         isDragging && 'bg-muted/60 shadow-lg'
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Drag handle */}
-      <div
-        {...dragHandleProps}
-        className={cn(
-          'flex-shrink-0 cursor-grab active:cursor-grabbing mt-0.5 transition-colors',
-          'text-muted-foreground/50 hover:text-muted-foreground',
-          'opacity-0 group-hover/task:opacity-100'
-        )}
-      >
-        <GripVertical className="w-3 h-3" />
-      </div>
-
       {/* Checkbox */}
       <div
         onClick={handleToggle}

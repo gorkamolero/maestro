@@ -35,6 +35,23 @@ Note: Slash commands don't work in Happy Coder because it uses the Claude Code S
 - The dev server with hot reload is sufficient for testing
 - Only build when explicitly requested by the user for production
 
+### Building an Executable
+
+**When the user asks to build an executable, create a build, or deploy the app:**
+
+```bash
+npm run deploy
+```
+
+This command:
+1. Runs `npm run make` (electron-forge build)
+2. Removes any existing `/Applications/Maestro.app`
+3. Copies the new build to `/Applications/Maestro.app`
+
+The built artifacts are also available at:
+- App bundle: `out/Maestro-darwin-arm64/Maestro.app`
+- Zip: `out/make/zip/darwin/arm64/Maestro-darwin-arm64-{version}.zip`
+
 ### Code Style Rules
 
 **React imports:**
