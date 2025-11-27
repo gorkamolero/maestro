@@ -3,10 +3,12 @@ import { Plus } from 'lucide-react';
 import { useSpacesStore, spacesActions } from '@/stores/spaces.store';
 import { useWorkspaceStore } from '@/stores/workspace.store';
 import { SpaceCard } from './SpaceCard';
+import { SpacePanesView } from './SpacePanesView';
+import { SpaceViewModeSelector } from './SpaceViewModeSelector';
 import { cn } from '@/lib/utils';
 
 export function ControlRoom() {
-  const { spaces } = useSpacesStore();
+  const { spaces, viewMode } = useSpacesStore();
   const { tabs } = useWorkspaceStore();
 
   const handleNewSpace = useCallback(() => {
@@ -14,8 +16,27 @@ export function ControlRoom() {
     spacesActions.addSpace(name);
   }, [spaces.length]);
 
+  // Render panes view
+  if (viewMode === 'panes') {
+    return (
+      <div className="relative flex flex-col h-full bg-background">
+        {/* View mode selector - top right */}
+        <div className="absolute top-4 right-4 z-10">
+          <SpaceViewModeSelector />
+        </div>
+        <SpacePanesView />
+      </div>
+    );
+  }
+
+  // Render cards view (default)
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div className="relative flex flex-col h-full bg-background">
+      {/* View mode selector - top right */}
+      <div className="absolute top-4 right-4 z-10">
+        <SpaceViewModeSelector />
+      </div>
+
       {/* Horizontal scrolling spaces */}
       <div className="flex-1 flex items-stretch overflow-x-auto overflow-y-hidden px-6 py-6 gap-4">
         {spaces.map((space) => {

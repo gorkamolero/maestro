@@ -22,7 +22,7 @@ export function TabPreviewList({
   const hiddenCount = tabs.length - maxVisible;
 
   return (
-    <div className="grid grid-cols-4 gap-1.5">
+    <div className="flex flex-wrap gap-4">
       {visibleTabs.map((tab) => (
         <TabPreviewIcon
           key={tab.id}

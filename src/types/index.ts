@@ -89,6 +89,9 @@ export interface Workspace {
 // Space - Organizational unit within a Workspace
 // =============================================================================
 
+/** View mode for space content area */
+export type SpaceContentMode = 'tasks' | 'notes';
+
 export interface Space {
   id: string;
   name: string;
@@ -111,6 +114,10 @@ export interface Space {
   lastActiveAt: string | null;
   /** Recently used coding paths for agent tasks (most recent first) */
   recentCodingPaths?: string[];
+  /** Current content view mode (tasks or notes) */
+  contentMode?: SpaceContentMode;
+  /** Serialized Lexical editor state for notes */
+  notesContent?: string;
 }
 
 // Color palette for spaces - 8 professional color pairs

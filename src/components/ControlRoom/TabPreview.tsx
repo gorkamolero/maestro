@@ -146,7 +146,7 @@ export function TabPreviewIcon({ tab, onClick }: TabPreviewProps) {
     e.stopPropagation();
     // For app-launcher tabs, launch the app directly
     if (tab.type === 'app-launcher') {
-      launchTab(tab);
+      launchTab(tab.id);
     } else if (tab.type !== 'agent') {
       // For non-agent tabs, open in a floating window
       // Agent tabs are handled by the AgentDrawer

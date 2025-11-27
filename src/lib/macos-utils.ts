@@ -9,12 +9,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import open from 'open';
 import { openWindows as getWindows } from 'get-windows';
-import type {
-  ConnectedApp,
-  AppCapabilities,
-  RunningApp,
-  WindowState,
-} from '../types/launcher';
+import type { ConnectedApp, AppCapabilities, RunningApp, WindowState } from '../types/launcher';
 
 const execAsync = promisify(exec);
 
@@ -61,10 +56,7 @@ export async function getAppInfo(appPath: string): Promise<ConnectedApp> {
  * Extract app icon as base64 data URL
  * Icons are cached in userData directory to avoid reconverting every time
  */
-async function extractAppIcon(
-  appPath: string,
-  info: Record<string, unknown>
-): Promise<string> {
+async function extractAppIcon(appPath: string, info: Record<string, unknown>): Promise<string> {
   try {
     // Get icon file name from Info.plist
     const iconFileName = info.CFBundleIconFile as string | undefined;
@@ -73,9 +65,7 @@ async function extractAppIcon(
     }
 
     // Construct path to icon file
-    const iconName = iconFileName.endsWith('.icns')
-      ? iconFileName
-      : `${iconFileName}.icns`;
+    const iconName = iconFileName.endsWith('.icns') ? iconFileName : `${iconFileName}.icns`;
     const iconPath = path.join(appPath, 'Contents', 'Resources', iconName);
 
     // Create cache directory in userData
@@ -98,7 +88,9 @@ async function extractAppIcon(
 
     // Convert ICNS to PNG using macOS sips command
     // ICNS cannot be displayed in browsers, so we convert to PNG first
-    await execAsync(`sips -s format png "${iconPath}" --out "${cachedPngPath}" --resampleHeightWidth 64 64`);
+    await execAsync(
+      `sips -s format png "${iconPath}" --out "${cachedPngPath}" --resampleHeightWidth 64 64`
+    );
 
     // Read converted PNG and return as base64
     const pngData = await fs.readFile(cachedPngPath);
@@ -146,20 +138,39 @@ function extractCapabilities(info: Record<string, unknown>): AppCapabilities {
 }
 
 /**
+ * CLI commands for apps that need special handling when opening folders/files
+ * These apps don't work well with macOS `open -a` for folders
+ * Maps app name to absolute CLI path
+ */
+const APP_CLI_COMMANDS: Record<string, string> = {
+  'Zed.app': '/usr/local/bin/zed',
+  'Visual Studio Code.app': '/usr/local/bin/code',
+  'Cursor.app': '/usr/local/bin/cursor',
+  'Sublime Text.app': '/usr/local/bin/subl',
+};
+
+/**
  * Launch an application
  */
-export async function launchApp(
-  appPath: string,
-  filePath?: string,
-  wait = false
-): Promise<void> {
+export async function launchApp(appPath: string, filePath?: string, wait = false): Promise<void> {
   try {
     if (filePath) {
-      // Open file with specific app
-      await open(filePath, {
-        app: { name: appPath },
-        wait,
-      });
+      // Check if this app has a CLI command
+      const appName = path.basename(appPath);
+      const cliCommand = APP_CLI_COMMANDS[appName];
+
+      if (cliCommand) {
+        // Use the CLI command directly
+        const waitFlag = wait ? '--wait' : '';
+        const cmd = `${cliCommand} ${waitFlag} "${filePath}"`;
+        await execAsync(cmd);
+      } else {
+        // Open file with specific app using macOS open command
+        await open(filePath, {
+          app: { name: appPath },
+          wait,
+        });
+      }
     } else {
       // Just launch the app
       await open(appPath, { wait });
@@ -361,4 +372,3 @@ export async function getInstalledApps(): Promise<InstalledApp[]> {
 
   return apps;
 }
-

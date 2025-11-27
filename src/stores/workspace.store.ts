@@ -336,6 +336,7 @@ export const workspaceActions = {
       tab.appLauncherConfig.launchConfig = {
         ...tab.appLauncherConfig.launchConfig,
         filePath,
+        deepLink: null, // Clear deepLink when setting filePath (they're mutually exclusive)
         launchMethod: filePath ? 'file' : 'app-only',
       };
     }

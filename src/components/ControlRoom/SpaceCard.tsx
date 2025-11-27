@@ -11,6 +11,8 @@ import { notificationsStore, notificationsActions } from '@/stores/notifications
 import { cn } from '@/lib/utils';
 import { AttentionBubble } from './AttentionBubble';
 import { SpaceTasksSection } from './SpaceTasksSection';
+import { SpaceContentModeSelector } from './SpaceContentModeSelector';
+import { SpaceNotesEditor } from './SpaceNotesEditor';
 import { TabPreviewList } from './TabPreviewList';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AgentProgressBar } from './AgentProgressBar';
@@ -260,9 +262,18 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
           />
         </div>
 
-        {/* Tasks list - scrollable, takes remaining space */}
+        {/* Mode selector */}
+        <div className="px-3 pb-2">
+          <SpaceContentModeSelector spaceId={space.id} mode={space.contentMode || 'tasks'} />
+        </div>
+
+        {/* Content area - tasks or notes based on mode */}
         <div className="flex-1 overflow-hidden px-3">
-          <SpaceTasksSection spaceId={space.id} />
+          {(space.contentMode || 'tasks') === 'tasks' ? (
+            <SpaceTasksSection spaceId={space.id} />
+          ) : (
+            <SpaceNotesEditor spaceId={space.id} initialContent={space.notesContent} />
+          )}
         </div>
 
         {/* Footer */}

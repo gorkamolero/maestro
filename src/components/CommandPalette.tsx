@@ -165,7 +165,7 @@ export function CommandPalette({ onClose, isExiting = false }: CommandPalettePro
     // Get all enabled tabs for the active space and launch them
     const spaceTabs = tabs.filter((t) => t.spaceId === activeSpaceId && !t.disabled);
     spaceTabs.forEach((tab) => {
-      launchTab(tab);
+      launchTab(tab.id);
     });
     onClose();
   }, [activeSpaceId, tabs, onClose]);

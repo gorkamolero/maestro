@@ -41,12 +41,17 @@ export const launcherActions = {
   async registerApp(appPath: string): Promise<ConnectedApp> {
     const app = await invoke('launcher:register-app', appPath) as ConnectedApp;
 
-    // Check if app already exists
+    // Check if app already exists by bundleId
     const existingIndex = launcherStore.connectedApps.findIndex(
       (a) => a.bundleId === app.bundleId
     );
 
     if (existingIndex >= 0) {
+      // IMPORTANT: Preserve the original ID to maintain references from workspace tabs
+      // The IPC handler generates a new UUID each time, but we need to keep the original
+      // so that existing tabs with connectedAppId references continue to work
+      const existingApp = launcherStore.connectedApps[existingIndex];
+      app.id = existingApp.id;
       launcherStore.connectedApps[existingIndex] = app;
     } else {
       launcherStore.connectedApps.push(app);
@@ -113,6 +118,20 @@ export const launcherActions = {
 
   getConnectedApp(appId: string): ConnectedApp | undefined {
     return launcherStore.connectedApps.find((a) => a.id === appId);
+  },
+
+  /**
+   * Find a connected app by bundleId (useful for migration/recovery)
+   */
+  getConnectedAppByBundleId(bundleId: string): ConnectedApp | undefined {
+    return launcherStore.connectedApps.find((a) => a.bundleId === bundleId);
+  },
+
+  /**
+   * Find a connected app by name (fallback for when IDs are mismatched)
+   */
+  getConnectedAppByName(name: string): ConnectedApp | undefined {
+    return launcherStore.connectedApps.find((a) => a.name === name);
   },
 
   async getInstalledApps(): Promise<Array<{ name: string; path: string; bundleId: string | null; icon: string | null }>> {

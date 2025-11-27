@@ -1,16 +1,20 @@
 import { useSnapshot } from 'valtio';
 import { persistWithHistory } from '@/lib/persist-with-history';
-import type { Space, Segment } from '@/types';
+import type { Space, Segment, SpaceContentMode } from '@/types';
 import { SPACE_COLOR_PALETTE } from '@/types';
+
+export type SpacesViewMode = 'cards' | 'panes';
 
 interface SpacesState {
   spaces: Space[];
+  viewMode: SpacesViewMode;
 }
 
 // Create proxy with both history (undo/redo) and IndexedDB persistence
 const { history: spacesHistory } = await persistWithHistory<SpacesState>(
   {
     spaces: [],
+    viewMode: 'cards',
   },
   'maestro-spaces',
   {
@@ -197,5 +201,44 @@ export const spacesActions = {
     const store = getSpacesStore();
     const space = store.spaces.find((s) => s.id === spaceId);
     return space?.recentCodingPaths || [];
+  },
+
+  /**
+   * Set the view mode for spaces (cards or panes)
+   */
+  setViewMode: (mode: SpacesViewMode) => {
+    const store = getSpacesStore();
+    store.viewMode = mode;
+  },
+
+  /**
+   * Set the content mode for a space (tasks or notes)
+   */
+  setSpaceContentMode: (spaceId: string, mode: SpaceContentMode) => {
+    const store = getSpacesStore();
+    const space = store.spaces.find((s) => s.id === spaceId);
+    if (space) {
+      space.contentMode = mode;
+    }
+  },
+
+  /**
+   * Update the notes content for a space
+   */
+  setSpaceNotesContent: (spaceId: string, content: string) => {
+    const store = getSpacesStore();
+    const space = store.spaces.find((s) => s.id === spaceId);
+    if (space) {
+      space.notesContent = content;
+    }
+  },
+
+  /**
+   * Get the notes content for a space
+   */
+  getSpaceNotesContent: (spaceId: string): string | undefined => {
+    const store = getSpacesStore();
+    const space = store.spaces.find((s) => s.id === spaceId);
+    return space?.notesContent;
   },
 };
