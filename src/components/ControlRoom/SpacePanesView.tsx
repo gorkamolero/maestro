@@ -11,6 +11,7 @@ import { SpaceTasksSection } from './SpaceTasksSection';
 import { SpaceNotesEditor } from './SpaceNotesEditor';
 import { TagSelector } from './TagSelector';
 import { CollapsibleSection } from './CollapsibleSection';
+import { NextBubble } from './NextBubble';
 import { EmojiPickerComponent } from '@/components/ui/emoji-picker';
 import { cn } from '@/lib/utils';
 
@@ -201,6 +202,14 @@ const SpacePane = memo(function SpacePane({ space, tabs, index, totalPanes, isFo
         {/* Tabs section */}
         <div className="px-2 py-1.5 border-b border-border/30">
           <TabPreviewList tabs={tabs} spaceId={space.id} showAddButton={true} maxVisible={6} />
+        </div>
+
+        {/* What's Next bubble */}
+        <div className="px-2 py-1.5 border-b border-border/30">
+          <NextBubble
+            value={space.next}
+            onChange={(value) => spacesActions.updateSpace(space.id, { next: value })}
+          />
         </div>
 
         {/* Content area - collapsible Tasks and Notes sections */}

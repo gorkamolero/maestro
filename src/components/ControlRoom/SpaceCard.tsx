@@ -28,6 +28,7 @@ import { SpaceNotesEditor } from './SpaceNotesEditor';
 import { CollapsibleSection } from './CollapsibleSection';
 import { TabPreviewList } from './TabPreviewList';
 import { SpaceCardHeader } from './SpaceCardHeader';
+import { NextBubble } from './NextBubble';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AgentProgressBar } from './AgentProgressBar';
 import {
@@ -136,6 +137,14 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
           isEmojiPickerOpen={isEmojiPickerOpen}
           setIsEmojiPickerOpen={setIsEmojiPickerOpen}
         />
+
+        {/* What's Next bubble - primary focus indicator */}
+        <div className="px-3 pb-2">
+          <NextBubble
+            value={space.next}
+            onChange={(value) => spacesActions.updateSpace(space.id, { next: value })}
+          />
+        </div>
 
         {/* Tabs / Favorites */}
         <div className="px-3 pb-2">
