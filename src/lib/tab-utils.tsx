@@ -16,11 +16,7 @@ export function getTabIcon(tab: Tab, size: 'sm' | 'md' | 'lg' = 'md') {
     case 'app-launcher':
       if (tab.appLauncherConfig?.icon) {
         return (
-          <img
-            src={tab.appLauncherConfig.icon}
-            alt={tab.title}
-            className={`${imgSize} rounded`}
-          />
+          <img src={tab.appLauncherConfig.icon} alt={tab.title} className={`${imgSize} rounded`} />
         );
       }
       return <span className={sizeClass}>🚀</span>;

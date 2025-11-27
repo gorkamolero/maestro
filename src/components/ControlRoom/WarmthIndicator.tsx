@@ -11,8 +11,7 @@ interface WarmthIndicatorProps {
 export function getWarmth(lastActiveAt: string | null): Warmth {
   if (!lastActiveAt) return 'cold';
 
-  const hoursSince =
-    (Date.now() - new Date(lastActiveAt).getTime()) / (1000 * 60 * 60);
+  const hoursSince = (Date.now() - new Date(lastActiveAt).getTime()) / (1000 * 60 * 60);
 
   if (hoursSince < 1) return 'hot';
   if (hoursSince < 24) return 'warm';
@@ -32,13 +31,7 @@ export function WarmthIndicator({ lastActiveAt, className }: WarmthIndicatorProp
         warmth === 'cold' && 'bg-foreground/15',
         className
       )}
-      title={
-        warmth === 'hot'
-          ? 'Active now'
-          : warmth === 'warm'
-            ? 'Active today'
-            : 'Inactive'
-      }
+      title={warmth === 'hot' ? 'Active now' : warmth === 'warm' ? 'Active today' : 'Inactive'}
     />
   );
 }

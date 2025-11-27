@@ -6,12 +6,7 @@
  */
 
 import type { IPlatformBridge, PerformanceData, ViewMetrics } from './interface';
-import type {
-  BrowserViewOptions,
-  Terminal,
-  TerminalOptions,
-  UnlistenFn,
-} from './types';
+import type { BrowserViewOptions, Terminal, TerminalOptions, UnlistenFn } from './types';
 
 export class ElectronBridge implements IPlatformBridge {
   // ============================================================================
@@ -23,10 +18,7 @@ export class ElectronBridge implements IPlatformBridge {
     return window.electron.invoke(command, args);
   }
 
-  async listen<T = unknown>(
-    event: string,
-    handler: (payload: T) => void
-  ): Promise<UnlistenFn> {
+  async listen<T = unknown>(event: string, handler: (payload: T) => void): Promise<UnlistenFn> {
     // @ts-expect-error - window.electron will be added by Electron preload
     const unsubscribe = window.electron.on(event, (payload: T) => {
       handler(payload);
@@ -39,7 +31,10 @@ export class ElectronBridge implements IPlatformBridge {
   // ============================================================================
 
   async createBrowserView(options: BrowserViewOptions): Promise<string> {
-    return this.invoke<string>('create_browser_view', options as unknown as Record<string, unknown>);
+    return this.invoke<string>(
+      'create_browser_view',
+      options as unknown as Record<string, unknown>
+    );
   }
 
   async closeBrowserView(label: string): Promise<void> {

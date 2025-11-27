@@ -84,7 +84,9 @@ interface AgentAnalyticsAPI {
 
 interface AgentAPI {
   // Session control
-  start: (options: AgentStartOptions) => Promise<{ success: boolean; error?: string; worktreePath?: string }>;
+  start: (
+    options: AgentStartOptions
+  ) => Promise<{ success: boolean; error?: string; worktreePath?: string }>;
   stop: (sessionId: string) => Promise<{ success: boolean }>;
   isActive: (sessionId: string) => Promise<boolean>;
 

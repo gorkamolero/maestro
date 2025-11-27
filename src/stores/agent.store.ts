@@ -1,4 +1,5 @@
 import { proxy, useSnapshot } from 'valtio';
+import { TERMINAL_LINES_BUFFER_SIZE } from '@/lib/constants';
 
 export type AgentStatus =
   | 'idle'
@@ -74,11 +75,7 @@ export const agentActions = {
     return session;
   },
 
-  updateStatus: (
-    sessionId: string,
-    status: AgentStatus,
-    details?: Partial<AgentSession>
-  ) => {
+  updateStatus: (sessionId: string, status: AgentStatus, details?: Partial<AgentSession>): void => {
     const session = agentStore.sessions.find((s) => s.id === sessionId);
     if (session) {
       session.status = status;
@@ -91,13 +88,13 @@ export const agentActions = {
     }
   },
 
-  appendTerminalLine: (sessionId: string, line: string) => {
+  appendTerminalLine: (sessionId: string, line: string): void => {
     const session = agentStore.sessions.find((s) => s.id === sessionId);
     if (session) {
       session.terminalLines.push(line);
-      // Keep only last 100 lines
-      if (session.terminalLines.length > 100) {
-        session.terminalLines = session.terminalLines.slice(-100);
+      // Keep only last N lines
+      if (session.terminalLines.length > TERMINAL_LINES_BUFFER_SIZE) {
+        session.terminalLines = session.terminalLines.slice(-TERMINAL_LINES_BUFFER_SIZE);
       }
     }
   },
@@ -116,7 +113,7 @@ export const agentActions = {
     );
   },
 
-  clearSession: (sessionId: string) => {
+  clearSession: (sessionId: string): void => {
     const index = agentStore.sessions.findIndex((s) => s.id === sessionId);
     if (index !== -1) {
       agentStore.sessions.splice(index, 1);

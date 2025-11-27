@@ -27,9 +27,7 @@ export function SpacePanesView() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { spaces } = useSpacesStore();
   const { tabs } = useWorkspaceStore();
-  const [focusedSpaceId, setFocusedSpaceId] = useState<string | null>(
-    spaces[0]?.id || null
-  );
+  const [focusedSpaceId, setFocusedSpaceId] = useState<string | null>(spaces[0]?.id || null);
 
   // Get tabs for a space
   const getSpaceTabs = useCallback(
@@ -44,7 +42,10 @@ export function SpacePanesView() {
     // Scroll to the new pane
     setTimeout(() => {
       if (containerRef.current) {
-        containerRef.current.scrollTo({ left: containerRef.current.scrollWidth, behavior: 'smooth' });
+        containerRef.current.scrollTo({
+          left: containerRef.current.scrollWidth,
+          behavior: 'smooth',
+        });
       }
     }, 50);
   }, [spaces.length]);
@@ -161,9 +162,8 @@ function SpacePane({ space, tabs, index, totalPanes, isFocused, onClick }: Space
           background: space.primaryColor
             ? `linear-gradient(180deg, color-mix(in srgb, ${space.primaryColor} 10%, rgb(16, 17, 19)) 0%, rgb(12, 13, 15) 100%)`
             : 'linear-gradient(180deg, rgb(18, 19, 21) 0%, rgb(12, 13, 15) 100%)',
-          boxShadow: isFocused && space.primaryColor
-            ? `inset 0 0 30px ${space.primaryColor}25`
-            : undefined,
+          boxShadow:
+            isFocused && space.primaryColor ? `inset 0 0 30px ${space.primaryColor}25` : undefined,
         }}
       >
         {/* Rotated title text */}
@@ -176,7 +176,9 @@ function SpacePane({ space, tabs, index, totalPanes, isFocused, onClick }: Space
         >
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
             <span className="text-sm">{space.icon || '📁'}</span>
-            <span className="truncate" style={{ maxWidth: '60vh' }}>{space.name}</span>
+            <span className="truncate" style={{ maxWidth: '60vh' }}>
+              {space.name}
+            </span>
           </div>
         </div>
       </div>
@@ -198,12 +200,7 @@ function SpacePane({ space, tabs, index, totalPanes, isFocused, onClick }: Space
         </div>
         {/* Tabs section */}
         <div className="px-2 py-1.5 border-b border-border/30">
-          <TabPreviewList
-            tabs={tabs}
-            spaceId={space.id}
-            showAddButton={true}
-            maxVisible={6}
-          />
+          <TabPreviewList tabs={tabs} spaceId={space.id} showAddButton={true} maxVisible={6} />
         </div>
 
         {/* Content area - collapsible Tasks and Notes sections */}
@@ -253,10 +250,13 @@ function SpacePaneHeaderContent({ space, tabs }: SpacePaneHeaderContentProps) {
     handleKeyDown: handleTitleKeyDown,
   } = useEditableTitle({ spaceId: space.id, spaceName: space.name });
 
-  const handleIconChange = useCallback((emoji: string) => {
-    spacesActions.updateSpace(space.id, { icon: emoji });
-    setIsEmojiPickerOpen(false);
-  }, [space.id]);
+  const handleIconChange = useCallback(
+    (emoji: string) => {
+      spacesActions.updateSpace(space.id, { icon: emoji });
+      setIsEmojiPickerOpen(false);
+    },
+    [space.id]
+  );
 
   return (
     <>
@@ -304,9 +304,7 @@ function SpacePaneHeaderContent({ space, tabs }: SpacePaneHeaderContentProps) {
 
       {/* Tab count badge */}
       {tabs.length > 0 && (
-        <span className="text-muted-foreground/60 tabular-nums">
-          {tabs.length}
-        </span>
+        <span className="text-muted-foreground/60 tabular-nums">{tabs.length}</span>
       )}
 
       {/* Tags */}
@@ -314,5 +312,3 @@ function SpacePaneHeaderContent({ space, tabs }: SpacePaneHeaderContentProps) {
     </>
   );
 }
-
-

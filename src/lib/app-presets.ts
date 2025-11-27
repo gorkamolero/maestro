@@ -28,9 +28,21 @@ export const APP_PRESETS: Record<string, AppPreset> = {
 
   // Design Tools - deeplink-based
   'com.figma.Desktop': { contextType: 'deeplink', captureHint: 'Copy link from Figma (⌘L)' },
-  'com.bohemiancoding.sketch3': { contextType: 'file', captureHint: 'Select Sketch file', fileTypes: ['sketch'] },
-  'com.adobe.illustrator': { contextType: 'file', captureHint: 'Select Illustrator file', fileTypes: ['ai', 'eps'] },
-  'com.adobe.Photoshop': { contextType: 'file', captureHint: 'Select Photoshop file', fileTypes: ['psd'] },
+  'com.bohemiancoding.sketch3': {
+    contextType: 'file',
+    captureHint: 'Select Sketch file',
+    fileTypes: ['sketch'],
+  },
+  'com.adobe.illustrator': {
+    contextType: 'file',
+    captureHint: 'Select Illustrator file',
+    fileTypes: ['ai', 'eps'],
+  },
+  'com.adobe.Photoshop': {
+    contextType: 'file',
+    captureHint: 'Select Photoshop file',
+    fileTypes: ['psd'],
+  },
 
   // Browsers - URL-based
   'com.google.Chrome': { contextType: 'url', captureHint: 'Enter URL to open' },
@@ -40,7 +52,10 @@ export const APP_PRESETS: Record<string, AppPreset> = {
   'com.brave.Browser': { contextType: 'url', captureHint: 'Enter URL to open' },
 
   // Communication - deeplink-based
-  'com.tinyspeck.slackmacgap': { contextType: 'deeplink', captureHint: 'Copy link to channel/message' },
+  'com.tinyspeck.slackmacgap': {
+    contextType: 'deeplink',
+    captureHint: 'Copy link to channel/message',
+  },
   'com.microsoft.teams2': { contextType: 'deeplink', captureHint: 'Copy link to channel/chat' },
   'ru.keepcoder.Telegram': { contextType: 'deeplink', captureHint: 'Copy link to chat' },
   'com.hnc.Discord': { contextType: 'deeplink', captureHint: 'Copy link to channel' },
@@ -52,10 +67,26 @@ export const APP_PRESETS: Record<string, AppPreset> = {
   'com.electron.asana2': { contextType: 'deeplink', captureHint: 'Copy link to task or project' },
 
   // File-based apps
-  'com.apple.Preview': { contextType: 'file', captureHint: 'Select file to open', fileTypes: ['pdf', 'png', 'jpg', 'jpeg', 'gif'] },
-  'com.apple.iWork.Pages': { contextType: 'file', captureHint: 'Select Pages document', fileTypes: ['pages'] },
-  'com.apple.iWork.Numbers': { contextType: 'file', captureHint: 'Select Numbers spreadsheet', fileTypes: ['numbers'] },
-  'com.apple.iWork.Keynote': { contextType: 'file', captureHint: 'Select Keynote presentation', fileTypes: ['key'] },
+  'com.apple.Preview': {
+    contextType: 'file',
+    captureHint: 'Select file to open',
+    fileTypes: ['pdf', 'png', 'jpg', 'jpeg', 'gif'],
+  },
+  'com.apple.iWork.Pages': {
+    contextType: 'file',
+    captureHint: 'Select Pages document',
+    fileTypes: ['pages'],
+  },
+  'com.apple.iWork.Numbers': {
+    contextType: 'file',
+    captureHint: 'Select Numbers spreadsheet',
+    fileTypes: ['numbers'],
+  },
+  'com.apple.iWork.Keynote': {
+    contextType: 'file',
+    captureHint: 'Select Keynote presentation',
+    fileTypes: ['key'],
+  },
 
   // Terminal apps - folder-based
   'com.apple.Terminal': { contextType: 'folder', captureHint: 'Select working directory' },
@@ -115,10 +146,15 @@ function inferContextType(app: ConnectedApp): AppPreset {
  */
 export function getContextTypeLabel(type: ContextType): string {
   switch (type) {
-    case 'folder': return 'Project Folder';
-    case 'file': return 'File';
-    case 'deeplink': return 'Link';
-    case 'url': return 'URL';
-    case 'none': return 'None';
+    case 'folder':
+      return 'Project Folder';
+    case 'file':
+      return 'File';
+    case 'deeplink':
+      return 'Link';
+    case 'url':
+      return 'URL';
+    case 'none':
+      return 'None';
   }
 }

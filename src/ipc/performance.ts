@@ -60,7 +60,7 @@ async function collectMetrics(
   let totalMemoryKB = 0;
 
   // Map process IDs to their metrics
-  const processMetrics = new Map<number, typeof appMetrics[0]>();
+  const processMetrics = new Map<number, (typeof appMetrics)[0]>();
   for (const metric of appMetrics) {
     processMetrics.set(metric.pid, metric);
     totalMemoryKB += metric.memory.workingSetSize;
@@ -215,7 +215,7 @@ export function registerPerformanceHandlers(
       const webContents = viewInfo.view.webContents;
       const pid = webContents.getOSProcessId();
       const appMetrics = app.getAppMetrics();
-      const processInfo = appMetrics.find(m => m.pid === pid);
+      const processInfo = appMetrics.find((m) => m.pid === pid);
 
       return {
         label,

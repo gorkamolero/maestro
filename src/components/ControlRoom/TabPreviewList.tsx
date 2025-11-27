@@ -1,5 +1,6 @@
 import { Plus } from 'lucide-react';
 import type { Tab } from '@/stores/workspace.store';
+import { TAB_PREVIEW_MAX_VISIBLE } from '@/lib/constants';
 import { TabPreviewIcon } from './TabPreview';
 import { AddTabPopover } from './AddTabPopover';
 
@@ -16,7 +17,7 @@ export function TabPreviewList({
   spaceId,
   onTabClick,
   showAddButton = true,
-  maxVisible = 12,
+  maxVisible = TAB_PREVIEW_MAX_VISIBLE,
 }: TabPreviewListProps) {
   const visibleTabs = tabs.slice(0, maxVisible);
   const hiddenCount = tabs.length - maxVisible;

@@ -46,7 +46,15 @@ const theme = {
   },
 };
 
-const nodes = [HeadingNode, QuoteNode, ListNode, ListItemNode, CodeNode, LinkNode, HorizontalRuleNode];
+const nodes = [
+  HeadingNode,
+  QuoteNode,
+  ListNode,
+  ListItemNode,
+  CodeNode,
+  LinkNode,
+  HorizontalRuleNode,
+];
 
 export function SpaceNotesEditor({ spaceId, initialContent }: SpaceNotesEditorProps) {
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);

@@ -76,7 +76,14 @@ export class AgentService {
   // Enable mock mode for development/testing without real SDK
   private mockMode = process.env.AGENT_MOCK === 'true';
 
-  async startSession({ sessionId, workDir, prompt, permissionMode, allowedTools, window }: AgentOptions) {
+  async startSession({
+    sessionId,
+    workDir,
+    prompt,
+    permissionMode,
+    allowedTools,
+    window,
+  }: AgentOptions) {
     console.log('[AgentService] Starting session:', {
       sessionId,
       workDir,
@@ -111,7 +118,7 @@ export class AgentService {
       // Create hook callbacks with proper SDK signatures
       const preToolUseHook: HookCallback = async (input, toolUseID, options) => {
         void toolUseID; // Required by SDK signature but not used here
-        void options;   // Required by SDK signature but not used here
+        void options; // Required by SDK signature but not used here
         const hookInput = input as PreToolUseHookInput;
         const toolName = hookInput.tool_name;
         const toolInput = hookInput.tool_input as Record<string, unknown>;
@@ -173,7 +180,11 @@ export class AgentService {
           title: hookInput.title,
           message: hookInput.message,
         });
-        this.emitTerminalLine(window, sessionId, `⚠ ${hookInput.title || hookInput.notification_type}: ${hookInput.message}`);
+        this.emitTerminalLine(
+          window,
+          sessionId,
+          `⚠ ${hookInput.title || hookInput.notification_type}: ${hookInput.message}`
+        );
         return { continue: true };
       };
 
@@ -219,7 +230,11 @@ export class AgentService {
           subagentId: hookInput.agent_id,
           subagentType: hookInput.agent_type,
         });
-        this.emitTerminalLine(window, sessionId, `● Subagent started: ${hookInput.agent_type} (${hookInput.agent_id.slice(0, 8)})`);
+        this.emitTerminalLine(
+          window,
+          sessionId,
+          `● Subagent started: ${hookInput.agent_type} (${hookInput.agent_id.slice(0, 8)})`
+        );
         return { continue: true };
       };
 
@@ -231,7 +246,11 @@ export class AgentService {
         if (currentSession && currentSession.subagentCount > 0) {
           currentSession.subagentCount--;
         }
-        this.emitTerminalLine(window, sessionId, `✓ Subagent completed: ${hookInput.agent_id.slice(0, 8)}`);
+        this.emitTerminalLine(
+          window,
+          sessionId,
+          `✓ Subagent completed: ${hookInput.agent_id.slice(0, 8)}`
+        );
         return { continue: true };
       };
 
@@ -306,7 +325,11 @@ export class AgentService {
   }
 
   private processSDKMessage(window: BrowserWindow, sessionId: string, message: SDKMessage) {
-    console.log('[AgentService] SDK message:', message.type, 'subtype' in message ? message.subtype : '');
+    console.log(
+      '[AgentService] SDK message:',
+      message.type,
+      'subtype' in message ? message.subtype : ''
+    );
 
     switch (message.type) {
       case 'assistant':
@@ -332,9 +355,12 @@ export class AgentService {
         const currentSession = this.sessions.get(sessionId);
         if (message.is_error) {
           // Error result - could be billing, API error, etc.
-          const errorMsg = 'result' in message && message.result
-            ? message.result
-            : ('errors' in message ? message.errors.join(', ') : message.subtype);
+          const errorMsg =
+            'result' in message && message.result
+              ? message.result
+              : 'errors' in message
+                ? message.errors.join(', ')
+                : message.subtype;
 
           // Mark that we already handled an error
           if (currentSession) {
@@ -442,7 +468,11 @@ export class AgentService {
       { status: 'thinking' as AgentStatus, line: '● Planning approach...', delay: 1000 },
       { status: 'running-command' as AgentStatus, line: '> git status', delay: 500 },
       { status: 'thinking' as AgentStatus, line: '✓ Command completed', delay: 300 },
-      { status: 'editing' as AgentStatus, line: '● Editing src/components/Example.tsx', delay: 1200 },
+      {
+        status: 'editing' as AgentStatus,
+        line: '● Editing src/components/Example.tsx',
+        delay: 1200,
+      },
       { status: 'thinking' as AgentStatus, line: '✓ File saved', delay: 300 },
       { status: 'running-command' as AgentStatus, line: '> pnpm lint', delay: 800 },
       { status: 'thinking' as AgentStatus, line: '✓ Lint passed', delay: 300 },

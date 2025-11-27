@@ -5,11 +5,8 @@ import { spacesActions } from '@/stores/spaces.store';
 import { cn } from '@/lib/utils';
 import { TagBadge } from './TagBadge';
 import { TAG_COLOR_PALETTE } from '@/types';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { ColorPaletteSelector } from '@/components/ui/color-palette-selector';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface TagSelectorProps {
   spaceId: string;
@@ -106,9 +103,7 @@ export function TagSelector({ spaceId, spaceTags, className }: TagSelectorProps)
                       )}
                     >
                       <TagBadge tag={tag} size="sm" />
-                      {isSelected && (
-                        <Check className="w-3.5 h-3.5 text-primary" />
-                      )}
+                      {isSelected && <Check className="w-3.5 h-3.5 text-primary" />}
                     </button>
                   );
                 })}
@@ -138,23 +133,13 @@ export function TagSelector({ spaceId, spaceTags, className }: TagSelectorProps)
                 )}
               />
               {/* Color picker */}
-              <div className="flex flex-wrap gap-1.5">
-                {TAG_COLOR_PALETTE.map((color, index) => (
-                  <button
-                    key={color}
-                    type="button"
-                    onClick={() => setSelectedColorIndex(index)}
-                    className={cn(
-                      'w-5 h-5 rounded-full transition-all duration-200',
-                      'hover:scale-110',
-                      selectedColorIndex === index
-                        ? 'ring-2 ring-white/50 scale-110'
-                        : 'opacity-60 hover:opacity-100'
-                    )}
-                    style={{ backgroundColor: color }}
-                  />
-                ))}
-              </div>
+              <ColorPaletteSelector
+                colors={TAG_COLOR_PALETTE}
+                selectedIndex={selectedColorIndex}
+                onSelect={(_, index) => setSelectedColorIndex(index)}
+                size="sm"
+                columns={5}
+              />
               {/* Actions */}
               <div className="flex items-center gap-1.5 justify-end pt-1">
                 <button

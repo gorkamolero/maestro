@@ -161,7 +161,11 @@ export function AgentTerminal({ sessionId, className, onReady }: AgentTerminalPr
  */
 export function useAgentTerminal(sessionId: string) {
   const startPtySession = useCallback(
-    async (workDir: string, prompt: string, permissionMode: 'acceptEdits' | 'askUser' | 'planOnly') => {
+    async (
+      workDir: string,
+      prompt: string,
+      permissionMode: 'acceptEdits' | 'askUser' | 'planOnly'
+    ) => {
       return window.agent.start({
         sessionId,
         workDir,

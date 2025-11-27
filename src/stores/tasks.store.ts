@@ -89,11 +89,14 @@ export function useTasksStore() {
 // Computed values
 export const tasksComputed = {
   get tasksByBoard(): Record<string, Task[]> {
-    return getTasksStore().tasks.reduce((acc, task) => {
-      if (!acc[task.boardTabId]) acc[task.boardTabId] = [];
-      acc[task.boardTabId].push(task);
-      return acc;
-    }, {} as Record<string, Task[]>);
+    return getTasksStore().tasks.reduce(
+      (acc, task) => {
+        if (!acc[task.boardTabId]) acc[task.boardTabId] = [];
+        acc[task.boardTabId].push(task);
+        return acc;
+      },
+      {} as Record<string, Task[]>
+    );
   },
 
   get activeTasks(): Task[] {
@@ -118,9 +121,7 @@ export const tasksComputed = {
   },
 
   getTasksByStatus(boardTabId: string, status: TaskStatus): Task[] {
-    return getTasksStore().tasks.filter(
-      (t) => t.boardTabId === boardTabId && t.status === status
-    );
+    return getTasksStore().tasks.filter((t) => t.boardTabId === boardTabId && t.status === status);
   },
 };
 
@@ -267,9 +268,7 @@ setInterval(() => {
     if (session && !session.endedAt) {
       // Calculate elapsed time
       const elapsed = Date.now() - new Date(session.startedAt).getTime();
-      const previousTime = task.sessions
-        .slice(0, -1)
-        .reduce((sum, s) => sum + s.duration, 0);
+      const previousTime = task.sessions.slice(0, -1).reduce((sum, s) => sum + s.duration, 0);
       task.timeSpent = previousTime + elapsed;
     }
   });

@@ -164,9 +164,12 @@ export class GitWorktreeService {
       if (status.trim()) {
         // Commit changes in worktree
         await execAsync('git add -A', { cwd: worktreeInfo.worktreePath });
-        await execAsync(`git commit -m "${commitMessage || `Maestro session ${sessionId.slice(0, 8)}`}"`, {
-          cwd: worktreeInfo.worktreePath,
-        });
+        await execAsync(
+          `git commit -m "${commitMessage || `Maestro session ${sessionId.slice(0, 8)}`}"`,
+          {
+            cwd: worktreeInfo.worktreePath,
+          }
+        );
       }
 
       // Get the original branch
@@ -179,7 +182,12 @@ export class GitWorktreeService {
         cwd: worktreeInfo.originalDir,
       });
 
-      console.log('[GitWorktreeService] Merged worktree:', sessionId, 'into', originalBranch.trim());
+      console.log(
+        '[GitWorktreeService] Merged worktree:',
+        sessionId,
+        'into',
+        originalBranch.trim()
+      );
       return true;
     } catch (error) {
       console.error('[GitWorktreeService] Failed to merge worktree:', error);

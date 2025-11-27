@@ -1,12 +1,12 @@
 export function warnOnlyOnce(message: string) {
-  if (process.env.NODE_ENV === "production") {
-    return
+  if (process.env.NODE_ENV === 'production') {
+    return;
   }
-  let run = false
+  let run = false;
   return () => {
     if (!run) {
-      console.warn(message)
+      console.warn(message);
     }
-    run = true
-  }
+    run = true;
+  };
 }

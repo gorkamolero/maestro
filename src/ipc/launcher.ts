@@ -4,11 +4,7 @@
  */
 
 import { ipcMain, dialog } from 'electron';
-import type {
-  ConnectedApp,
-  RunningApp,
-  WindowState,
-} from '../types/launcher';
+import type { ConnectedApp, RunningApp, WindowState } from '../types/launcher';
 import * as macosUtils from '../lib/macos-utils';
 
 // In-memory storage for connected apps
@@ -51,7 +47,6 @@ export function registerLauncherHandlers() {
     }
   );
 
-
   /**
    * Get list of running applications
    */
@@ -62,12 +57,9 @@ export function registerLauncherHandlers() {
   /**
    * Check if a specific app is running
    */
-  ipcMain.handle(
-    'launcher:is-app-running',
-    async (_event, bundleId: string): Promise<boolean> => {
-      return await macosUtils.isAppRunning(bundleId);
-    }
-  );
+  ipcMain.handle('launcher:is-app-running', async (_event, bundleId: string): Promise<boolean> => {
+    return await macosUtils.isAppRunning(bundleId);
+  });
 
   /**
    * Bring app to front
@@ -103,32 +95,29 @@ export function registerLauncherHandlers() {
   /**
    * Open native file picker to select a file for an app
    */
-  ipcMain.handle(
-    'launcher:pick-file',
-    async (_event, appId: string): Promise<string | null> => {
-      const app = connectedApps.get(appId);
-      if (!app) {
-        return null;
-      }
-
-      const filters = [];
-      if (app.capabilities.fileAssociations.length > 0) {
-        filters.push({
-          name: 'Supported Files',
-          extensions: app.capabilities.fileAssociations,
-        });
-      }
-      filters.push({ name: 'All Files', extensions: ['*'] });
-
-      const result = await dialog.showOpenDialog({
-        title: 'Select File',
-        properties: ['openFile'],
-        filters,
-      });
-
-      return result.canceled ? null : result.filePaths[0];
+  ipcMain.handle('launcher:pick-file', async (_event, appId: string): Promise<string | null> => {
+    const app = connectedApps.get(appId);
+    if (!app) {
+      return null;
     }
-  );
+
+    const filters = [];
+    if (app.capabilities.fileAssociations.length > 0) {
+      filters.push({
+        name: 'Supported Files',
+        extensions: app.capabilities.fileAssociations,
+      });
+    }
+    filters.push({ name: 'All Files', extensions: ['*'] });
+
+    const result = await dialog.showOpenDialog({
+      title: 'Select File',
+      properties: ['openFile'],
+      filters,
+    });
+
+    return result.canceled ? null : result.filePaths[0];
+  });
 
   /**
    * Launch app with deep link
@@ -140,9 +129,12 @@ export function registerLauncherHandlers() {
   /**
    * Launch app with file
    */
-  ipcMain.handle('launcher:launch-with-file', async (_event, appPath: string, filePath: string): Promise<void> => {
-    await macosUtils.launchApp(appPath, filePath);
-  });
+  ipcMain.handle(
+    'launcher:launch-with-file',
+    async (_event, appPath: string, filePath: string): Promise<void> => {
+      await macosUtils.launchApp(appPath, filePath);
+    }
+  );
 
   /**
    * Launch app only
@@ -175,10 +167,7 @@ export function registerLauncherHandlers() {
    */
   ipcMain.handle(
     'dialog:openFile',
-    async (
-      _event,
-      filters?: { name: string; extensions: string[] }[]
-    ): Promise<string | null> => {
+    async (_event, filters?: { name: string; extensions: string[] }[]): Promise<string | null> => {
       const result = await dialog.showOpenDialog({
         title: 'Select File',
         properties: ['openFile'],

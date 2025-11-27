@@ -53,7 +53,6 @@ export function View({ children, backdrop = false, style = {} }: ViewProps) {
   const [layoutReady, setLayoutReady] = useState(false);
   const nodeRef = useRef<Yoga.YogaNode>();
 
-
   // Create yoga node once
   if (!nodeRef.current) {
     nodeRef.current = Yoga.Node.create();
@@ -165,7 +164,6 @@ export function View({ children, backdrop = false, style = {} }: ViewProps) {
       width: Math.round(layout.width),
       height: Math.round(layout.height),
     };
-
 
     return computedBounds;
     // eslint-disable-next-line react-hooks/exhaustive-deps

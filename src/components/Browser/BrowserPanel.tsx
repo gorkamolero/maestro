@@ -87,7 +87,7 @@ export function BrowserPanel({ tab, isActive }: BrowserPanelProps) {
 
   // Get the space this tab belongs to, then get its profile for session isolation
   const { spaces } = useSpacesStore();
-  const space = spaces.find(s => s.id === tab.spaceId);
+  const space = spaces.find((s) => s.id === tab.spaceId);
   const profile = space?.profileId ? getProfileById(space.profileId) : null;
 
   // Get reactive snapshot of browser state
@@ -196,14 +196,10 @@ export function BrowserPanel({ tab, isActive }: BrowserPanelProps) {
               </div>
 
               {/* Error heading */}
-              <h2 className="text-xl font-semibold mb-2 text-foreground">
-                Unable to load page
-              </h2>
+              <h2 className="text-xl font-semibold mb-2 text-foreground">Unable to load page</h2>
 
               {/* Error message */}
-              <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
-                {error}
-              </p>
+              <p className="text-sm text-muted-foreground mb-6 leading-relaxed">{error}</p>
 
               {/* Retry button */}
               <Button

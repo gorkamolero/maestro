@@ -2,7 +2,12 @@ import { useEffect, useState } from 'react';
 import { useSnapshot } from 'valtio';
 import { Play, Square, Eye } from 'lucide-react';
 import { toast } from 'sonner';
-import { agentStore, agentActions, type AgentStatus, type PermissionMode } from '@/stores/agent.store';
+import {
+  agentStore,
+  agentActions,
+  type AgentStatus,
+  type PermissionMode,
+} from '@/stores/agent.store';
 import { notificationsActions } from '@/stores/notifications.store';
 import type { Tab } from '@/stores/workspace.store';
 import { AgentAvatar } from './AgentAvatar';
@@ -117,8 +122,7 @@ export function AgentPanel({ tab }: AgentPanelProps) {
   const isRunning =
     session &&
     ['starting', 'thinking', 'editing', 'running-command', 'waiting'].includes(session.status);
-  const isFinished =
-    session && ['completed', 'error', 'stopped'].includes(session.status);
+  const isFinished = session && ['completed', 'error', 'stopped'].includes(session.status);
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -147,10 +151,7 @@ export function AgentPanel({ tab }: AgentPanelProps) {
 
           <div className="flex-1 bg-black/50 rounded-lg p-3 overflow-hidden">
             {session?.terminalLines.length ? (
-              <AgentActivityLog
-                lines={session.terminalLines}
-                className="h-full"
-              />
+              <AgentActivityLog lines={session.terminalLines} className="h-full" />
             ) : (
               <p className="text-gray-500 text-xs italic">
                 {session ? 'Waiting for activity...' : 'Start a task to see activity'}

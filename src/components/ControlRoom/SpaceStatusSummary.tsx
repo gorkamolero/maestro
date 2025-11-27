@@ -20,9 +20,5 @@ export function SpaceStatusSummary({ tabs, className }: SpaceStatusSummaryProps)
   if (browserCount > 0) parts.push(`${browserCount} browser`);
   if (appCount > 0) parts.push(`${appCount} app`);
 
-  return (
-    <p className={cn('text-xs text-muted-foreground', className)}>
-      {parts.join(' · ')}
-    </p>
-  );
+  return <p className={cn('text-xs text-muted-foreground', className)}>{parts.join(' · ')}</p>;
 }

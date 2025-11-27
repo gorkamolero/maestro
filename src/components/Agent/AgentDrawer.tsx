@@ -1,7 +1,23 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import { useSnapshot } from 'valtio';
-import { Play, Square, Eye, FolderOpen, ChevronRight, Maximize2, ArrowLeft, Bot, Coins } from 'lucide-react';
-import { agentStore, agentActions, type AgentStatus, type PermissionMode, type AgentUsage } from '@/stores/agent.store';
+import {
+  Play,
+  Square,
+  Eye,
+  FolderOpen,
+  ChevronRight,
+  Maximize2,
+  ArrowLeft,
+  Bot,
+  Coins,
+} from 'lucide-react';
+import {
+  agentStore,
+  agentActions,
+  type AgentStatus,
+  type PermissionMode,
+  type AgentUsage,
+} from '@/stores/agent.store';
 import { cn } from '@/lib/utils';
 import { AgentAvatar } from './AgentAvatar';
 import { AgentActivityLogCompact } from './AgentActivityLog';
@@ -137,7 +153,7 @@ function DefaultView() {
   const { setView } = useFamilyDrawer();
   const { tabId } = useAgentDrawerContext();
   const { sessions } = useSnapshot(agentStore);
-  const session = sessions.find(s => s.tabId === tabId);
+  const session = sessions.find((s) => s.tabId === tabId);
 
   // Redirect to appropriate view based on session status
   const sessionStatus = session?.status;
@@ -224,13 +240,7 @@ function CreateView() {
   const handleStart = async () => {
     if (!prompt.trim() || !workDir.trim()) return;
 
-    const session = agentActions.createSession(
-      tabId,
-      spaceId,
-      prompt,
-      workDir,
-      permissionMode
-    );
+    const session = agentActions.createSession(tabId, spaceId, prompt, workDir, permissionMode);
 
     await window.agent.start({
       sessionId: session.id,
@@ -289,12 +299,14 @@ function CreateView() {
 
           {/* Permission mode */}
           <div>
-            <label className="text-[15px] font-semibold text-foreground mb-2 block">Permission mode</label>
+            <label className="text-[15px] font-semibold text-foreground mb-2 block">
+              Permission mode
+            </label>
             <div className="space-y-2">
               {[
                 { value: 'acceptEdits', label: 'Auto-approve', desc: 'Agent edits without asking' },
                 { value: 'askUser', label: 'Ask first', desc: 'Confirm each edit' },
-                { value: 'planOnly', label: 'Plan only', desc: 'Suggest but don\'t apply' },
+                { value: 'planOnly', label: 'Plan only', desc: "Suggest but don't apply" },
               ].map((mode) => (
                 <button
                   key={mode.value}
@@ -306,10 +318,12 @@ function CreateView() {
                       : 'bg-muted/50 border border-transparent hover:bg-muted'
                   )}
                 >
-                  <div className={cn(
-                    'w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0',
-                    permissionMode === mode.value ? 'border-primary' : 'border-muted-foreground'
-                  )}>
+                  <div
+                    className={cn(
+                      'w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0',
+                      permissionMode === mode.value ? 'border-primary' : 'border-muted-foreground'
+                    )}
+                  >
                     {permissionMode === mode.value && (
                       <div className="w-2 h-2 rounded-full bg-primary" />
                     )}
@@ -329,7 +343,9 @@ function CreateView() {
             className="w-full flex items-center justify-between px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <span>Advanced options</span>
-            <ChevronRight className={cn('w-4 h-4 transition-transform', showAdvanced && 'rotate-90')} />
+            <ChevronRight
+              className={cn('w-4 h-4 transition-transform', showAdvanced && 'rotate-90')}
+            />
           </button>
 
           {/* Advanced options */}
@@ -341,19 +357,33 @@ function CreateView() {
                   onClick={() => setUseWorktree(!useWorktree)}
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors bg-muted/30 hover:bg-muted/50"
                 >
-                  <div className={cn(
-                    'w-4 h-4 rounded border-2 flex items-center justify-center shrink-0',
-                    useWorktree ? 'border-primary bg-primary' : 'border-muted-foreground'
-                  )}>
+                  <div
+                    className={cn(
+                      'w-4 h-4 rounded border-2 flex items-center justify-center shrink-0',
+                      useWorktree ? 'border-primary bg-primary' : 'border-muted-foreground'
+                    )}
+                  >
                     {useWorktree && (
-                      <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      <svg
+                        className="w-3 h-3 text-primary-foreground"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={3}
+                          d="M5 13l4 4L19 7"
+                        />
                       </svg>
                     )}
                   </div>
                   <div>
                     <p className="text-sm font-medium">Use git worktree</p>
-                    <p className="text-xs text-muted-foreground">Isolate session in separate branch</p>
+                    <p className="text-xs text-muted-foreground">
+                      Isolate session in separate branch
+                    </p>
                   </div>
                 </button>
               </div>
@@ -363,7 +393,9 @@ function CreateView() {
                 <label className="text-[15px] font-semibold text-foreground block">
                   Allowed tools
                   <span className="text-xs font-normal text-muted-foreground ml-2">
-                    {allowedTools.length === 0 ? '(all enabled)' : `(${allowedTools.length} selected)`}
+                    {allowedTools.length === 0
+                      ? '(all enabled)'
+                      : `(${allowedTools.length} selected)`}
                   </span>
                 </label>
                 <p className="text-xs text-muted-foreground mb-2">
@@ -405,8 +437,8 @@ function CreateView() {
         <FamilyDrawerSecondaryButton
           onClick={handleStart}
           className={cn(
-            "bg-primary text-primary-foreground",
-            (!prompt.trim() || !workDir.trim()) && "opacity-50 cursor-not-allowed"
+            'bg-primary text-primary-foreground',
+            (!prompt.trim() || !workDir.trim()) && 'opacity-50 cursor-not-allowed'
           )}
         >
           <Play className="w-4 h-4" /> Start
@@ -424,7 +456,7 @@ function RunningView() {
   const { setView } = useFamilyDrawer();
   const { tabId, onMaximize } = useAgentDrawerContext();
   const { sessions } = useSnapshot(agentStore);
-  const session = sessions.find(s => s.tabId === tabId);
+  const session = sessions.find((s) => s.tabId === tabId);
 
   // Redirect based on session state changes
   const sessionStatus = session?.status;
@@ -463,10 +495,7 @@ function RunningView() {
         <div className="mt-6 border-t border-border pt-6">
           <div className="bg-black/40 rounded-xl p-3 max-h-40 overflow-hidden">
             {session.terminalLines.length > 0 ? (
-              <AgentActivityLogCompact
-                lines={session.terminalLines}
-                maxLines={6}
-              />
+              <AgentActivityLogCompact lines={session.terminalLines} maxLines={6} />
             ) : (
               <p className="text-xs text-muted-foreground italic">Waiting for activity...</p>
             )}
@@ -512,7 +541,7 @@ function CompletedView() {
   const { setView } = useFamilyDrawer();
   const { tabId, onMaximize } = useAgentDrawerContext();
   const { sessions } = useSnapshot(agentStore);
-  const session = sessions.find(s => s.tabId === tabId);
+  const session = sessions.find((s) => s.tabId === tabId);
 
   const handleNewTask = () => {
     if (session) {
@@ -544,10 +573,7 @@ function CompletedView() {
           {/* Activity summary */}
           {session && session.terminalLines.length > 0 && (
             <div className="bg-black/40 rounded-xl p-3 max-h-32 overflow-hidden">
-              <AgentActivityLogCompact
-                lines={session.terminalLines.slice(-4)}
-                maxLines={4}
-              />
+              <AgentActivityLogCompact lines={session.terminalLines.slice(-4)} maxLines={4} />
             </div>
           )}
         </div>
@@ -582,7 +608,7 @@ function ErrorView() {
   const { setView } = useFamilyDrawer();
   const { tabId } = useAgentDrawerContext();
   const { sessions } = useSnapshot(agentStore);
-  const session = sessions.find(s => s.tabId === tabId);
+  const session = sessions.find((s) => s.tabId === tabId);
 
   const handleRetry = () => {
     setView('create');
@@ -616,10 +642,7 @@ function ErrorView() {
           {/* Activity log showing what happened */}
           {session && session.terminalLines.length > 0 && (
             <div className="bg-black/40 rounded-xl p-3 max-h-32 overflow-hidden">
-              <AgentActivityLogCompact
-                lines={session.terminalLines.slice(-4)}
-                maxLines={4}
-              />
+              <AgentActivityLogCompact lines={session.terminalLines.slice(-4)} maxLines={4} />
             </div>
           )}
         </div>
@@ -668,12 +691,14 @@ export function AgentDrawer({
   onMaximize,
 }: AgentDrawerProps) {
   const { sessions } = useSnapshot(agentStore);
-  const session = sessions.find(s => s.tabId === tabId);
+  const session = sessions.find((s) => s.tabId === tabId);
 
   // Determine initial view based on session state
   const getInitialView = () => {
     if (!session) return 'default';
-    if (['starting', 'thinking', 'editing', 'running-command', 'waiting'].includes(session.status)) {
+    if (
+      ['starting', 'thinking', 'editing', 'running-command', 'waiting'].includes(session.status)
+    ) {
       return 'running';
     }
     if (session.status === 'completed') return 'completed';
@@ -684,9 +709,7 @@ export function AgentDrawer({
   return (
     <AgentDrawerContext.Provider value={{ tabId, spaceId, defaultWorkDir, onMaximize }}>
       <FamilyDrawerRoot views={agentViews} defaultView={getInitialView()}>
-        <FamilyDrawerTrigger asChild>
-          {children}
-        </FamilyDrawerTrigger>
+        <FamilyDrawerTrigger asChild>{children}</FamilyDrawerTrigger>
 
         <FamilyDrawerPortal>
           <FamilyDrawerOverlay className="bg-black/50" />

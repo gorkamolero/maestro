@@ -31,9 +31,7 @@ export function CollapsibleSection({
         className={cn(
           'flex items-center gap-1.5 w-full font-medium transition-colors',
           'text-muted-foreground hover:text-foreground',
-          compact
-            ? 'h-6 px-1 text-[10px]'
-            : 'h-7 px-2 text-[11px] border-b border-white/[0.06]'
+          compact ? 'h-6 px-1 text-[10px]' : 'h-7 px-2 text-[11px] border-b border-white/[0.06]'
         )}
       >
         <ChevronRight

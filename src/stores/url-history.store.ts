@@ -30,9 +30,7 @@ export const urlHistoryActions = {
    * Add or update a URL in the history
    */
   addUrl(url: string, title = '') {
-    const existingIndex = urlHistoryStore.entries.findIndex(
-      (entry) => entry.url === url
-    );
+    const existingIndex = urlHistoryStore.entries.findIndex((entry) => entry.url === url);
 
     if (existingIndex >= 0) {
       // Update existing entry

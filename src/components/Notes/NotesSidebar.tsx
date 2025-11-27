@@ -75,9 +75,7 @@ export function NotesSidebar({ spaceId }: NotesSidebarProps) {
   };
 
   // Filter tree if searching
-  const filteredTree = searchQuery
-    ? tree.filter((node) => filterNode(node, searchQuery))
-    : tree;
+  const filteredTree = searchQuery ? tree.filter((node) => filterNode(node, searchQuery)) : tree;
 
   return (
     <div className="notes-sidebar h-full flex flex-col bg-background border-r border-border">
@@ -183,10 +181,7 @@ export function NotesSidebar({ spaceId }: NotesSidebarProps) {
           <div className="px-3 py-8 text-center text-sm text-muted-foreground">
             <FileText size={32} className="mx-auto mb-2 opacity-50" />
             <p>No notes yet</p>
-            <button
-              onClick={handleNewNote}
-              className="mt-2 text-xs text-primary hover:underline"
-            >
+            <button onClick={handleNewNote} className="mt-2 text-xs text-primary hover:underline">
               Create your first note
             </button>
           </div>
@@ -226,13 +221,15 @@ function TreeNodeComponent({ node, level }: TreeNodeComponentProps) {
   const snap = useSnapshot(notesStore);
 
   // Get the current name from the store (reactive) instead of the static node object
-  const currentItem = node.type === 'note'
-    ? snap.notes.find((n) => n.id === node.id)
-    : snap.folders.find((f) => f.id === node.id);
+  const currentItem =
+    node.type === 'note'
+      ? snap.notes.find((n) => n.id === node.id)
+      : snap.folders.find((f) => f.id === node.id);
 
   const displayName = currentItem?.name ?? node.name;
-  const isPinned = node.type === 'note' ? (currentItem as typeof snap.notes[0])?.isPinned : false;
-  const isExpanded = node.type === 'folder' ? (currentItem as typeof snap.folders[0])?.expanded : false;
+  const isPinned = node.type === 'note' ? (currentItem as (typeof snap.notes)[0])?.isPinned : false;
+  const isExpanded =
+    node.type === 'folder' ? (currentItem as (typeof snap.folders)[0])?.expanded : false;
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -327,9 +324,7 @@ function TreeNodeComponent({ node, level }: TreeNodeComponentProps) {
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={handleRename}>Rename</DropdownMenuItem>
             {node.type === 'note' && (
-              <DropdownMenuItem onClick={handlePin}>
-                {isPinned ? 'Unpin' : 'Pin'}
-              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handlePin}>{isPinned ? 'Unpin' : 'Pin'}</DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleDelete} className="text-destructive">

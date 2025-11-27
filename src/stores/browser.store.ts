@@ -49,11 +49,7 @@ export function getBrowserState(tabId: string, initialUrl: string): BrowserState
 }
 
 // Helper to update navigation state
-export function updateBrowserNavigation(
-  tabId: string,
-  url: string,
-  history: NavigationHistory
-) {
+export function updateBrowserNavigation(tabId: string, url: string, history: NavigationHistory) {
   const browser = browserStore.browsers[tabId];
   if (browser) {
     browser.url = url;

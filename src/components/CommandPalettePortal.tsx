@@ -49,23 +49,28 @@ export function CommandPalettePortal({ isOpen, onClose }: CommandPalettePortalPr
   return (
     <div>
       {/* Backdrop - full screen BrowserView, created first so it's behind */}
-      <View backdrop style={{
-        width: '100%',
-        height: '100%',
-      }}>
+      <View
+        backdrop
+        style={{
+          width: '100%',
+          height: '100%',
+        }}
+      >
         <PortalWindow onClose={onClose}>
           <BackdropContent onClose={onClose} />
         </PortalWindow>
       </View>
 
       {/* Content - centered BrowserView, created second so it's on top */}
-      <View style={{
-        width: '100%',
-        height: '100%',
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-      }}>
+      <View
+        style={{
+          width: '100%',
+          height: '100%',
+          flexDirection: 'row',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
         <View style={{ width: 640, height: 480 }}>
           <PortalWindow onClose={onClose}>
             <CommandPaletteContent onClose={onClose} />

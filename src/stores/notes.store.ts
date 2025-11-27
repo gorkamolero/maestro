@@ -86,11 +86,14 @@ export const notesStore = store;
 // Computed values
 export const notesComputed = {
   get notesBySpace(): Record<string, Note[]> {
-    return notesStore.notes.reduce((acc, note) => {
-      if (!acc[note.spaceId]) acc[note.spaceId] = [];
-      acc[note.spaceId].push(note);
-      return acc;
-    }, {} as Record<string, Note[]>);
+    return notesStore.notes.reduce(
+      (acc, note) => {
+        if (!acc[note.spaceId]) acc[note.spaceId] = [];
+        acc[note.spaceId].push(note);
+        return acc;
+      },
+      {} as Record<string, Note[]>
+    );
   },
 
   get recentNotes(): Note[] {
@@ -151,9 +154,10 @@ export const notesComputed = {
 
     // Build hierarchy
     nodeMap.forEach((node) => {
-      const item = node.type === 'folder'
-        ? folders.find((f) => f.id === node.id)
-        : notes.find((n) => n.id === node.id);
+      const item =
+        node.type === 'folder'
+          ? folders.find((f) => f.id === node.id)
+          : notes.find((n) => n.id === node.id);
 
       if (item?.parentId) {
         const parent = nodeMap.get(item.parentId);
@@ -198,9 +202,7 @@ export const notesComputed = {
     if (!query) return [];
 
     const lowerQuery = query.toLowerCase();
-    const notes = spaceId
-      ? notesComputed.getNotesBySpace(spaceId)
-      : notesStore.notes;
+    const notes = spaceId ? notesComputed.getNotesBySpace(spaceId) : notesStore.notes;
 
     return notes.filter((note) => {
       return (

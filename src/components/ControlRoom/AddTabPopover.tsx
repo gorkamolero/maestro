@@ -3,11 +3,7 @@ import { Terminal, Globe, AppWindow, CheckSquare, StickyNote, Bot } from 'lucide
 import { workspaceActions } from '@/stores/workspace.store';
 import { windowsActions } from '@/stores/windows.store';
 import { launcherActions } from '@/stores/launcher.store';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
 interface AddTabPopoverProps {
@@ -128,9 +124,7 @@ export function AddTabPopover({ spaceId, children }: AddTabPopoverProps) {
         }}
       >
         {isLoading ? (
-          <div className="py-3 px-2 text-center text-sm text-muted-foreground">
-            Loading...
-          </div>
+          <div className="py-3 px-2 text-center text-sm text-muted-foreground">Loading...</div>
         ) : (
           <div className="flex flex-col">
             {TAB_OPTIONS.map((option) => (

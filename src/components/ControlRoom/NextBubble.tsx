@@ -84,10 +84,7 @@ export function NextBubble({
     <button
       type="button"
       onClick={handleStartEdit}
-      className={cn(
-        'flex items-center gap-2 text-left w-full group/next',
-        className
-      )}
+      className={cn('flex items-center gap-2 text-left w-full group/next', className)}
     >
       <span className="text-muted-foreground text-xs">→</span>
       {isEmpty ? (

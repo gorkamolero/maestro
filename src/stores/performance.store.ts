@@ -118,7 +118,7 @@ export function getActiveSpaceMetrics(activeSpaceId: string | null): SpaceMetric
  * Get all app metrics for tabs in a space
  */
 export function getAppsForSpace(spaceId: string): AppMetrics[] {
-  return Object.values(performanceStore.apps).filter(app => {
+  return Object.values(performanceStore.apps).filter((app) => {
     const tabMetrics = performanceStore.tabs[app.tabId];
     return tabMetrics?.spaceId === spaceId;
   });
@@ -176,15 +176,14 @@ export const performanceActions = {
     const newSpaceMetrics: Record<string, SpaceMetrics> = {};
 
     for (const spaceId of spaceIds) {
-      const spaceTabs = Object.values(performanceStore.tabs).filter(
-        t => t.spaceId === spaceId
-      );
+      const spaceTabs = Object.values(performanceStore.tabs).filter((t) => t.spaceId === spaceId);
 
       const totalMemoryKB = spaceTabs.reduce((sum, t) => sum + t.memoryKB, 0);
-      const avgCpuPercent = spaceTabs.length > 0
-        ? spaceTabs.reduce((sum, t) => sum + t.cpuPercent, 0) / spaceTabs.length
-        : 0;
-      const activeAppCount = spaceTabs.filter(t => t.memoryKB > 0).length;
+      const avgCpuPercent =
+        spaceTabs.length > 0
+          ? spaceTabs.reduce((sum, t) => sum + t.cpuPercent, 0) / spaceTabs.length
+          : 0;
+      const activeAppCount = spaceTabs.filter((t) => t.memoryKB > 0).length;
 
       newSpaceMetrics[spaceId] = {
         spaceId,

@@ -1,6 +1,23 @@
 import { useState } from 'react';
 import { useSnapshot } from 'valtio';
-import { Terminal, Globe, FileText, AppWindow, Bot, Trash2, Settings, Save, CheckSquare, StickyNote, FolderOpen, Link, Smile, X, PictureInPicture2, Maximize2 } from 'lucide-react';
+import {
+  Terminal,
+  Globe,
+  FileText,
+  AppWindow,
+  Bot,
+  Trash2,
+  Settings,
+  Save,
+  CheckSquare,
+  StickyNote,
+  FolderOpen,
+  Link,
+  Smile,
+  X,
+  PictureInPicture2,
+  Maximize2,
+} from 'lucide-react';
 import type { Tab } from '@/stores/workspace.store';
 import { workspaceActions } from '@/stores/workspace.store';
 import { windowsActions } from '@/stores/windows.store';
@@ -77,11 +94,7 @@ function TabIconButton({
         {tab.emoji ? (
           <span className="text-xl leading-none">{tab.emoji}</span>
         ) : appIcon ? (
-          <img
-            src={appIcon}
-            alt={tab.title}
-            className="w-6 h-6 rounded"
-          />
+          <img src={appIcon} alt={tab.title} className="w-6 h-6 rounded" />
         ) : (
           <TabTypeIcon type={tab.type} className="w-5 h-5" />
         )}
@@ -112,15 +125,12 @@ export function TabPreviewIcon({ tab, onClick }: TabPreviewProps) {
   const { sessions } = useSnapshot(agentStore);
 
   // Get agent session for hover preview
-  const agentSession = tab.type === 'agent'
-    ? sessions.find(s => s.tabId === tab.id)
-    : null;
+  const agentSession = tab.type === 'agent' ? sessions.find((s) => s.tabId === tab.id) : null;
 
   // Check if app has context set
-  const hasContext = tab.type === 'app-launcher' && (
-    tab.appLauncherConfig?.launchConfig.filePath ||
-    tab.appLauncherConfig?.launchConfig.deepLink
-  );
+  const hasContext =
+    tab.type === 'app-launcher' &&
+    (tab.appLauncherConfig?.launchConfig.filePath || tab.appLauncherConfig?.launchConfig.deepLink);
 
   // Get context type for the app (for showing appropriate icon)
   const getContextIcon = () => {
@@ -134,11 +144,16 @@ export function TabPreviewIcon({ tab, onClick }: TabPreviewProps) {
     const preset = getAppPreset(connectedApp);
     if (!hasContext) return <Save className="w-3.5 h-3.5" />;
     switch (preset.contextType) {
-      case 'folder': return <FolderOpen className="w-3.5 h-3.5" />;
-      case 'file': return <FileText className="w-3.5 h-3.5" />;
-      case 'deeplink': return <Link className="w-3.5 h-3.5" />;
-      case 'url': return <Globe className="w-3.5 h-3.5" />;
-      default: return <Save className="w-3.5 h-3.5" />;
+      case 'folder':
+        return <FolderOpen className="w-3.5 h-3.5" />;
+      case 'file':
+        return <FileText className="w-3.5 h-3.5" />;
+      case 'deeplink':
+        return <Link className="w-3.5 h-3.5" />;
+      case 'url':
+        return <Globe className="w-3.5 h-3.5" />;
+      default:
+        return <Save className="w-3.5 h-3.5" />;
     }
   };
 
@@ -244,7 +259,10 @@ export function TabPreviewIcon({ tab, onClick }: TabPreviewProps) {
               Edit
             </ContextMenuItem>
             <ContextMenuSeparator />
-            <ContextMenuItem onClick={handleRemove} className="gap-2 text-destructive focus:text-destructive">
+            <ContextMenuItem
+              onClick={handleRemove}
+              className="gap-2 text-destructive focus:text-destructive"
+            >
               <Trash2 className="w-3.5 h-3.5" />
               Remove
             </ContextMenuItem>
@@ -264,10 +282,7 @@ export function TabPreviewIcon({ tab, onClick }: TabPreviewProps) {
         {/* Terminal preview on hover */}
         {agentSession && agentSession.terminalLines.length > 0 && (
           <div className="absolute top-full left-0 z-50 w-48">
-            <TerminalPreview
-              lines={agentSession.terminalLines}
-              visible={isHovered}
-            />
+            <TerminalPreview lines={agentSession.terminalLines} visible={isHovered} />
           </div>
         )}
       </div>
@@ -331,7 +346,10 @@ export function TabPreviewIcon({ tab, onClick }: TabPreviewProps) {
               Edit
             </ContextMenuItem>
             <ContextMenuSeparator />
-            <ContextMenuItem onClick={handleRemove} className="gap-2 text-destructive focus:text-destructive">
+            <ContextMenuItem
+              onClick={handleRemove}
+              className="gap-2 text-destructive focus:text-destructive"
+            >
               <Trash2 className="w-3.5 h-3.5" />
               Remove
             </ContextMenuItem>

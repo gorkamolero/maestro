@@ -30,18 +30,12 @@ function Accordion(props: AccordionProps) {
   const [value, setValue] = useControlledState<string | string[] | undefined>({
     value: props?.value,
     defaultValue: props?.defaultValue,
-    onChange: props?.onValueChange as (
-      value: string | string[] | undefined,
-    ) => void,
+    onChange: props?.onValueChange as (value: string | string[] | undefined) => void,
   });
 
   return (
     <AccordionProvider value={{ value, setValue }}>
-      <AccordionPrimitive.Root
-        data-slot="accordion"
-        {...props}
-        onValueChange={setValue}
-      />
+      <AccordionPrimitive.Root data-slot="accordion" {...props} onValueChange={setValue} />
     </AccordionProvider>
   );
 }
@@ -50,9 +44,7 @@ type AccordionItemProps = React.ComponentProps<typeof AccordionPrimitive.Item>;
 
 function AccordionItem(props: AccordionItemProps) {
   const { value } = useAccordion();
-  const [isOpen, setIsOpen] = React.useState(
-    value?.includes(props?.value) ?? false,
-  );
+  const [isOpen, setIsOpen] = React.useState(value?.includes(props?.value) ?? false);
 
   React.useEffect(() => {
     setIsOpen(value?.includes(props?.value) ?? false);
@@ -65,22 +57,16 @@ function AccordionItem(props: AccordionItemProps) {
   );
 }
 
-type AccordionHeaderProps = React.ComponentProps<
-  typeof AccordionPrimitive.Header
->;
+type AccordionHeaderProps = React.ComponentProps<typeof AccordionPrimitive.Header>;
 
 function AccordionHeader(props: AccordionHeaderProps) {
   return <AccordionPrimitive.Header data-slot="accordion-header" {...props} />;
 }
 
-type AccordionTriggerProps = React.ComponentProps<
-  typeof AccordionPrimitive.Trigger
->;
+type AccordionTriggerProps = React.ComponentProps<typeof AccordionPrimitive.Trigger>;
 
 function AccordionTrigger(props: AccordionTriggerProps) {
-  return (
-    <AccordionPrimitive.Trigger data-slot="accordion-trigger" {...props} />
-  );
+  return <AccordionPrimitive.Trigger data-slot="accordion-trigger" {...props} />;
 }
 
 type AccordionContentProps = Omit<
@@ -113,8 +99,7 @@ function AccordionContent({
             }
             transition={transition}
             style={{
-              maskImage:
-                'linear-gradient(black var(--mask-stop), transparent var(--mask-stop))',
+              maskImage: 'linear-gradient(black var(--mask-stop), transparent var(--mask-stop))',
               WebkitMaskImage:
                 'linear-gradient(black var(--mask-stop), transparent var(--mask-stop))',
               overflow: 'hidden',
@@ -138,8 +123,7 @@ function AccordionContent({
               exit={{ height: 0, opacity: 0, '--mask-stop': '0%', y: 20 }}
               transition={transition}
               style={{
-                maskImage:
-                  'linear-gradient(black var(--mask-stop), transparent var(--mask-stop))',
+                maskImage: 'linear-gradient(black var(--mask-stop), transparent var(--mask-stop))',
                 WebkitMaskImage:
                   'linear-gradient(black var(--mask-stop), transparent var(--mask-stop))',
                 overflow: 'hidden',

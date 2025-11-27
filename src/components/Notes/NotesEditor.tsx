@@ -31,7 +31,7 @@ const emptyEditorState = {
 
 export function NotesEditor({ noteId }: NotesEditorProps) {
   const snap = useSnapshot(notesStore);
-  const note = snap.notes.find(n => n.id === noteId);
+  const note = snap.notes.find((n) => n.id === noteId);
 
   if (!note) {
     return (
@@ -75,9 +75,7 @@ export function NotesEditor({ noteId }: NotesEditorProps) {
         />
         <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
           <span>Modified {formatDate(note.modifiedAt)}</span>
-          {note.linkedTaskIds.length > 0 && (
-            <span>{note.linkedTaskIds.length} linked tasks</span>
-          )}
+          {note.linkedTaskIds.length > 0 && <span>{note.linkedTaskIds.length} linked tasks</span>}
           {note.tags.length > 0 && <span>{note.tags.length} tags</span>}
         </div>
       </div>

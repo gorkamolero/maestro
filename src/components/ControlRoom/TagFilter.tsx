@@ -52,7 +52,7 @@ export function TagFilter({ className }: TagFilterProps) {
         {hasActiveFilters && !isExpanded && (
           <span
             className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full"
-            style={{ backgroundColor: tags.find(t => activeFilters.includes(t.id))?.color }}
+            style={{ backgroundColor: tags.find((t) => activeFilters.includes(t.id))?.color }}
           />
         )}
       </button>

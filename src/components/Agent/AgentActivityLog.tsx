@@ -92,10 +92,7 @@ export function AgentActivityLog({
   return (
     <div
       ref={containerRef}
-      className={cn(
-        'flex flex-col gap-0.5 overflow-auto font-mono text-xs',
-        className
-      )}
+      className={cn('flex flex-col gap-0.5 overflow-auto font-mono text-xs', className)}
     >
       <AnimatePresence mode="popLayout" initial={false}>
         {activityLines.map((line) => {
@@ -110,17 +107,10 @@ export function AgentActivityLog({
               animate={{ opacity: 1, x: 0, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.15 }}
-              className={cn(
-                'flex items-start gap-2 py-0.5 px-1 rounded',
-                'hover:bg-white/[0.02]'
-              )}
+              className={cn('flex items-start gap-2 py-0.5 px-1 rounded', 'hover:bg-white/[0.02]')}
             >
               {/* Icon */}
-              {icon && (
-                <span className={cn('w-3 text-center shrink-0', colorClass)}>
-                  {icon}
-                </span>
-              )}
+              {icon && <span className={cn('w-3 text-center shrink-0', colorClass)}>{icon}</span>}
 
               {/* Content */}
               <span className={cn('flex-1 break-words', icon ? 'text-foreground/80' : colorClass)}>
@@ -147,10 +137,7 @@ export function AgentActivityLogCompact({
   return (
     <div className={cn('font-mono text-[10px] space-y-0.5', className)}>
       {visibleLines.map((line, i) => (
-        <div
-          key={i}
-          className={cn('truncate', getLineStyle(line))}
-        >
+        <div key={i} className={cn('truncate', getLineStyle(line))}>
           {line}
         </div>
       ))}

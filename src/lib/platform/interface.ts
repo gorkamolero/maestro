@@ -6,12 +6,7 @@
  * we can swap platforms without changing component code.
  */
 
-import type {
-  BrowserViewOptions,
-  Terminal,
-  TerminalOptions,
-  UnlistenFn,
-} from './types';
+import type { BrowserViewOptions, Terminal, TerminalOptions, UnlistenFn } from './types';
 
 export interface IPlatformBridge {
   // ============================================================================
@@ -32,10 +27,7 @@ export interface IPlatformBridge {
    * @param handler Event handler
    * @returns Promise resolving to unlisten function
    */
-  listen<T = unknown>(
-    event: string,
-    handler: (payload: T) => void
-  ): Promise<UnlistenFn>;
+  listen<T = unknown>(event: string, handler: (payload: T) => void): Promise<UnlistenFn>;
 
   // ============================================================================
   // Browser: Webview Management

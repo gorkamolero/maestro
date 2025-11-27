@@ -26,29 +26,19 @@ export function ModalContent({ className, children, ...props }: ModalContentProp
 
 export function ModalHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div
-      className={cn('flex flex-col gap-2 text-center sm:text-left', className)}
-      {...props}
-    />
+    <div className={cn('flex flex-col gap-2 text-center sm:text-left', className)} {...props} />
   );
 }
 
 export function ModalTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
-  return (
-    <h2
-      className={cn('text-lg leading-none font-semibold', className)}
-      {...props}
-    />
-  );
+  return <h2 className={cn('text-lg leading-none font-semibold', className)} {...props} />;
 }
 
-export function ModalDescription({ className, ...props }: React.HTMLAttributes<HTMLParagraphElement>) {
-  return (
-    <p
-      className={cn('text-muted-foreground text-sm', className)}
-      {...props}
-    />
-  );
+export function ModalDescription({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLParagraphElement>) {
+  return <p className={cn('text-muted-foreground text-sm', className)} {...props} />;
 }
 
 export function ModalFooter({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {

@@ -50,10 +50,7 @@ export function SpaceEditMode({ space, tabs, onDone }: SpaceEditModeProps) {
   };
 
   return (
-    <div
-      className="flex flex-col gap-3"
-      onClick={(e) => e.stopPropagation()}
-    >
+    <div className="flex flex-col gap-3" onClick={(e) => e.stopPropagation()}>
       {/* Space name + icon row */}
       <div className="flex items-center gap-2">
         <EmojiPickerComponent value={space.icon} onChange={handleIconChange}>
@@ -93,9 +90,7 @@ export function SpaceEditMode({ space, tabs, onDone }: SpaceEditModeProps) {
               className="group/tab flex items-center gap-2 text-xs px-2 py-1 rounded hover:bg-white/[0.04]"
             >
               <TabTypeIcon type={tab.type} />
-              <span className="flex-1 truncate text-muted-foreground">
-                {tab.title}
-              </span>
+              <span className="flex-1 truncate text-muted-foreground">{tab.title}</span>
               <button
                 onClick={() => handleRemoveTab(tab.id)}
                 className="opacity-0 group-hover/tab:opacity-100 p-0.5 hover:bg-white/[0.08] rounded transition-all"

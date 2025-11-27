@@ -7,7 +7,7 @@ import {
   DragStartEvent,
   PointerSensor,
   useSensor,
-  useSensors
+  useSensors,
 } from '@dnd-kit/core';
 import { TaskStatus, useTasksStore, tasksActions } from '@/stores/tasks.store';
 import { TaskColumn } from './TaskColumn';
@@ -106,9 +106,7 @@ export function TaskBoard({ boardTabId }: TaskBoardProps) {
         ))}
       </div>
 
-      <DragOverlay>
-        {activeTask ? <TaskCard task={activeTask} /> : null}
-      </DragOverlay>
+      <DragOverlay>{activeTask ? <TaskCard task={activeTask} /> : null}</DragOverlay>
     </DndContext>
   );
 }

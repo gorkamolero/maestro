@@ -8,7 +8,11 @@ export function normalizeUrl(url: string): string {
   const trimmed = url.trim();
 
   // Already has a valid scheme
-  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed === 'about:blank') {
+  if (
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://') ||
+    trimmed === 'about:blank'
+  ) {
     return trimmed;
   }
 

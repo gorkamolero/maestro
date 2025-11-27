@@ -6,6 +6,21 @@ All notable changes to Maestro will be documented in this file.
 
 ### Added
 
+#### Code Quality Improvements (2025-11-27)
+- New hooks: `useStopPropagation`, `useModal` for common patterns
+- Centralized constants in `src/lib/constants.ts` (magic numbers, durations, limits)
+- `ColorPaletteSelector` component for reusable color picking UI
+- `src/lib/error-utils.ts` with `logError`, `handleError`, `tryCatch` utilities
+- `SpaceCardHeader` component extracted from SpaceCard
+
+### Changed
+
+#### Code Refactoring (2025-11-27)
+- SpaceCard refactored: 365 → 241 lines, header extracted to sub-component
+- Store actions now have explicit return types (`spaces.store`, `agent.store`)
+- Standardized error handling pattern replaces `.catch(console.error)`
+- TagSelector and SpaceCard use new ColorPaletteSelector component
+
 #### Windowed View System (2025-11-27)
 - **Floating Windows**: Open any tab (browser, terminal, agent) as a draggable, resizable floating window
 - **Maximized View**: Full-screen mode for focused work with minimal header

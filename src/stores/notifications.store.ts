@@ -37,9 +37,7 @@ export const notificationsActions = {
   },
 
   dismiss: (id: string) => {
-    const index = notificationsStore.notifications.findIndex(
-      (n) => n.id === id
-    );
+    const index = notificationsStore.notifications.findIndex((n) => n.id === id);
     if (index !== -1) {
       notificationsStore.notifications.splice(index, 1);
     }
@@ -52,18 +50,13 @@ export const notificationsActions = {
   },
 
   getForSpace: (spaceId: string) => {
-    return notificationsStore.notifications.filter(
-      (n) => n.spaceId === spaceId
-    );
+    return notificationsStore.notifications.filter((n) => n.spaceId === spaceId);
   },
 
   getLatestForSpace: (spaceId: string) => {
     const spaceNotifications = notificationsStore.notifications
       .filter((n) => n.spaceId === spaceId)
-      .sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     return spaceNotifications[0] || null;
   },
 };

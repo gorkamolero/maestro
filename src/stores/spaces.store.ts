@@ -106,18 +106,18 @@ export const spacesActions = {
    */
   setSpaceProfile: (spaceId: string, profileId: string | undefined): void => {
     const store = getSpacesStore();
-    const space = store.spaces.find(s => s.id === spaceId);
+    const space = store.spaces.find((s) => s.id === spaceId);
     if (space) {
       space.profileId = profileId;
     }
   },
 
-  removeSpace: (spaceId: string) => {
+  removeSpace: (spaceId: string): void => {
     const store = getSpacesStore();
     store.spaces = store.spaces.filter((t) => t.id !== spaceId);
   },
 
-  updateSpace: (spaceId: string, updates: Partial<Space>) => {
+  updateSpace: (spaceId: string, updates: Partial<Space>): void => {
     const store = getSpacesStore();
     const index = store.spaces.findIndex((t) => t.id === spaceId);
     if (index !== -1) {
@@ -125,12 +125,12 @@ export const spacesActions = {
     }
   },
 
-  reorderSpaces: (spaces: Space[]) => {
+  reorderSpaces: (spaces: Space[]): void => {
     const store = getSpacesStore();
     store.spaces = spaces;
   },
 
-  addSegment: (spaceId: string, segment: Segment) => {
+  addSegment: (spaceId: string, segment: Segment): void => {
     const store = getSpacesStore();
     const space = store.spaces.find((t) => t.id === spaceId);
     if (space) {
@@ -138,7 +138,7 @@ export const spacesActions = {
     }
   },
 
-  removeSegment: (spaceId: string, segmentId: string) => {
+  removeSegment: (spaceId: string, segmentId: string): void => {
     const store = getSpacesStore();
     const space = store.spaces.find((t) => t.id === spaceId);
     if (space) {
@@ -146,7 +146,7 @@ export const spacesActions = {
     }
   },
 
-  updateSegment: (spaceId: string, segmentId: string, updates: Partial<Segment>) => {
+  updateSegment: (spaceId: string, segmentId: string, updates: Partial<Segment>): void => {
     const store = getSpacesStore();
     const space = store.spaces.find((t) => t.id === spaceId);
     if (space) {
@@ -160,7 +160,7 @@ export const spacesActions = {
   /**
    * Set the "what's next" text for a space
    */
-  setSpaceNext: (spaceId: string, next: string | null) => {
+  setSpaceNext: (spaceId: string, next: string | null): void => {
     const store = getSpacesStore();
     const space = store.spaces.find((s) => s.id === spaceId);
     if (space) {
@@ -171,7 +171,7 @@ export const spacesActions = {
   /**
    * Update the last active timestamp for a space
    */
-  updateSpaceLastActive: (spaceId: string) => {
+  updateSpaceLastActive: (spaceId: string): void => {
     const store = getSpacesStore();
     const space = store.spaces.find((s) => s.id === spaceId);
     if (space) {
@@ -182,7 +182,7 @@ export const spacesActions = {
   /**
    * Add a coding path to a space's recent paths (keeps last 5, most recent first)
    */
-  addRecentCodingPath: (spaceId: string, path: string) => {
+  addRecentCodingPath: (spaceId: string, path: string): void => {
     const store = getSpacesStore();
     const space = store.spaces.find((s) => s.id === spaceId);
     if (space) {
@@ -206,7 +206,7 @@ export const spacesActions = {
   /**
    * Set the view mode for spaces (cards or panes)
    */
-  setViewMode: (mode: SpacesViewMode) => {
+  setViewMode: (mode: SpacesViewMode): void => {
     const store = getSpacesStore();
     store.viewMode = mode;
   },
@@ -214,7 +214,7 @@ export const spacesActions = {
   /**
    * Set the content mode for a space (tasks or notes)
    */
-  setSpaceContentMode: (spaceId: string, mode: SpaceContentMode) => {
+  setSpaceContentMode: (spaceId: string, mode: SpaceContentMode): void => {
     const store = getSpacesStore();
     const space = store.spaces.find((s) => s.id === spaceId);
     if (space) {
@@ -225,7 +225,7 @@ export const spacesActions = {
   /**
    * Update the notes content for a space
    */
-  setSpaceNotesContent: (spaceId: string, content: string) => {
+  setSpaceNotesContent: (spaceId: string, content: string): void => {
     const store = getSpacesStore();
     const space = store.spaces.find((s) => s.id === spaceId);
     if (space) {
@@ -245,7 +245,7 @@ export const spacesActions = {
   /**
    * Add a tag to a space
    */
-  addTag: (spaceId: string, tagId: string) => {
+  addTag: (spaceId: string, tagId: string): void => {
     const store = getSpacesStore();
     const space = store.spaces.find((s) => s.id === spaceId);
     if (space) {
@@ -261,7 +261,7 @@ export const spacesActions = {
   /**
    * Remove a tag from a space
    */
-  removeTag: (spaceId: string, tagId: string) => {
+  removeTag: (spaceId: string, tagId: string): void => {
     const store = getSpacesStore();
     const space = store.spaces.find((s) => s.id === spaceId);
     if (space && space.tags) {
@@ -272,7 +272,7 @@ export const spacesActions = {
   /**
    * Toggle a tag on a space
    */
-  toggleTag: (spaceId: string, tagId: string) => {
+  toggleTag: (spaceId: string, tagId: string): void => {
     const store = getSpacesStore();
     const space = store.spaces.find((s) => s.id === spaceId);
     if (space) {

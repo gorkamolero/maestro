@@ -118,14 +118,11 @@ interface HappySessionInfo {
 
 contextBridge.exposeInMainWorld('agent', {
   // Session control
-  start: (options: AgentStartOptions) =>
-    ipcRenderer.invoke('agent:start', options),
+  start: (options: AgentStartOptions) => ipcRenderer.invoke('agent:start', options),
 
-  stop: (sessionId: string) =>
-    ipcRenderer.invoke('agent:stop', { sessionId }),
+  stop: (sessionId: string) => ipcRenderer.invoke('agent:stop', { sessionId }),
 
-  isActive: (sessionId: string) =>
-    ipcRenderer.invoke('agent:is-active', { sessionId }),
+  isActive: (sessionId: string) => ipcRenderer.invoke('agent:is-active', { sessionId }),
 
   // Event subscriptions
   onStatus: (callback: (data: AgentStatusEvent) => void) => {
@@ -166,7 +163,8 @@ contextBridge.exposeInMainWorld('agent', {
     get: (sessionId?: string) => ipcRenderer.invoke('agent:analytics-get', { sessionId }),
     getTotalCost: () => ipcRenderer.invoke('agent:analytics-total-cost'),
     listSessions: () => ipcRenderer.invoke('agent:analytics-list-sessions'),
-    readHistory: (sessionId: string) => ipcRenderer.invoke('agent:analytics-read-history', { sessionId }),
+    readHistory: (sessionId: string) =>
+      ipcRenderer.invoke('agent:analytics-read-history', { sessionId }),
 
     onUpdate: (callback: (data: SessionAnalytics) => void) => {
       const handler = (_: IpcRendererEvent, data: SessionAnalytics) => callback(data);
@@ -184,14 +182,12 @@ contextBridge.exposeInMainWorld('happy', {
   /**
    * Detect if Happy Coder CLI is installed
    */
-  detect: (): Promise<HappyDetectionResult> =>
-    ipcRenderer.invoke('happy:detect'),
+  detect: (): Promise<HappyDetectionResult> => ipcRenderer.invoke('happy:detect'),
 
   /**
    * Clear detection cache (call after user installs)
    */
-  clearCache: (): Promise<{ success: boolean }> =>
-    ipcRenderer.invoke('happy:clear-cache'),
+  clearCache: (): Promise<{ success: boolean }> => ipcRenderer.invoke('happy:clear-cache'),
 
   /**
    * Get active Happy session count and info
@@ -214,8 +210,7 @@ contextBridge.exposeInMainWorld('happy', {
   /**
    * Get installation instructions
    */
-  getInstallInstructions: (): Promise<string> =>
-    ipcRenderer.invoke('happy:install-instructions'),
+  getInstallInstructions: (): Promise<string> => ipcRenderer.invoke('happy:install-instructions'),
 });
 
 // ============================================================================
@@ -249,7 +244,8 @@ contextBridge.exposeInMainWorld('pty', {
         ipcRenderer.send('pty-resize', ptyId, { cols, rows });
       },
       onExit: (callback: (exitCode: { exitCode: number }) => void) => {
-        const listener = (_event: IpcRendererEvent, exitCode: { exitCode: number }) => callback(exitCode);
+        const listener = (_event: IpcRendererEvent, exitCode: { exitCode: number }) =>
+          callback(exitCode);
         ipcRenderer.on(`pty-exit-${ptyId}`, listener);
         return () => ipcRenderer.removeListener(`pty-exit-${ptyId}`, listener);
       },

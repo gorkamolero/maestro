@@ -1,17 +1,13 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-export function invariant(
-  cond?: boolean,
-  message?: string,
-  ..._args: string[]
-): asserts cond {
-/* eslint-enable @typescript-eslint/no-unused-vars */
+export function invariant(cond?: boolean, message?: string, ..._args: string[]): asserts cond {
+  /* eslint-enable @typescript-eslint/no-unused-vars */
   if (cond) {
-    return
+    return;
   }
 
   throw new Error(
-    "Internal Lexical error: invariant() is meant to be replaced at compile " +
-      "time. There is no runtime version. Error: " +
+    'Internal Lexical error: invariant() is meant to be replaced at compile ' +
+      'time. There is no runtime version. Error: ' +
       message
-  )
+  );
 }

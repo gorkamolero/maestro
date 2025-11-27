@@ -149,10 +149,7 @@ export const happyActions = {
    * Decrement active Happy sessions count
    */
   decrementActiveSessions: (): void => {
-    happyStore.status.activeHappySessions = Math.max(
-      0,
-      happyStore.status.activeHappySessions - 1
-    );
+    happyStore.status.activeHappySessions = Math.max(0, happyStore.status.activeHappySessions - 1);
   },
 
   /**

@@ -1,11 +1,6 @@
 import { useState, useMemo } from 'react';
 import { FolderOpen, History } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import type { PermissionMode } from '@/stores/agent.store';
 import { spacesActions } from '@/stores/spaces.store';
 import { cn } from '@/lib/utils';
@@ -13,11 +8,7 @@ import { cn } from '@/lib/utils';
 interface CreateAgentModalProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (config: {
-    prompt: string;
-    workDir: string;
-    permissionMode: PermissionMode;
-  }) => void;
+  onSubmit: (config: { prompt: string; workDir: string; permissionMode: PermissionMode }) => void;
   defaultWorkDir?: string;
   spaceId?: string;
 }
@@ -122,9 +113,7 @@ export function CreateAgentModal({
 
           {/* Working directory */}
           <div>
-            <label className="text-sm text-muted-foreground mb-2 block">
-              Working directory
-            </label>
+            <label className="text-sm text-muted-foreground mb-2 block">Working directory</label>
 
             {/* Recent paths */}
             {recentPaths.length > 0 && (
@@ -172,9 +161,7 @@ export function CreateAgentModal({
 
           {/* Permission mode */}
           <div>
-            <label className="text-sm text-muted-foreground mb-2 block">
-              Permission mode
-            </label>
+            <label className="text-sm text-muted-foreground mb-2 block">Permission mode</label>
             <div className="space-y-2">
               {PERMISSION_OPTIONS.map((option) => (
                 <label
@@ -196,9 +183,7 @@ export function CreateAgentModal({
                   />
                   <div>
                     <div className="text-sm font-medium">{option.label}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {option.description}
-                    </div>
+                    <div className="text-xs text-muted-foreground">{option.description}</div>
                   </div>
                 </label>
               ))}

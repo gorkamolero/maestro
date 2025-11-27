@@ -44,10 +44,7 @@ export function TagBadge({
         textShadow: '0 0 10px currentColor',
       }}
     >
-      <span
-        className="w-1.5 h-1.5 rounded-full"
-        style={{ backgroundColor: tag.color }}
-      />
+      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: tag.color }} />
       {tag.name}
       {removable && onRemove && (
         <button

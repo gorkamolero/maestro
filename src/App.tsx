@@ -19,14 +19,18 @@ startAutoBackup();
 function useAgentIpcSubscription() {
   useEffect(() => {
     // Subscribe to agent status updates
-    const unsubStatus = window.agent?.onStatus((data: { sessionId: string; status: string; error?: string }) => {
-      agentActions.updateStatus(data.sessionId, data.status as AgentStatus, data);
-    });
+    const unsubStatus = window.agent?.onStatus(
+      (data: { sessionId: string; status: string; error?: string }) => {
+        agentActions.updateStatus(data.sessionId, data.status as AgentStatus, data);
+      }
+    );
 
     // Subscribe to agent terminal output
-    const unsubTerminal = window.agent?.onTerminalLine((data: { sessionId: string; line: string }) => {
-      agentActions.appendTerminalLine(data.sessionId, data.line);
-    });
+    const unsubTerminal = window.agent?.onTerminalLine(
+      (data: { sessionId: string; line: string }) => {
+        agentActions.appendTerminalLine(data.sessionId, data.line);
+      }
+    );
 
     return () => {
       unsubStatus?.();
@@ -61,7 +65,8 @@ function App() {
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
-      const isInputField = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+      const isInputField =
+        target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
 
       // Ctrl/Cmd+Z - Undo
       if (e.key === 'z' && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
@@ -110,7 +115,9 @@ function App() {
 
       // ESC - Close focused floating window
       if (e.key === 'Escape' && windowsStore.focusedWindowId) {
-        const focusedWindow = windowsStore.windows.find(w => w.id === windowsStore.focusedWindowId);
+        const focusedWindow = windowsStore.windows.find(
+          (w) => w.id === windowsStore.focusedWindowId
+        );
         if (focusedWindow?.mode === 'floating') {
           e.preventDefault();
           windowsActions.closeWindow(windowsStore.focusedWindowId);
@@ -120,7 +127,9 @@ function App() {
 
       // Cmd+` - Cycle through floating windows
       if (e.key === '`' && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
-        const floatingWindows = windowsStore.windows.filter(w => w.mode === 'floating' && !w.isMinimized);
+        const floatingWindows = windowsStore.windows.filter(
+          (w) => w.mode === 'floating' && !w.isMinimized
+        );
         if (floatingWindows.length > 0) {
           e.preventDefault();
           windowsActions.cycleFocusNext();
@@ -130,7 +139,9 @@ function App() {
 
       // Cmd+Shift+` - Cycle backwards through floating windows
       if (e.key === '`' && (e.metaKey || e.ctrlKey) && e.shiftKey) {
-        const floatingWindows = windowsStore.windows.filter(w => w.mode === 'floating' && !w.isMinimized);
+        const floatingWindows = windowsStore.windows.filter(
+          (w) => w.mode === 'floating' && !w.isMinimized
+        );
         if (floatingWindows.length > 0) {
           e.preventDefault();
           windowsActions.cycleFocusPrev();
@@ -171,7 +182,10 @@ function App() {
       {/* Window Manager - renders all floating and maximized windows */}
       <WindowManager />
 
-      <CommandPalettePortal isOpen={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} />
+      <CommandPalettePortal
+        isOpen={commandPaletteOpen}
+        onClose={() => setCommandPaletteOpen(false)}
+      />
       <Toaster
         theme="dark"
         position="bottom-right"

@@ -117,24 +117,33 @@ export function registerAgentHandlers(getMainWindow: () => BrowserWindow | null)
   });
 
   // Merge worktree changes back to original branch
-  ipcMain.handle('agent:merge-worktree', async (_, { sessionId, commitMessage }: { sessionId: string; commitMessage?: string }) => {
-    const success = await gitWorktreeService.mergeWorktree(sessionId, commitMessage);
-    return { success };
-  });
+  ipcMain.handle(
+    'agent:merge-worktree',
+    async (_, { sessionId, commitMessage }: { sessionId: string; commitMessage?: string }) => {
+      const success = await gitWorktreeService.mergeWorktree(sessionId, commitMessage);
+      return { success };
+    }
+  );
 
   // ============================================================================
   // PTY Mode Handlers
   // ============================================================================
 
-  ipcMain.handle('agent:pty-resize', async (_, { sessionId, cols, rows }: { sessionId: string; cols: number; rows: number }) => {
-    agentPtyService.resize(sessionId, cols, rows);
-    return { success: true };
-  });
+  ipcMain.handle(
+    'agent:pty-resize',
+    async (_, { sessionId, cols, rows }: { sessionId: string; cols: number; rows: number }) => {
+      agentPtyService.resize(sessionId, cols, rows);
+      return { success: true };
+    }
+  );
 
-  ipcMain.handle('agent:pty-write', async (_, { sessionId, data }: { sessionId: string; data: string }) => {
-    agentPtyService.write(sessionId, data);
-    return { success: true };
-  });
+  ipcMain.handle(
+    'agent:pty-write',
+    async (_, { sessionId, data }: { sessionId: string; data: string }) => {
+      agentPtyService.write(sessionId, data);
+      return { success: true };
+    }
+  );
 
   // ============================================================================
   // Analytics Handlers
@@ -168,9 +177,12 @@ export function registerAgentHandlers(getMainWindow: () => BrowserWindow | null)
     return agentJsonlService.listSessions();
   });
 
-  ipcMain.handle('agent:analytics-read-history', async (_, { sessionId }: { sessionId: string }) => {
-    return agentJsonlService.readSessionHistory(sessionId);
-  });
+  ipcMain.handle(
+    'agent:analytics-read-history',
+    async (_, { sessionId }: { sessionId: string }) => {
+      return agentJsonlService.readSessionHistory(sessionId);
+    }
+  );
 
   // ============================================================================
   // Happy Coder Handlers

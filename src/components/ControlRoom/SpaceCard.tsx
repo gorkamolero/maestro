@@ -1,15 +1,24 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useSnapshot } from 'valtio';
 import { AnimatePresence } from 'motion/react';
-import { Play, Pencil, MoreHorizontal, Plus, Palette, Cpu, HardDrive, CheckSquare, FileText } from 'lucide-react';
+import {
+  MoreHorizontal,
+  Plus,
+  Palette,
+  Cpu,
+  HardDrive,
+  CheckSquare,
+  FileText,
+  Pencil,
+} from 'lucide-react';
 import { useSpaceTabsPerformance } from '@/hooks/usePerformance';
-import { useEditableTitle } from '@/hooks/useEditableTitle';
 import { useSpaceTasks } from '@/hooks/useSpaceTasks';
 import { formatMemory, formatCpu } from '@/stores/performance.store';
+import { TABS_MAX_VISIBLE, TOOLTIP_DELAY_DURATION } from '@/lib/constants';
+import { ColorPaletteSelector } from '@/components/ui/color-palette-selector';
 import type { Space } from '@/types';
 import { SPACE_COLOR_PALETTE } from '@/types';
 import type { Tab } from '@/stores/workspace.store';
-import { workspaceActions } from '@/stores/workspace.store';
 import { spacesActions } from '@/stores/spaces.store';
 import { notificationsStore, notificationsActions } from '@/stores/notifications.store';
 import { cn } from '@/lib/utils';
@@ -18,9 +27,9 @@ import { SpaceTasksSection } from './SpaceTasksSection';
 import { SpaceNotesEditor } from './SpaceNotesEditor';
 import { CollapsibleSection } from './CollapsibleSection';
 import { TabPreviewList } from './TabPreviewList';
+import { SpaceCardHeader } from './SpaceCardHeader';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AgentProgressBar } from './AgentProgressBar';
-import { EmojiPickerComponent } from '@/components/ui/emoji-picker';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,7 +40,6 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
 } from '@/components/ui/dropdown-menu';
-import { TagSelector } from './TagSelector';
 
 interface SpaceCardProps {
   space: Space;
@@ -44,17 +52,6 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
   const { notifications } = useSnapshot(notificationsStore);
   const { totalMemoryKB, avgCpuPercent } = useSpaceTabsPerformance(space.id);
 
-  // Editable title hook
-  const {
-    isEditing: isEditingTitle,
-    value: titleValue,
-    setValue: setTitleValue,
-    inputRef: titleInputRef,
-    startEditing: startEditingTitle,
-    save: saveTitle,
-    handleKeyDown: handleTitleKeyDown,
-  } = useEditableTitle({ spaceId: space.id, spaceName: space.name });
-
   // Get tasks for this space
   const { tasks: spaceTasks } = useSpaceTasks(space.id);
 
@@ -66,46 +63,30 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
     return spaceNotifications[0] || null;
   }, [notifications, space.id]);
 
-  const handleLaunchAll = useCallback(async () => {
-    for (const tab of tabs) {
-      if (tab.type === 'app-launcher' && tab.appLauncherConfig) {
-        await workspaceActions.launchApp(tab);
-      }
-    }
-  }, [tabs]);
-
   // Check if any agent or terminal is running
   const hasRunningAgent = useMemo(() => {
-    return tabs.some(t => (t.type === 'agent' || t.type === 'terminal') && t.status === 'running');
+    return tabs.some(
+      (t) => (t.type === 'agent' || t.type === 'terminal') && t.status === 'running'
+    );
   }, [tabs]);
 
-
-
-
-  // ============================================================================
-  // Icon/Emoji Picker
-  // ============================================================================
-
-  const handleIconClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsEmojiPickerOpen(true);
-  }, []);
-
-  const handleIconChange = useCallback((emoji: string) => {
-    spacesActions.updateSpace(space.id, { icon: emoji });
-    setIsEmojiPickerOpen(false);
-  }, [space.id]);
-
-  const handleColorChange = useCallback((primary: string, secondary: string) => {
-    spacesActions.updateSpace(space.id, { primaryColor: primary, secondaryColor: secondary });
-  }, [space.id]);
+  const handleColorChange = useCallback(
+    (primary: string, secondary: string) => {
+      spacesActions.updateSpace(space.id, { primaryColor: primary, secondaryColor: secondary });
+    },
+    [space.id]
+  );
 
   const handleDeleteSpace = useCallback(() => {
     spacesActions.removeSpace(space.id);
   }, [space.id]);
 
+  const handleOpenEmojiPicker = useCallback(() => {
+    setIsEmojiPickerOpen(true);
+  }, []);
+
   return (
-    <TooltipProvider delayDuration={0}>
+    <TooltipProvider delayDuration={TOOLTIP_DELAY_DURATION}>
       <div
         className={cn(
           'group relative flex flex-col flex-shrink-0',
@@ -149,94 +130,12 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
         </AnimatePresence>
 
         {/* Header */}
-        <div className="flex flex-col gap-2 px-3 pt-3 pb-2">
-          <div className="flex items-center gap-2">
-            {/* Icon */}
-            <EmojiPickerComponent
-              value={space.icon}
-              onChange={handleIconChange}
-              open={isEmojiPickerOpen}
-              onOpenChange={setIsEmojiPickerOpen}
-            >
-              <span
-                className="text-lg cursor-pointer hover:scale-110 transition-transform"
-                onClick={handleIconClick}
-              >
-                {space.icon || '📁'}
-              </span>
-            </EmojiPickerComponent>
-
-            {/* Title */}
-            {isEditingTitle ? (
-              <input
-                ref={titleInputRef}
-                type="text"
-                value={titleValue}
-                onChange={(e) => setTitleValue(e.target.value)}
-                onKeyDown={handleTitleKeyDown}
-                onBlur={saveTitle}
-                onClick={(e) => e.stopPropagation()}
-                className={cn(
-                  'flex-1 bg-transparent font-medium text-sm outline-none min-w-0',
-                  'border-b border-foreground/20 text-foreground'
-                )}
-              />
-            ) : (
-              <h3
-                className="flex-1 font-medium text-sm truncate cursor-pointer text-foreground"
-                onClick={(e) => e.stopPropagation()}
-                onDoubleClick={(e) => {
-                  e.stopPropagation();
-                  startEditingTitle();
-                }}
-              >
-                {space.name}
-              </h3>
-            )}
-
-            {/* Action buttons */}
-            <div className="flex items-center gap-0.5">
-              {tabs.some(t => t.type === 'app-launcher') && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleLaunchAll();
-                      }}
-                      className="p-1.5 rounded transition-colors hover:bg-accent"
-                    >
-                      <Play className="w-3.5 h-3.5 text-muted-foreground" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    <p className="text-xs">Launch all apps</p>
-                  </TooltipContent>
-                </Tooltip>
-              )}
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      startEditingTitle();
-                    }}
-                    className="p-1.5 rounded transition-colors opacity-0 group-hover:opacity-100 hover:bg-accent"
-                  >
-                    <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  <p className="text-xs">Edit space</p>
-                </TooltipContent>
-              </Tooltip>
-            </div>
-          </div>
-
-          {/* Tags */}
-          <TagSelector spaceId={space.id} spaceTags={space.tags || []} />
-        </div>
+        <SpaceCardHeader
+          space={space}
+          tabs={tabs}
+          isEmojiPickerOpen={isEmojiPickerOpen}
+          setIsEmojiPickerOpen={setIsEmojiPickerOpen}
+        />
 
         {/* Tabs / Favorites */}
         <div className="px-3 pb-2">
@@ -244,7 +143,7 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
             tabs={tabs}
             spaceId={space.id}
             showAddButton={true}
-            maxVisible={6}
+            maxVisible={TABS_MAX_VISIBLE}
           />
         </div>
 
@@ -280,7 +179,9 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
                 onClick={(e) => {
                   e.stopPropagation();
                   // Focus the add task input - SpaceTasksSection handles this internally
-                  const input = document.querySelector(`[data-space-task-input="${space.id}"]`) as HTMLInputElement;
+                  const input = document.querySelector(
+                    `[data-space-task-input="${space.id}"]`
+                  ) as HTMLInputElement;
                   input?.focus();
                 }}
                 className="p-1.5 rounded transition-colors hover:bg-accent"
@@ -314,33 +215,22 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => startEditingTitle()}>
+              <DropdownMenuItem onClick={handleOpenEmojiPicker}>
                 <Pencil className="w-4 h-4 mr-2" />
                 Rename
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleIconClick}>
-                Change icon
-              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleOpenEmojiPicker}>Change icon</DropdownMenuItem>
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>
                   <Palette className="w-4 h-4 mr-2" />
                   Change color
                 </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent>
-                  <div className="grid grid-cols-4 gap-1 p-2">
-                    {SPACE_COLOR_PALETTE.map((color) => (
-                      <button
-                        key={color.name}
-                        onClick={() => handleColorChange(color.primary, color.secondary)}
-                        className={cn(
-                          'w-6 h-6 rounded-full transition-transform hover:scale-110',
-                          space.primaryColor === color.primary && 'ring-2 ring-offset-2 ring-offset-popover ring-primary'
-                        )}
-                        style={{ backgroundColor: color.primary }}
-                        title={color.name}
-                      />
-                    ))}
-                  </div>
+                <DropdownMenuSubContent className="p-2">
+                  <ColorPaletteSelector
+                    colors={SPACE_COLOR_PALETTE}
+                    selectedColor={space.primaryColor}
+                    onSelect={(color) => handleColorChange(color.primary, color.secondary)}
+                  />
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
               <DropdownMenuSeparator />
@@ -355,9 +245,7 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
         </div>
 
         {/* Agent progress bar */}
-        {hasRunningAgent && (
-          <AgentProgressBar />
-        )}
+        {hasRunningAgent && <AgentProgressBar />}
       </div>
     </TooltipProvider>
   );

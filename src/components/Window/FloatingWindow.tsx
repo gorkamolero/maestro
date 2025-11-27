@@ -143,10 +143,7 @@ export function FloatingWindow({ window, tab, isFocused, children }: FloatingWin
       />
 
       {/* Content area */}
-      <div
-        className="relative bg-card"
-        style={{ height: contentHeight }}
-      >
+      <div className="relative bg-card" style={{ height: contentHeight }}>
         {children}
       </div>
 

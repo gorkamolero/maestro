@@ -9,7 +9,6 @@ export function getWebviewPosition(element: HTMLElement) {
   // Use getBoundingClientRect for viewport-relative position
   const rect = element.getBoundingClientRect();
 
-
   // Use clientWidth/clientHeight which excludes scrollbars
   const contentWidth = element.clientWidth;
   const contentHeight = element.clientHeight;
@@ -20,7 +19,6 @@ export function getWebviewPosition(element: HTMLElement) {
     width: contentWidth,
     height: contentHeight,
   };
-
 
   return position;
 }
@@ -36,7 +34,15 @@ interface UseWebviewOptions {
   partition?: string;
 }
 
-export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setError, isActive, partition }: UseWebviewOptions) {
+export function useWebview({
+  tabId,
+  initialUrl,
+  containerRef,
+  setIsLoading,
+  setError,
+  isActive,
+  partition,
+}: UseWebviewOptions) {
   const webviewLabelRef = useRef<string | null>(null);
 
   // Log prop changes
@@ -51,33 +57,38 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
   const browserSnap = useSnapshot(browserStore);
   const browser = browserSnap.browsers[tabId];
   const navigationCanGoBack = browser ? browser.history.activeIndex > 0 : false;
-  const navigationCanGoForward = browser ? browser.history.activeIndex < browser.history.entries.length - 1 : false;
+  const navigationCanGoForward = browser
+    ? browser.history.activeIndex < browser.history.entries.length - 1
+    : false;
 
   // Navigate to URL
-  const handleNavigate = useCallback(async (url: string) => {
-    const normalizedUrl = normalizeUrl(url);
+  const handleNavigate = useCallback(
+    async (url: string) => {
+      const normalizedUrl = normalizeUrl(url);
 
-    // If no webview exists yet, update the store to trigger webview creation
-    if (!webviewLabelRef.current) {
-      updateBrowserNavigation(tabId, normalizedUrl, {
-        entries: [{ url: normalizedUrl, title: '' }],
-        activeIndex: 0,
-      });
-      return;
-    }
+      // If no webview exists yet, update the store to trigger webview creation
+      if (!webviewLabelRef.current) {
+        updateBrowserNavigation(tabId, normalizedUrl, {
+          entries: [{ url: normalizedUrl, title: '' }],
+          activeIndex: 0,
+        });
+        return;
+      }
 
-    try {
-      setIsLoading(true);
-      await platform.navigateBrowser(webviewLabelRef.current, normalizedUrl);
-      // State will be updated via browser-navigation-updated event
-      setError(null);
-    } catch (err) {
-      console.error('Navigation error:', err);
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setIsLoading(false);
-    }
-  }, [tabId, setIsLoading, setError]);
+      try {
+        setIsLoading(true);
+        await platform.navigateBrowser(webviewLabelRef.current, normalizedUrl);
+        // State will be updated via browser-navigation-updated event
+        setError(null);
+      } catch (err) {
+        console.error('Navigation error:', err);
+        setError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [tabId, setIsLoading, setError]
+  );
 
   // Go back
   const handleGoBack = useCallback(async () => {
@@ -102,9 +113,12 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
   }, []);
 
   // Refresh
-  const handleRefresh = useCallback((url: string) => {
-    handleNavigate(url);
-  }, [handleNavigate]);
+  const handleRefresh = useCallback(
+    (url: string) => {
+      handleNavigate(url);
+    },
+    [handleNavigate]
+  );
 
   // Go home
   const handleHome = useCallback(() => {
@@ -127,7 +141,7 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
       let rect = containerRef.current.getBoundingClientRect();
       let attempts = 0;
       while (rect.height === 0 && attempts < 50 && mounted) {
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
         if (!containerRef.current) return;
         rect = containerRef.current.getBoundingClientRect();
         attempts++;
@@ -169,9 +183,7 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
         console.error('Failed to create webview:', error);
         if (mounted) {
           setIsLoading(false);
-          const errorMsg = error instanceof Error
-            ? error.message
-            : String(error);
+          const errorMsg = error instanceof Error ? error.message : String(error);
           setError(`Failed to create browser view: ${errorMsg}`);
         }
       }
@@ -203,7 +215,6 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
           activeIndex: number;
         };
       }>('browser-navigation-updated', (payload) => {
-
         if (!payload || !payload.label || !payload.url || !payload.history) {
           return;
         }
@@ -222,7 +233,7 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
 
     return () => {
       if (unlistenPromise) {
-        unlistenPromise.then(unlisten => unlisten());
+        unlistenPromise.then((unlisten) => unlisten());
       }
     };
   }, [tabId]);
@@ -247,15 +258,17 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
       const position = getWebviewPosition(containerRef.current);
 
       // Call set_position and set_size on the existing webview
-      platform.updateBrowserBounds(
-        webviewLabelRef.current,
-        position.x,
-        position.y,
-        position.width,
-        position.height
-      ).catch((err) => {
-        console.error('Failed to update webview bounds:', err);
-      });
+      platform
+        .updateBrowserBounds(
+          webviewLabelRef.current,
+          position.x,
+          position.y,
+          position.width,
+          position.height
+        )
+        .catch((err) => {
+          console.error('Failed to update webview bounds:', err);
+        });
     };
 
     const debouncedUpdate = () => {
@@ -275,7 +288,6 @@ export function useWebview({ tabId, initialUrl, containerRef, setIsLoading, setE
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
 
   return {
     webviewLabelRef,

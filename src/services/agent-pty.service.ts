@@ -84,9 +84,7 @@ export class AgentPtyService {
     }
 
     // Build environment with Happy-specific vars if applicable
-    const happyEnv = isHappySession
-      ? happyService.buildHappyEnv(happySettings)
-      : {};
+    const happyEnv = isHappySession ? happyService.buildHappyEnv(happySettings) : {};
 
     // Spawn Claude/Happy in PTY
     const ptyProcess = pty.spawn(command, args, {
@@ -220,7 +218,12 @@ export class AgentPtyService {
     return happyService.getActiveSessionCount();
   }
 
-  private emitStatus(window: BrowserWindow, sessionId: string, status: AgentStatus, error?: string) {
+  private emitStatus(
+    window: BrowserWindow,
+    sessionId: string,
+    status: AgentStatus,
+    error?: string
+  ) {
     if (!window.isDestroyed()) {
       window.webContents.send('agent:status', { sessionId, status, error });
     }

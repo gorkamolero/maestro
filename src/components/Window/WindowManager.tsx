@@ -21,9 +21,7 @@ export function WindowManager() {
 
   // Sort windows by z-index for correct rendering order
   const sortedWindows = useMemo(() => {
-    return [...windows]
-      .filter((w) => !w.isMinimized)
-      .sort((a, b) => a.zIndex - b.zIndex);
+    return [...windows].filter((w) => !w.isMinimized).sort((a, b) => a.zIndex - b.zIndex);
   }, [windows]);
 
   // Get floating windows (not maximized)
@@ -64,11 +62,7 @@ export function WindowManager() {
 
           return (
             <div key={window.id} className="pointer-events-auto">
-              <FloatingWindow
-                window={window}
-                tab={tab}
-                isFocused={window.id === focusedWindowId}
-              >
+              <FloatingWindow window={window} tab={tab} isFocused={window.id === focusedWindowId}>
                 <WindowContent
                   tab={tab}
                   width={window.size.width}
@@ -81,9 +75,7 @@ export function WindowManager() {
       </div>
 
       {/* Minimized windows dock */}
-      {minimizedWindows.length > 0 && (
-        <MinimizedDock windows={minimizedWindows} tabs={tabs} />
-      )}
+      {minimizedWindows.length > 0 && <MinimizedDock windows={minimizedWindows} tabs={tabs} />}
     </>
   );
 }
@@ -148,11 +140,7 @@ function MaximizedView({
 
       {/* Content */}
       <div className="flex-1 overflow-hidden">
-        <WindowContent
-          tab={tab}
-          width={window.innerWidth}
-          height={window.innerHeight - 40}
-        />
+        <WindowContent tab={tab} width={window.innerWidth} height={window.innerHeight - 40} />
       </div>
     </div>
   );

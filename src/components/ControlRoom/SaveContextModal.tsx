@@ -170,31 +170,46 @@ export function SaveContextModal({ tab, open, onOpenChange }: SaveContextModalPr
 
   const getIcon = () => {
     switch (contextType) {
-      case 'folder': return <FolderOpen className="w-5 h-5" />;
-      case 'file': return <FileText className="w-5 h-5" />;
-      case 'deeplink': return <Link className="w-5 h-5" />;
-      case 'url': return <Globe className="w-5 h-5" />;
-      default: return null;
+      case 'folder':
+        return <FolderOpen className="w-5 h-5" />;
+      case 'file':
+        return <FileText className="w-5 h-5" />;
+      case 'deeplink':
+        return <Link className="w-5 h-5" />;
+      case 'url':
+        return <Globe className="w-5 h-5" />;
+      default:
+        return null;
     }
   };
 
   const getTitle = () => {
     switch (contextType) {
-      case 'folder': return 'Set Project Folder';
-      case 'file': return 'Set File';
-      case 'deeplink': return 'Set Link';
-      case 'url': return 'Set URL';
-      default: return 'Set Context';
+      case 'folder':
+        return 'Set Project Folder';
+      case 'file':
+        return 'Set File';
+      case 'deeplink':
+        return 'Set Link';
+      case 'url':
+        return 'Set URL';
+      default:
+        return 'Set Context';
     }
   };
 
   const getPlaceholder = () => {
     switch (contextType) {
-      case 'folder': return '/path/to/project';
-      case 'file': return '/path/to/file';
-      case 'deeplink': return `${connectedApp?.capabilities.urlScheme || 'app'}://...`;
-      case 'url': return 'https://...';
-      default: return '';
+      case 'folder':
+        return '/path/to/project';
+      case 'file':
+        return '/path/to/file';
+      case 'deeplink':
+        return `${connectedApp?.capabilities.urlScheme || 'app'}://...`;
+      case 'url':
+        return 'https://...';
+      default:
+        return '';
     }
   };
 
@@ -244,9 +259,7 @@ export function SaveContextModal({ tab, open, onOpenChange }: SaveContextModalPr
           </div>
 
           {/* Validation error */}
-          {validationError && (
-            <p className="text-xs text-destructive">{validationError}</p>
-          )}
+          {validationError && <p className="text-xs text-destructive">{validationError}</p>}
 
           {/* Current context indicator */}
           {tab.appLauncherConfig?.launchConfig.filePath && (

@@ -1,5 +1,6 @@
 import { useSnapshot } from 'valtio';
 import { persistWithHistory } from '@/lib/persist-with-history';
+import { RECENTLY_CLOSED_TABS_LIMIT } from '@/lib/constants';
 import type { LaunchConfig, SavedState } from '@/types/launcher';
 
 export type TabType = 'terminal' | 'browser' | 'agent' | 'app-launcher' | 'tasks' | 'notes';
@@ -142,8 +143,8 @@ export const workspaceActions = {
       closedAt: new Date(),
     });
 
-    if (store.recentlyClosedTabs.length > 10) {
-      store.recentlyClosedTabs = store.recentlyClosedTabs.slice(0, 10);
+    if (store.recentlyClosedTabs.length > RECENTLY_CLOSED_TABS_LIMIT) {
+      store.recentlyClosedTabs = store.recentlyClosedTabs.slice(0, RECENTLY_CLOSED_TABS_LIMIT);
     }
 
     store.tabs.splice(tabIndex, 1);

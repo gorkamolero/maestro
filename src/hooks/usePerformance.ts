@@ -31,34 +31,31 @@ export function usePerformanceMonitor(intervalMs = 2000) {
         performanceActions.setConnected(true);
 
         // Listen for metrics updates
-        const unlisten = await platform.listen<PerformanceData>(
-          'performance-metrics',
-          (data) => {
-            if (!mounted) return;
+        const unlisten = await platform.listen<PerformanceData>('performance-metrics', (data) => {
+          if (!mounted) return;
 
-            // Update the store with new metrics
-            performanceActions.updateMetrics({
-              apps: data.apps,
-              system: data.system,
-              timestamp: data.timestamp,
-            });
+          // Update the store with new metrics
+          performanceActions.updateMetrics({
+            apps: data.apps,
+            system: data.system,
+            timestamp: data.timestamp,
+          });
 
-            // Also update tab and space aggregations when new metrics arrive
-            const workspaceStore = getWorkspaceStore();
-            const spacesStore = getSpacesStore();
+          // Also update tab and space aggregations when new metrics arrive
+          const workspaceStore = getWorkspaceStore();
+          const spacesStore = getSpacesStore();
 
-            const tabsForMetrics = workspaceStore.tabs.map(t => ({
-              id: t.id,
-              spaceId: t.spaceId,
-              type: t.type,
-            }));
+          const tabsForMetrics = workspaceStore.tabs.map((t) => ({
+            id: t.id,
+            spaceId: t.spaceId,
+            type: t.type,
+          }));
 
-            performanceActions.updateTabMetrics(tabsForMetrics, workspaceStore.activeTabId);
+          performanceActions.updateTabMetrics(tabsForMetrics, workspaceStore.activeTabId);
 
-            const spaceIds = [...new Set(spacesStore.spaces.map(s => s.id))];
-            performanceActions.updateSpaceMetrics(spaceIds);
-          }
-        );
+          const spaceIds = [...new Set(spacesStore.spaces.map((s) => s.id))];
+          performanceActions.updateSpaceMetrics(spaceIds);
+        });
 
         unlistenRef.current = unlisten;
       } catch (error) {
@@ -83,7 +80,7 @@ export function usePerformanceMonitor(intervalMs = 2000) {
   // Update tab and space metrics when tabs change
   useEffect(() => {
     // Map tabs to metrics structure
-    const tabsForMetrics = tabs.map(t => ({
+    const tabsForMetrics = tabs.map((t) => ({
       id: t.id,
       spaceId: t.spaceId,
       type: t.type,
@@ -92,7 +89,7 @@ export function usePerformanceMonitor(intervalMs = 2000) {
     performanceActions.updateTabMetrics(tabsForMetrics, activeTabId);
 
     // Get unique space IDs
-    const spaceIds = [...new Set(spaces.map(s => s.id))];
+    const spaceIds = [...new Set(spaces.map((s) => s.id))];
     performanceActions.updateSpaceMetrics(spaceIds);
   }, [tabs, activeTabId, spaces]);
 }
@@ -151,22 +148,20 @@ export function useSpaceTabsPerformance(spaceId: string | null) {
     };
   }
 
-  const spaceTabs = tabs.filter(t => t.spaceId === spaceId);
-  const tabsWithMetrics = spaceTabs.map(tab => ({
+  const spaceTabs = tabs.filter((t) => t.spaceId === spaceId);
+  const tabsWithMetrics = spaceTabs.map((tab) => ({
     tab,
     metrics: performance.tabs[tab.id],
     appMetrics: performance.apps[`browser-${tab.id}`],
   }));
 
-  const totalMemoryKB = tabsWithMetrics.reduce(
-    (sum, t) => sum + (t.metrics?.memoryKB || 0),
-    0
-  );
+  const totalMemoryKB = tabsWithMetrics.reduce((sum, t) => sum + (t.metrics?.memoryKB || 0), 0);
 
-  const activeTabs = tabsWithMetrics.filter(t => t.metrics?.memoryKB);
-  const avgCpuPercent = activeTabs.length > 0
-    ? activeTabs.reduce((sum, t) => sum + (t.metrics?.cpuPercent || 0), 0) / activeTabs.length
-    : 0;
+  const activeTabs = tabsWithMetrics.filter((t) => t.metrics?.memoryKB);
+  const avgCpuPercent =
+    activeTabs.length > 0
+      ? activeTabs.reduce((sum, t) => sum + (t.metrics?.cpuPercent || 0), 0) / activeTabs.length
+      : 0;
 
   return {
     tabs: tabsWithMetrics,

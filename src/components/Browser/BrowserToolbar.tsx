@@ -56,18 +56,10 @@ export function BrowserToolbar({
         >
           <ChevronRight className="w-4 h-4" />
         </button>
-        <button
-          onClick={onReload}
-          className="p-1.5 rounded hover:bg-accent"
-          title="Reload"
-        >
+        <button onClick={onReload} className="p-1.5 rounded hover:bg-accent" title="Reload">
           <RotateCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
         </button>
-        <button
-          onClick={onHome}
-          className="p-1.5 rounded hover:bg-accent"
-          title="Home"
-        >
+        <button onClick={onHome} className="p-1.5 rounded hover:bg-accent" title="Home">
           <Home className="w-4 h-4" />
         </button>
       </div>

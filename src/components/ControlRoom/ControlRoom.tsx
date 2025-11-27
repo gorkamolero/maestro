@@ -57,13 +57,7 @@ export function ControlRoom() {
       <div className="flex-1 flex items-stretch overflow-x-auto overflow-y-hidden px-6 py-4 gap-4">
         {filteredSpaces.map((space) => {
           const spaceTabs = tabs.filter((t) => t.spaceId === space.id);
-          return (
-            <SpaceCard
-              key={space.id}
-              space={space}
-              tabs={spaceTabs}
-            />
-          );
+          return <SpaceCard key={space.id} space={space} tabs={spaceTabs} />;
         })}
 
         {/* New Space button - Zed/Telegram style */}

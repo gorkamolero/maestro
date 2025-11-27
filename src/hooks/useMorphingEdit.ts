@@ -6,10 +6,7 @@ interface UseMorphingEditOptions {
 }
 
 export function useMorphingEdit(options: UseMorphingEditOptions = {}) {
-  const {
-    collapsedHeight = 50,
-    expandedHeight = 150,
-  } = options;
+  const { collapsedHeight = 50, expandedHeight = 150 } = options;
 
   const [isEditing, setIsEditing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);

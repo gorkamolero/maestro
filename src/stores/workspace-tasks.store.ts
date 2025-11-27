@@ -54,9 +54,8 @@ export const workspaceTasksComputed = {
    * Get count of incomplete tasks for a space
    */
   getIncompleteCount(spaceId: string): number {
-    return getWorkspaceTasksStore().tasks.filter(
-      (t) => t.spaceId === spaceId && !t.completed
-    ).length;
+    return getWorkspaceTasksStore().tasks.filter((t) => t.spaceId === spaceId && !t.completed)
+      .length;
   },
 };
 
@@ -67,9 +66,7 @@ export const workspaceTasksActions = {
 
     // Find the minimum position for this space (to insert at top)
     const spaceTasks = store.tasks.filter((t) => t.spaceId === spaceId);
-    const minPosition = spaceTasks.length > 0
-      ? Math.min(...spaceTasks.map((t) => t.position))
-      : 0;
+    const minPosition = spaceTasks.length > 0 ? Math.min(...spaceTasks.map((t) => t.position)) : 0;
 
     const task: WorkspaceTask = {
       id: crypto.randomUUID(),
@@ -110,9 +107,7 @@ export const workspaceTasksActions = {
 
   deleteCompletedTasks(spaceId: string) {
     const store = getWorkspaceTasksStore();
-    store.tasks = store.tasks.filter(
-      (t) => t.spaceId !== spaceId || !t.completed
-    );
+    store.tasks = store.tasks.filter((t) => t.spaceId !== spaceId || !t.completed);
   },
 
   deleteAllTasksForSpace(spaceId: string) {

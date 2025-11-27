@@ -137,9 +137,8 @@ export async function createBackup(): Promise<Backup> {
 
     // Get existing backups to determine version
     const existingBackups = await getBackups();
-    const version = existingBackups.length > 0
-      ? Math.max(...existingBackups.map(b => b.version)) + 1
-      : 1;
+    const version =
+      existingBackups.length > 0 ? Math.max(...existingBackups.map((b) => b.version)) + 1 : 1;
 
     const backup: Backup = {
       id: crypto.randomUUID(),
@@ -188,7 +187,7 @@ export async function getBackups(): Promise<Backup[]> {
         backups.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
         // Ensure dates are Date objects (they may be strings after retrieval)
-        backups.forEach(backup => {
+        backups.forEach((backup) => {
           if (typeof backup.timestamp === 'string') {
             backup.timestamp = new Date(backup.timestamp);
           }
@@ -222,7 +221,7 @@ async function pruneBackups(): Promise<void> {
       const transaction = db.transaction(BACKUP_STORE_NAME, 'readwrite');
       const store = transaction.objectStore(BACKUP_STORE_NAME);
 
-      backupsToDelete.forEach(backup => {
+      backupsToDelete.forEach((backup) => {
         store.delete(backup.id);
       });
 
@@ -241,7 +240,7 @@ async function pruneBackups(): Promise<void> {
  */
 export async function restoreBackup(backupId: string): Promise<boolean> {
   const backups = await getBackups();
-  const backup = backups.find(b => b.id === backupId);
+  const backup = backups.find((b) => b.id === backupId);
 
   if (!backup) {
     console.error(`[Backup] Backup not found: ${backupId}`);
@@ -292,11 +291,11 @@ export function startAutoBackup(): void {
   }
 
   // Create initial backup on startup
-  createBackup().catch(err => console.error('[Backup] Initial backup failed:', err));
+  createBackup().catch((err) => console.error('[Backup] Initial backup failed:', err));
 
   // Schedule periodic backups
   backupIntervalId = setInterval(() => {
-    createBackup().catch(err => console.error('[Backup] Scheduled backup failed:', err));
+    createBackup().catch((err) => console.error('[Backup] Scheduled backup failed:', err));
   }, BACKUP_INTERVAL_MS);
 
   console.log(`[Backup] Auto backup started (every ${BACKUP_INTERVAL_MS / 60000} minutes)`);

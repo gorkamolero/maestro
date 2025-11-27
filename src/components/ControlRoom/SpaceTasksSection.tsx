@@ -37,9 +37,7 @@ export function SpaceTasksSection({ spaceId }: SpaceTasksSectionProps) {
 
   // Get tasks for this space, sorted by position (lower = higher in list)
   const tasks = useMemo(() => {
-    return allTasks
-      .filter((t) => t.spaceId === spaceId)
-      .sort((a, b) => a.position - b.position);
+    return allTasks.filter((t) => t.spaceId === spaceId).sort((a, b) => a.position - b.position);
   }, [spaceId, allTasks]);
 
   const taskIds = useMemo(() => tasks.map((t) => t.id), [tasks]);
@@ -131,10 +129,7 @@ export function SpaceTasksSection({ spaceId }: SpaceTasksSectionProps) {
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
           >
-            <SortableContext
-              items={taskIds}
-              strategy={verticalListSortingStrategy}
-            >
+            <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
               <div className="space-y-1 pb-2 pr-2">
                 <AnimatePresence initial={false}>
                   {tasks.map((task) => (
@@ -145,9 +140,7 @@ export function SpaceTasksSection({ spaceId }: SpaceTasksSectionProps) {
             </SortableContext>
           </DndContext>
         ) : (
-          <p className="text-xs text-center py-4 text-muted-foreground">
-            No tasks yet
-          </p>
+          <p className="text-xs text-center py-4 text-muted-foreground">No tasks yet</p>
         )}
       </ScrollArea>
     </div>
@@ -159,14 +152,9 @@ interface SortableTaskItemProps {
 }
 
 function SortableTaskItem({ task }: SortableTaskItemProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: task.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: task.id,
+  });
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -177,10 +165,7 @@ function SortableTaskItem({ task }: SortableTaskItemProps) {
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <TaskItem
-        task={task}
-        isDragging={isDragging}
-      />
+      <TaskItem task={task} isDragging={isDragging} />
     </div>
   );
 }
@@ -281,9 +266,7 @@ function TaskItem({ task, isDragging }: TaskItemProps) {
             : 'border-muted-foreground/30 hover:border-muted-foreground/50'
         )}
       >
-        {task.completed && (
-          <Check className="w-3 h-3 text-primary-foreground" strokeWidth={3} />
-        )}
+        {task.completed && <Check className="w-3 h-3 text-primary-foreground" strokeWidth={3} />}
       </div>
 
       {/* Content - editable */}
@@ -303,9 +286,7 @@ function TaskItem({ task, isDragging }: TaskItemProps) {
           onClick={handleStartEdit}
           className={cn(
             'flex-1 text-xs leading-relaxed break-words cursor-text',
-            task.completed
-              ? 'line-through text-muted-foreground'
-              : 'text-foreground'
+            task.completed ? 'line-through text-muted-foreground' : 'text-foreground'
           )}
         >
           {task.content}

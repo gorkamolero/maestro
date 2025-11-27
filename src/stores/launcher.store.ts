@@ -1,9 +1,7 @@
 import { persist } from 'valtio-persist';
 import { IndexedDBStrategy } from 'valtio-persist/indexed-db';
-import type {
-  ConnectedApp,
-  RunningApp,
-} from '../types/launcher';
+import { handleError } from '@/lib/error-utils';
+import type { ConnectedApp, RunningApp } from '../types/launcher';
 
 // Electron IPC helper
 const invoke = (channel: string, ...args: unknown[]) => {
@@ -34,17 +32,15 @@ export const launcherStore = store;
 
 export const launcherActions = {
   async loadConnectedApps() {
-    const apps = await invoke('launcher:get-connected-apps') as ConnectedApp[];
+    const apps = (await invoke('launcher:get-connected-apps')) as ConnectedApp[];
     launcherStore.connectedApps = apps;
   },
 
   async registerApp(appPath: string): Promise<ConnectedApp> {
-    const app = await invoke('launcher:register-app', appPath) as ConnectedApp;
+    const app = (await invoke('launcher:register-app', appPath)) as ConnectedApp;
 
     // Check if app already exists by bundleId
-    const existingIndex = launcherStore.connectedApps.findIndex(
-      (a) => a.bundleId === app.bundleId
-    );
+    const existingIndex = launcherStore.connectedApps.findIndex((a) => a.bundleId === app.bundleId);
 
     if (existingIndex >= 0) {
       // IMPORTANT: Preserve the original ID to maintain references from workspace tabs
@@ -60,7 +56,14 @@ export const launcherActions = {
     return app;
   },
 
-  async launchApp(connectedAppId: string, launchConfig: { filePath: string | null; deepLink: string | null; launchMethod: 'file' | 'deeplink' | 'app-only' }) {
+  async launchApp(
+    connectedAppId: string,
+    launchConfig: {
+      filePath: string | null;
+      deepLink: string | null;
+      launchMethod: 'file' | 'deeplink' | 'app-only';
+    }
+  ) {
     const connectedApp = launcherActions.getConnectedApp(connectedAppId);
     if (!connectedApp) {
       throw new Error(`Connected app not found: ${connectedAppId}`);
@@ -100,7 +103,7 @@ export const launcherActions = {
   },
 
   async updateRunningApps() {
-    const apps = await invoke('launcher:get-running-apps') as RunningApp[];
+    const apps = (await invoke('launcher:get-running-apps')) as RunningApp[];
     launcherStore.runningApps = new Set(apps.map((a) => a.bundleId));
   },
 
@@ -109,11 +112,11 @@ export const launcherActions = {
   },
 
   async pickApp(): Promise<string | null> {
-    return await invoke('launcher:pick-app') as string | null;
+    return (await invoke('launcher:pick-app')) as string | null;
   },
 
   async pickFile(appId: string): Promise<string | null> {
-    return await invoke('launcher:pick-file', appId) as string | null;
+    return (await invoke('launcher:pick-file', appId)) as string | null;
   },
 
   getConnectedApp(appId: string): ConnectedApp | undefined {
@@ -134,15 +137,22 @@ export const launcherActions = {
     return launcherStore.connectedApps.find((a) => a.name === name);
   },
 
-  async getInstalledApps(): Promise<Array<{ name: string; path: string; bundleId: string | null; icon: string | null }>> {
-    return await invoke('launcher:get-installed-apps') as Array<{ name: string; path: string; bundleId: string | null; icon: string | null }>;
+  async getInstalledApps(): Promise<
+    Array<{ name: string; path: string; bundleId: string | null; icon: string | null }>
+  > {
+    return (await invoke('launcher:get-installed-apps')) as Array<{
+      name: string;
+      path: string;
+      bundleId: string | null;
+      icon: string | null;
+    }>;
   },
 };
 
 // Poll for running apps every 2 seconds
 setInterval(() => {
-  launcherActions.updateRunningApps().catch(console.error);
+  launcherActions.updateRunningApps().catch(handleError({ prefix: '[Launcher]' }));
 }, 2000);
 
 // Initial update
-launcherActions.updateRunningApps().catch(console.error);
+launcherActions.updateRunningApps().catch(handleError({ prefix: '[Launcher]' }));

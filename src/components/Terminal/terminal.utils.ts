@@ -38,7 +38,7 @@ export function restoreTerminalBuffer(terminal: Terminal, content: string): void
   if (!content) return;
 
   const lines = content.split('\n');
-  lines.forEach(line => {
+  lines.forEach((line) => {
     terminal.writeln(line);
   });
 }
@@ -50,8 +50,8 @@ export function restoreTerminalBuffer(terminal: Terminal, content: string): void
 export function extractWorkingDirectory(buffer: string): string | null {
   // Look for common shell prompts that include directory
   const patterns = [
-    /(?:^|\n).*?([~/][\w\-/.]+)\s*[$#>]/m,  // bash/zsh style
-    /(?:^|\n).*?\[([~/][\w\-/.]+)\]/m,       // bracketed style
+    /(?:^|\n).*?([~/][\w\-/.]+)\s*[$#>]/m, // bash/zsh style
+    /(?:^|\n).*?\[([~/][\w\-/.]+)\]/m, // bracketed style
   ];
 
   for (const pattern of patterns) {
@@ -87,7 +87,10 @@ export interface TerminalState {
   theme: 'termius-dark' | 'dracula' | 'nord';
 }
 
-export function saveTerminalState(terminal: Terminal, theme: TerminalState['theme']): TerminalState {
+export function saveTerminalState(
+  terminal: Terminal,
+  theme: TerminalState['theme']
+): TerminalState {
   const buffer = getTerminalBuffer(terminal);
   const workingDir = extractWorkingDirectory(buffer);
 

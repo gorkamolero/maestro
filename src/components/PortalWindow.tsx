@@ -45,8 +45,10 @@ export function PortalWindow({ children, onClose }: PortalWindowProps) {
         externalWindow.__IS_PORTAL_WINDOW__ = true;
 
         // Copy styles from parent window
-        const parentStyles = Array.from(document.head.querySelectorAll('style, link[rel="stylesheet"]'));
-        parentStyles.forEach(style => {
+        const parentStyles = Array.from(
+          document.head.querySelectorAll('style, link[rel="stylesheet"]')
+        );
+        parentStyles.forEach((style) => {
           const clonedStyle = style.cloneNode(true);
           externalWindow.document.head.appendChild(clonedStyle);
         });
@@ -112,7 +114,6 @@ export function PortalWindow({ children, onClose }: PortalWindowProps) {
 
     // Cleanup: close the portal BrowserView when component unmounts
     return () => {
-
       // Close the portal immediately - don't wait or check mount count
       platform.closeAllPortals().catch((err) => {
         console.error('[PortalWindow] Error closing portals:', err);
@@ -160,8 +161,7 @@ export function PortalWindow({ children, onClose }: PortalWindowProps) {
           if (portalWindow && !portalWindow.closed) {
             portalWindow.removeEventListener('keydown', handleEscape);
           }
-        } catch (error) {
-        }
+        } catch (error) {}
       };
     } catch (error) {
       console.error('[PortalWindow] Error setting up escape handler:', error);
@@ -194,7 +194,6 @@ export function PortalWindow({ children, onClose }: PortalWindowProps) {
 
     // Send bounds once ID is available
     waitForWebContentsId().then((webContentsId) => {
-
       // @ts-expect-error - window.opener exists on child windows
       if (portalWindow.opener && !portalWindow.opener.closed) {
         // @ts-expect-error - window.electron is added by preload

@@ -1,14 +1,9 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  type ReactNode,
-} from "react"
-import { Slot } from "@radix-ui/react-slot"
-import clsx from "clsx"
-import { AnimatePresence, motion } from "motion/react"
-import useMeasure from "react-use-measure"
-import { Drawer } from "vaul"
+import { createContext, useContext, useState, type ReactNode } from 'react';
+import { Slot } from '@radix-ui/react-slot';
+import clsx from 'clsx';
+import { AnimatePresence, motion } from 'motion/react';
+import useMeasure from 'react-use-measure';
+import { Drawer } from 'vaul';
 
 // ============================================================================
 // usePrevious Hook - React 19 compliant
@@ -20,25 +15,25 @@ import { Drawer } from "vaul"
  * Uses state to store the value, avoiding ref access during render.
  */
 function usePrevious<T>(value: T): T | undefined {
-  const [current, setCurrent] = useState<T>(value)
-  const [previous, setPrevious] = useState<T | undefined>(undefined)
+  const [current, setCurrent] = useState<T>(value);
+  const [previous, setPrevious] = useState<T | undefined>(undefined);
 
   if (value !== current) {
-    setPrevious(current)
-    setCurrent(value)
+    setPrevious(current);
+    setCurrent(value);
   }
 
-  return previous
+  return previous;
 }
 
 // ============================================================================
 // Types
 // ============================================================================
 
-type ViewComponent = React.ComponentType<Record<string, unknown>>
+type ViewComponent = React.ComponentType<Record<string, unknown>>;
 
 interface ViewsRegistry {
-  [viewName: string]: ViewComponent
+  [viewName: string]: ViewComponent;
 }
 
 // ============================================================================
@@ -46,27 +41,23 @@ interface ViewsRegistry {
 // ============================================================================
 
 interface FamilyDrawerContextValue {
-  isOpen: boolean
-  view: string
-  setView: (view: string) => void
-  opacityDuration: number
-  elementRef: ReturnType<typeof useMeasure>[0]
-  bounds: ReturnType<typeof useMeasure>[1]
-  views: ViewsRegistry | undefined
+  isOpen: boolean;
+  view: string;
+  setView: (view: string) => void;
+  opacityDuration: number;
+  elementRef: ReturnType<typeof useMeasure>[0];
+  bounds: ReturnType<typeof useMeasure>[1];
+  views: ViewsRegistry | undefined;
 }
 
-const FamilyDrawerContext = createContext<FamilyDrawerContextValue | undefined>(
-  undefined
-)
+const FamilyDrawerContext = createContext<FamilyDrawerContextValue | undefined>(undefined);
 
 function useFamilyDrawer() {
-  const context = useContext(FamilyDrawerContext)
+  const context = useContext(FamilyDrawerContext);
   if (!context) {
-    throw new Error(
-      "FamilyDrawer components must be used within FamilyDrawerRoot"
-    )
+    throw new Error('FamilyDrawer components must be used within FamilyDrawerRoot');
   }
-  return context
+  return context;
 }
 
 // ============================================================================
@@ -74,13 +65,13 @@ function useFamilyDrawer() {
 // ============================================================================
 
 interface FamilyDrawerRootProps {
-  children: ReactNode
-  open?: boolean
-  defaultOpen?: boolean
-  onOpenChange?: (open: boolean) => void
-  defaultView?: string
-  onViewChange?: (view: string) => void
-  views?: ViewsRegistry
+  children: ReactNode;
+  open?: boolean;
+  defaultOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  defaultView?: string;
+  onViewChange?: (view: string) => void;
+  views?: ViewsRegistry;
 }
 
 function FamilyDrawerRoot({
@@ -88,41 +79,40 @@ function FamilyDrawerRoot({
   open: controlledOpen,
   defaultOpen = false,
   onOpenChange,
-  defaultView = "default",
+  defaultView = 'default',
   onViewChange,
   views: customViews,
 }: FamilyDrawerRootProps) {
-  const [internalOpen, setInternalOpen] = useState(defaultOpen)
-  const [view, setView] = useState(defaultView)
-  const [elementRef, bounds] = useMeasure()
+  const [internalOpen, setInternalOpen] = useState(defaultOpen);
+  const [view, setView] = useState(defaultView);
+  const [elementRef, bounds] = useMeasure();
 
-  const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen
-  const setIsOpen = onOpenChange || setInternalOpen
+  const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setIsOpen = onOpenChange || setInternalOpen;
 
   // Track previous height for animation duration calculation
-  const previousHeight = usePrevious(bounds.height)
+  const previousHeight = usePrevious(bounds.height);
 
   // Calculate opacity duration based on height change
   const opacityDuration = (() => {
-    const MIN_DURATION = 0.15
-    const MAX_DURATION = 0.27
+    const MIN_DURATION = 0.15;
+    const MAX_DURATION = 0.27;
 
     if (previousHeight === undefined || previousHeight === 0) {
-      return MIN_DURATION
+      return MIN_DURATION;
     }
 
-    const heightDifference = Math.abs(bounds.height - previousHeight)
-    return Math.min(Math.max(heightDifference / 500, MIN_DURATION), MAX_DURATION)
-  })()
+    const heightDifference = Math.abs(bounds.height - previousHeight);
+    return Math.min(Math.max(heightDifference / 500, MIN_DURATION), MAX_DURATION);
+  })();
 
   const handleViewChange = (newView: string) => {
-    setView(newView)
-    onViewChange?.(newView)
-  }
+    setView(newView);
+    onViewChange?.(newView);
+  };
 
   // Use custom views if provided, otherwise pass undefined
-  const views =
-    customViews && Object.keys(customViews).length > 0 ? customViews : undefined
+  const views = customViews && Object.keys(customViews).length > 0 ? customViews : undefined;
 
   const contextValue: FamilyDrawerContextValue = {
     isOpen,
@@ -132,7 +122,7 @@ function FamilyDrawerRoot({
     elementRef,
     bounds,
     views,
-  }
+  };
 
   return (
     <FamilyDrawerContext.Provider value={contextValue}>
@@ -140,7 +130,7 @@ function FamilyDrawerRoot({
         {children}
       </Drawer.Root>
     </FamilyDrawerContext.Provider>
-  )
+  );
 }
 
 // ============================================================================
@@ -148,29 +138,25 @@ function FamilyDrawerRoot({
 // ============================================================================
 
 interface FamilyDrawerTriggerProps {
-  children: ReactNode
-  asChild?: boolean
-  className?: string
+  children: ReactNode;
+  asChild?: boolean;
+  className?: string;
 }
 
-function FamilyDrawerTrigger({
-  children,
-  asChild = false,
-  className,
-}: FamilyDrawerTriggerProps) {
+function FamilyDrawerTrigger({ children, asChild = false, className }: FamilyDrawerTriggerProps) {
   if (asChild) {
     return (
       <Drawer.Trigger asChild>
         <Slot>{children}</Slot>
       </Drawer.Trigger>
-    )
+    );
   }
 
   return (
     <Drawer.Trigger asChild>
       <button
         className={clsx(
-          "fixed top-1/2 left-1/2 antialiased -translate-y-1/2 -translate-x-1/2 h-[44px] rounded-full border bg-background px-4 py-2 font-medium text-foreground transition-colors hover:bg-accent focus-visible:shadow-focus-ring-button md:font-medium cursor-pointer",
+          'fixed top-1/2 left-1/2 antialiased -translate-y-1/2 -translate-x-1/2 h-[44px] rounded-full border bg-background px-4 py-2 font-medium text-foreground transition-colors hover:bg-accent focus-visible:shadow-focus-ring-button md:font-medium cursor-pointer',
           className
         )}
         type="button"
@@ -178,7 +164,7 @@ function FamilyDrawerTrigger({
         {children}
       </button>
     </Drawer.Trigger>
-  )
+  );
 }
 
 // ============================================================================
@@ -186,7 +172,7 @@ function FamilyDrawerTrigger({
 // ============================================================================
 
 function FamilyDrawerPortal({ children }: { children: ReactNode }) {
-  return <Drawer.Portal>{children}</Drawer.Portal>
+  return <Drawer.Portal>{children}</Drawer.Portal>;
 }
 
 // ============================================================================
@@ -194,19 +180,19 @@ function FamilyDrawerPortal({ children }: { children: ReactNode }) {
 // ============================================================================
 
 interface FamilyDrawerOverlayProps {
-  className?: string
-  onClick?: () => void
+  className?: string;
+  onClick?: () => void;
 }
 
 function FamilyDrawerOverlay({ className, onClick }: FamilyDrawerOverlayProps) {
-  const { setView } = useFamilyDrawer()
+  const { setView } = useFamilyDrawer();
 
   return (
     <Drawer.Overlay
-      className={clsx("fixed inset-0 z-10 bg-black/30", className)}
-      onClick={onClick || (() => setView("default"))}
+      className={clsx('fixed inset-0 z-10 bg-black/30', className)}
+      onClick={onClick || (() => setView('default'))}
     />
-  )
+  );
 }
 
 // ============================================================================
@@ -214,22 +200,18 @@ function FamilyDrawerOverlay({ className, onClick }: FamilyDrawerOverlayProps) {
 // ============================================================================
 
 interface FamilyDrawerContentProps {
-  children: ReactNode
-  className?: string
-  asChild?: boolean
+  children: ReactNode;
+  className?: string;
+  asChild?: boolean;
 }
 
-function FamilyDrawerContent({
-  children,
-  className,
-  asChild = false,
-}: FamilyDrawerContentProps) {
-  const { bounds } = useFamilyDrawer()
+function FamilyDrawerContent({ children, className, asChild = false }: FamilyDrawerContentProps) {
+  const { bounds } = useFamilyDrawer();
 
   // Stop propagation on all clicks inside the drawer content
   const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation()
-  }
+    e.stopPropagation();
+  };
 
   const content = (
     <motion.div
@@ -244,33 +226,33 @@ function FamilyDrawerContent({
     >
       {children}
     </motion.div>
-  )
+  );
 
   if (asChild) {
     return (
       <Drawer.Content
         asChild
         className={clsx(
-          "fixed inset-x-4 bottom-4 z-10 mx-auto max-w-[361px] overflow-hidden rounded-[36px] bg-background outline-none md:mx-auto md:w-full",
+          'fixed inset-x-4 bottom-4 z-10 mx-auto max-w-[361px] overflow-hidden rounded-[36px] bg-background outline-none md:mx-auto md:w-full',
           className
         )}
       >
         <Slot>{content}</Slot>
       </Drawer.Content>
-    )
+    );
   }
 
   return (
     <Drawer.Content
       asChild
       className={clsx(
-        "fixed inset-x-4 bottom-4 z-10 mx-auto max-w-[361px] overflow-hidden rounded-[36px] bg-background outline-none md:mx-auto md:w-full",
+        'fixed inset-x-4 bottom-4 z-10 mx-auto max-w-[361px] overflow-hidden rounded-[36px] bg-background outline-none md:mx-auto md:w-full',
         className
       )}
     >
       {content}
     </Drawer.Content>
-  )
+  );
 }
 
 // ============================================================================
@@ -278,24 +260,18 @@ function FamilyDrawerContent({
 // ============================================================================
 
 interface FamilyDrawerAnimatedWrapperProps {
-  children: ReactNode
-  className?: string
+  children: ReactNode;
+  className?: string;
 }
 
-function FamilyDrawerAnimatedWrapper({
-  children,
-  className,
-}: FamilyDrawerAnimatedWrapperProps) {
-  const { elementRef } = useFamilyDrawer()
+function FamilyDrawerAnimatedWrapper({ children, className }: FamilyDrawerAnimatedWrapperProps) {
+  const { elementRef } = useFamilyDrawer();
 
   return (
-    <div
-      ref={elementRef}
-      className={clsx("px-6 pb-6 pt-2.5 antialiased", className)}
-    >
+    <div ref={elementRef} className={clsx('px-6 pb-6 pt-2.5 antialiased', className)}>
       {children}
     </div>
-  )
+  );
 }
 
 // ============================================================================
@@ -303,13 +279,11 @@ function FamilyDrawerAnimatedWrapper({
 // ============================================================================
 
 interface FamilyDrawerAnimatedContentProps {
-  children: ReactNode
+  children: ReactNode;
 }
 
-function FamilyDrawerAnimatedContent({
-  children,
-}: FamilyDrawerAnimatedContentProps) {
-  const { view, opacityDuration } = useFamilyDrawer()
+function FamilyDrawerAnimatedContent({ children }: FamilyDrawerAnimatedContentProps) {
+  const { view, opacityDuration } = useFamilyDrawer();
 
   return (
     <AnimatePresence initial={false} mode="popLayout" custom={view}>
@@ -326,7 +300,7 @@ function FamilyDrawerAnimatedContent({
         {children}
       </motion.div>
     </AnimatePresence>
-  )
+  );
 }
 
 // ============================================================================
@@ -334,38 +308,34 @@ function FamilyDrawerAnimatedContent({
 // ============================================================================
 
 interface FamilyDrawerCloseProps {
-  children?: ReactNode
-  asChild?: boolean
-  className?: string
+  children?: ReactNode;
+  asChild?: boolean;
+  className?: string;
 }
 
-function FamilyDrawerClose({
-  children,
-  asChild = false,
-  className,
-}: FamilyDrawerCloseProps) {
+function FamilyDrawerClose({ children, asChild = false, className }: FamilyDrawerCloseProps) {
   const defaultClose = (
     <button
       data-vaul-no-drag=""
       className={clsx(
-        "absolute right-8 top-7 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground transition-transform focus:scale-95 focus-visible:shadow-focus-ring-button active:scale-75 cursor-pointer",
+        'absolute right-8 top-7 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground transition-transform focus:scale-95 focus-visible:shadow-focus-ring-button active:scale-75 cursor-pointer',
         className
       )}
       type="button"
     >
       {children || <CloseIcon />}
     </button>
-  )
+  );
 
   if (asChild) {
     return (
       <Drawer.Close asChild>
         <Slot>{defaultClose}</Slot>
       </Drawer.Close>
-    )
+    );
   }
 
-  return <Drawer.Close asChild>{defaultClose}</Drawer.Close>
+  return <Drawer.Close asChild>{defaultClose}</Drawer.Close>;
 }
 
 // ============================================================================
@@ -373,36 +343,29 @@ function FamilyDrawerClose({
 // ============================================================================
 
 interface FamilyDrawerHeaderProps {
-  icon: ReactNode
-  title: string
-  description: string
-  className?: string
+  icon: ReactNode;
+  title: string;
+  description: string;
+  className?: string;
 }
 
-function FamilyDrawerHeader({
-  icon,
-  title,
-  description,
-  className,
-}: FamilyDrawerHeaderProps) {
+function FamilyDrawerHeader({ icon, title, description, className }: FamilyDrawerHeaderProps) {
   return (
-    <header className={clsx("mt-[21px]", className)}>
+    <header className={clsx('mt-[21px]', className)}>
       {icon}
-      <h2 className="mt-2.5 text-[22px] font-semibold text-foreground md:font-medium">
-        {title}
-      </h2>
+      <h2 className="mt-2.5 text-[22px] font-semibold text-foreground md:font-medium">{title}</h2>
       <p className="mt-3 text-[17px] font-medium leading-[24px] text-muted-foreground md:font-normal">
         {description}
       </p>
     </header>
-  )
+  );
 }
 
 interface FamilyDrawerButtonProps {
-  children: ReactNode
-  onClick: () => void
-  className?: string
-  asChild?: boolean
+  children: ReactNode;
+  onClick: () => void;
+  className?: string;
+  asChild?: boolean;
 }
 
 function FamilyDrawerButton({
@@ -412,16 +375,16 @@ function FamilyDrawerButton({
   asChild = false,
 }: FamilyDrawerButtonProps) {
   const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    e.preventDefault()
-    onClick()
-  }
+    e.stopPropagation();
+    e.preventDefault();
+    onClick();
+  };
 
   const button = (
     <button
       data-vaul-no-drag=""
       className={clsx(
-        "flex h-12 w-full items-center gap-[15px] rounded-[16px] bg-muted px-4 text-[17px] font-semibold text-foreground transition-transform focus:scale-95 focus-visible:shadow-focus-ring-button active:scale-95 md:font-medium cursor-pointer",
+        'flex h-12 w-full items-center gap-[15px] rounded-[16px] bg-muted px-4 text-[17px] font-semibold text-foreground transition-transform focus:scale-95 focus-visible:shadow-focus-ring-button active:scale-95 md:font-medium cursor-pointer',
         className
       )}
       onClick={handleClick}
@@ -429,20 +392,20 @@ function FamilyDrawerButton({
     >
       {children}
     </button>
-  )
+  );
 
   if (asChild) {
-    return <Slot>{button}</Slot>
+    return <Slot>{button}</Slot>;
   }
 
-  return button
+  return button;
 }
 
 interface FamilyDrawerSecondaryButtonProps {
-  children: ReactNode
-  onClick: () => void
-  className: string
-  asChild?: boolean
+  children: ReactNode;
+  onClick: () => void;
+  className: string;
+  asChild?: boolean;
 }
 
 function FamilyDrawerSecondaryButton({
@@ -452,30 +415,30 @@ function FamilyDrawerSecondaryButton({
   asChild = false,
 }: FamilyDrawerSecondaryButtonProps) {
   const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    e.preventDefault()
-    onClick()
-  }
+    e.stopPropagation();
+    e.preventDefault();
+    onClick();
+  };
 
   const button = (
     <button
       data-vaul-no-drag=""
       type="button"
       className={clsx(
-        "flex h-12 w-full items-center justify-center gap-[15px] rounded-full text-center text-[19px] font-semibold transition-transform focus:scale-95 focus-visible:shadow-focus-ring-button active:scale-95 md:font-medium cursor-pointer",
+        'flex h-12 w-full items-center justify-center gap-[15px] rounded-full text-center text-[19px] font-semibold transition-transform focus:scale-95 focus-visible:shadow-focus-ring-button active:scale-95 md:font-medium cursor-pointer',
         className
       )}
       onClick={handleClick}
     >
       {children}
     </button>
-  )
+  );
 
   if (asChild) {
-    return <Slot>{button}</Slot>
+    return <Slot>{button}</Slot>;
   }
 
-  return button
+  return button;
 }
 
 // ============================================================================
@@ -483,34 +446,32 @@ function FamilyDrawerSecondaryButton({
 // ============================================================================
 
 interface FamilyDrawerViewContentProps {
-  views?: ViewsRegistry
+  views?: ViewsRegistry;
 }
 
 function FamilyDrawerViewContent(
-  {
-    views: propViews,
-  }: FamilyDrawerViewContentProps = {} as FamilyDrawerViewContentProps
+  { views: propViews }: FamilyDrawerViewContentProps = {} as FamilyDrawerViewContentProps
 ) {
-  const { view, views: contextViews } = useFamilyDrawer()
+  const { view, views: contextViews } = useFamilyDrawer();
 
   // Use prop views first, then context views
-  const views = propViews || contextViews
+  const views = propViews || contextViews;
 
   if (!views) {
     throw new Error(
-      "FamilyDrawerViewContent requires views to be provided via props or FamilyDrawerRoot"
-    )
+      'FamilyDrawerViewContent requires views to be provided via props or FamilyDrawerRoot'
+    );
   }
 
-  const ViewComponent = views[view]
+  const ViewComponent = views[view];
 
   if (!ViewComponent) {
     // Fallback to default view if view not found
-    const DefaultComponent = views.default
-    return DefaultComponent ? <DefaultComponent /> : null
+    const DefaultComponent = views.default;
+    return DefaultComponent ? <DefaultComponent /> : null;
   }
 
-  return <ViewComponent />
+  return <ViewComponent />;
 }
 
 // ============================================================================
@@ -519,13 +480,7 @@ function FamilyDrawerViewContent(
 
 function CloseIcon() {
   return (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 12 12"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
       <title>Close Icon</title>
       <path
         d="M10.4854 1.99998L2.00007 10.4853"
@@ -542,7 +497,7 @@ function CloseIcon() {
         strokeLinejoin="round"
       />
     </svg>
-  )
+  );
 }
 
 // ============================================================================
@@ -565,4 +520,4 @@ export {
   useFamilyDrawer,
   type ViewsRegistry,
   type ViewComponent,
-}
+};

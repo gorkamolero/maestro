@@ -43,11 +43,11 @@ export const getProfileStore = () => profileStore;
 export const getActiveProfile = (): Profile | null => {
   const { profiles, activeProfileId } = profileStore;
   if (!activeProfileId) return null;
-  return profiles.find(p => p.id === activeProfileId) || null;
+  return profiles.find((p) => p.id === activeProfileId) || null;
 };
 
 export const getProfileById = (id: string): Profile | null => {
-  return profileStore.profiles.find(p => p.id === id) || null;
+  return profileStore.profiles.find((p) => p.id === id) || null;
 };
 
 // =============================================================================
@@ -61,7 +61,7 @@ export function useProfileStore() {
 export function useActiveProfile(): Profile | null {
   const snap = useSnapshot(profileStore);
   if (!snap.activeProfileId) return null;
-  return snap.profiles.find(p => p.id === snap.activeProfileId) || null;
+  return snap.profiles.find((p) => p.id === snap.activeProfileId) || null;
 }
 
 // =============================================================================
@@ -101,8 +101,11 @@ export const profileActions = {
   /**
    * Update an existing profile
    */
-  updateProfile: (profileId: string, updates: Partial<Omit<Profile, 'id' | 'sessionPartition' | 'createdAt'>>): void => {
-    const index = profileStore.profiles.findIndex(p => p.id === profileId);
+  updateProfile: (
+    profileId: string,
+    updates: Partial<Omit<Profile, 'id' | 'sessionPartition' | 'createdAt'>>
+  ): void => {
+    const index = profileStore.profiles.findIndex((p) => p.id === profileId);
     if (index !== -1) {
       profileStore.profiles[index] = {
         ...profileStore.profiles[index],
@@ -115,7 +118,7 @@ export const profileActions = {
    * Update profile settings
    */
   updateProfileSettings: (profileId: string, settings: Partial<ProfileSettings>): void => {
-    const profile = profileStore.profiles.find(p => p.id === profileId);
+    const profile = profileStore.profiles.find((p) => p.id === profileId);
     if (profile) {
       profile.settings = {
         ...profile.settings,
@@ -128,7 +131,7 @@ export const profileActions = {
    * Delete a profile
    */
   deleteProfile: (profileId: string): void => {
-    const index = profileStore.profiles.findIndex(p => p.id === profileId);
+    const index = profileStore.profiles.findIndex((p) => p.id === profileId);
     if (index !== -1) {
       profileStore.profiles.splice(index, 1);
 
@@ -143,7 +146,7 @@ export const profileActions = {
    * Switch to a different profile
    */
   switchProfile: (profileId: string): void => {
-    const profile = profileStore.profiles.find(p => p.id === profileId);
+    const profile = profileStore.profiles.find((p) => p.id === profileId);
     if (profile) {
       profileStore.activeProfileId = profileId;
       profile.lastActiveAt = new Date().toISOString();

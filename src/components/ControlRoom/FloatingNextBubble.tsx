@@ -25,18 +25,9 @@ export function FloatingNextBubble({ spaceId, className }: FloatingNextBubblePro
 
   return (
     <div
-      className={cn(
-        'px-3 py-2 rounded-lg',
-        'bg-card/90 backdrop-blur-sm',
-        'max-w-xs',
-        className
-      )}
+      className={cn('px-3 py-2 rounded-lg', 'bg-card/90 backdrop-blur-sm', 'max-w-xs', className)}
     >
-      <NextBubble
-        value={space.next}
-        onChange={handleChange}
-        placeholder="What's next?"
-      />
+      <NextBubble value={space.next} onChange={handleChange} placeholder="What's next?" />
     </div>
   );
 }

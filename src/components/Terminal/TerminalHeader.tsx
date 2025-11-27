@@ -27,9 +27,7 @@ export function TerminalHeader({ workingDir, theme, onThemeChange }: TerminalHea
     >
       <div className="flex items-center gap-2">
         <Terminal className="w-4 h-4 text-primary" />
-        <span className="text-xs font-medium">
-          {workingDir || 'Terminal'}
-        </span>
+        <span className="text-xs font-medium">{workingDir || 'Terminal'}</span>
       </div>
 
       <div className="flex items-center gap-2">

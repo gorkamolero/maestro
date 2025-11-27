@@ -59,7 +59,9 @@ export function launchTab(tabId: string): void {
       connectedApp = launcherActions.getConnectedAppByName(tab.title);
       if (connectedApp) {
         // Auto-heal: Update the tab's connectedAppId to the correct ID
-        console.log(`[launchTab] Auto-healing connectedAppId for "${tab.title}": ${tab.appLauncherConfig.connectedAppId} -> ${connectedApp.id}`);
+        console.log(
+          `[launchTab] Auto-healing connectedAppId for "${tab.title}": ${tab.appLauncherConfig.connectedAppId} -> ${connectedApp.id}`
+        );
         workspaceActions.updateAppLauncherConfig(tab.id, {
           connectedAppId: connectedApp.id,
         });
@@ -67,12 +69,11 @@ export function launchTab(tabId: string): void {
     }
 
     if (connectedApp) {
-      launcherActions.launchApp(
-        connectedApp.id,
-        tab.appLauncherConfig.launchConfig
-      );
+      launcherActions.launchApp(connectedApp.id, tab.appLauncherConfig.launchConfig);
     } else {
-      console.error(`[launchTab] Connected app not found for tab "${tab.title}" (ID: ${tab.appLauncherConfig.connectedAppId})`);
+      console.error(
+        `[launchTab] Connected app not found for tab "${tab.title}" (ID: ${tab.appLauncherConfig.connectedAppId})`
+      );
     }
   }
   // For non-app-launcher tabs, we just set them active (they don't "launch" externally)

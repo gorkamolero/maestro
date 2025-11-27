@@ -10,10 +10,7 @@ import {
   CAN_REDO_COMMAND,
   COMMAND_PRIORITY_CRITICAL,
 } from 'lexical';
-import {
-  INSERT_ORDERED_LIST_COMMAND,
-  INSERT_UNORDERED_LIST_COMMAND,
-} from '@lexical/list';
+import { INSERT_ORDERED_LIST_COMMAND, INSERT_UNORDERED_LIST_COMMAND } from '@lexical/list';
 import { $createHeadingNode, $createQuoteNode, HeadingTagType } from '@lexical/rich-text';
 import { $setBlocksType } from '@lexical/selection';
 import { $createCodeNode } from '@lexical/code';
@@ -216,9 +213,7 @@ export function EditorToolbar() {
       {/* Lists */}
       <Toggle
         size="sm"
-        onPressedChange={() =>
-          editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined)
-        }
+        onPressedChange={() => editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined)}
         className="h-8 w-8 p-0"
       >
         <List className="h-4 w-4" />

@@ -44,13 +44,8 @@ export function WindowContent({ tab, width, height }: WindowContentProps) {
   // For tasks tabs - placeholder for now
   if (tab.type === 'tasks') {
     return (
-      <div
-        className="w-full h-full overflow-auto bg-card p-4"
-        style={{ width, height }}
-      >
-        <div className="text-muted-foreground text-sm">
-          Tasks view - coming soon
-        </div>
+      <div className="w-full h-full overflow-auto bg-card p-4" style={{ width, height }}>
+        <div className="text-muted-foreground text-sm">Tasks view - coming soon</div>
       </div>
     );
   }
@@ -58,13 +53,8 @@ export function WindowContent({ tab, width, height }: WindowContentProps) {
   // For notes tabs - placeholder for now
   if (tab.type === 'notes') {
     return (
-      <div
-        className="w-full h-full overflow-auto bg-card p-4"
-        style={{ width, height }}
-      >
-        <div className="text-muted-foreground text-sm">
-          Notes editor - coming soon
-        </div>
+      <div className="w-full h-full overflow-auto bg-card p-4" style={{ width, height }}>
+        <div className="text-muted-foreground text-sm">Notes editor - coming soon</div>
       </div>
     );
   }
@@ -75,9 +65,7 @@ export function WindowContent({ tab, width, height }: WindowContentProps) {
       className="w-full h-full flex items-center justify-center bg-card"
       style={{ width, height }}
     >
-      <div className="text-muted-foreground text-sm">
-        Unknown tab type: {tab.type}
-      </div>
+      <div className="text-muted-foreground text-sm">Unknown tab type: {tab.type}</div>
     </div>
   );
 }
