@@ -1,6 +1,5 @@
 import { useEffect, useRef, useCallback, useState, useMemo } from 'react';
-import { Plus, CheckSquare, FileText, ChevronRight } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { Plus, CheckSquare, FileText } from 'lucide-react';
 import { useSpacesStore, spacesActions } from '@/stores/spaces.store';
 import { useWorkspaceStore } from '@/stores/workspace.store';
 import { useWorkspaceTasksStore } from '@/stores/workspace-tasks.store';
@@ -10,6 +9,7 @@ import { TabPreviewList } from './TabPreviewList';
 import { SpaceTasksSection } from './SpaceTasksSection';
 import { SpaceNotesEditor } from './SpaceNotesEditor';
 import { TagSelector } from './TagSelector';
+import { CollapsibleSection } from './CollapsibleSection';
 import { EmojiPickerComponent } from '@/components/ui/emoji-picker';
 import { cn } from '@/lib/utils';
 
@@ -335,46 +335,4 @@ function SpacePaneHeaderContent({ space, tabs }: SpacePaneHeaderContentProps) {
   );
 }
 
-interface CollapsibleSectionProps {
-  icon: React.ReactNode;
-  label: string;
-  defaultOpen?: boolean;
-  children: React.ReactNode;
-}
-
-function CollapsibleSection({ icon, label, defaultOpen = false, children }: CollapsibleSectionProps) {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-
-  return (
-    <div>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 w-full h-7 px-2 text-[11px] font-medium text-muted-foreground hover:text-foreground border-b border-white/[0.06] transition-colors"
-      >
-        <ChevronRight
-          className={cn(
-            'w-3 h-3 transition-transform duration-150',
-            isOpen && 'rotate-90'
-          )}
-        />
-        {icon}
-        <span>{label}</span>
-      </button>
-      <AnimatePresence initial={false}>
-        {isOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.15, ease: 'easeOut' }}
-            style={{ overflow: 'hidden' }}
-          >
-            {children}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
 

@@ -1,9 +1,10 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useSnapshot } from 'valtio';
 import { AnimatePresence } from 'motion/react';
-import { Play, Pencil, MoreHorizontal, Plus, Palette, Cpu, HardDrive } from 'lucide-react';
+import { Play, Pencil, MoreHorizontal, Plus, Palette, Cpu, HardDrive, CheckSquare, FileText } from 'lucide-react';
 import { useSpaceTabsPerformance } from '@/hooks/usePerformance';
 import { formatMemory, formatCpu } from '@/stores/performance.store';
+import { useWorkspaceTasksStore } from '@/stores/workspace-tasks.store';
 import type { Space } from '@/types';
 import { SPACE_COLOR_PALETTE } from '@/types';
 import type { Tab } from '@/stores/workspace.store';
@@ -13,8 +14,8 @@ import { notificationsStore, notificationsActions } from '@/stores/notifications
 import { cn } from '@/lib/utils';
 import { AttentionBubble } from './AttentionBubble';
 import { SpaceTasksSection } from './SpaceTasksSection';
-import { SpaceContentModeSelector } from './SpaceContentModeSelector';
 import { SpaceNotesEditor } from './SpaceNotesEditor';
+import { CollapsibleSection } from './CollapsibleSection';
 import { TabPreviewList } from './TabPreviewList';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AgentProgressBar } from './AgentProgressBar';
@@ -44,6 +45,13 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
   const titleInputRef = useRef<HTMLInputElement>(null);
   const { notifications } = useSnapshot(notificationsStore);
   const { totalMemoryKB, avgCpuPercent } = useSpaceTabsPerformance(space.id);
+  const { tasks: allTasks } = useWorkspaceTasksStore();
+
+  // Get tasks for this space
+  const spaceTasks = useMemo(
+    () => allTasks.filter((t) => t.spaceId === space.id),
+    [allTasks, space.id]
+  );
 
   // Get latest notification for this space
   const latestNotification = useMemo(() => {
@@ -271,18 +279,28 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
           />
         </div>
 
-        {/* Mode selector */}
-        <div className="px-3 pb-2">
-          <SpaceContentModeSelector spaceId={space.id} mode={space.contentMode || 'tasks'} />
-        </div>
-
-        {/* Content area - tasks or notes based on mode */}
-        <div className="flex-1 overflow-hidden px-3">
-          {(space.contentMode || 'tasks') === 'tasks' ? (
-            <SpaceTasksSection spaceId={space.id} />
-          ) : (
-            <SpaceNotesEditor spaceId={space.id} initialContent={space.notesContent} />
-          )}
+        {/* Collapsible Tasks & Notes sections */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-2">
+          <CollapsibleSection
+            icon={<CheckSquare className="w-3 h-3" />}
+            label="Tasks"
+            defaultOpen={spaceTasks.length > 0}
+            compact
+          >
+            <div className="px-1 py-1">
+              <SpaceTasksSection spaceId={space.id} />
+            </div>
+          </CollapsibleSection>
+          <CollapsibleSection
+            icon={<FileText className="w-3 h-3" />}
+            label="Notes"
+            defaultOpen={!!(space.notesContent && space.notesContent.trim().length > 0)}
+            compact
+          >
+            <div className="py-1">
+              <SpaceNotesEditor spaceId={space.id} initialContent={space.notesContent} />
+            </div>
+          </CollapsibleSection>
         </div>
 
         {/* Footer */}
