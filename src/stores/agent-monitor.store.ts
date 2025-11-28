@@ -70,7 +70,7 @@ export function getSessionsForSpace(spaceId: string): AgentSession[] {
     .sort((a, b) => new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime());
 }
 
-export function getActivitiesForSpace(spaceId: string, limit: number = 50): AgentActivity[] {
+export function getActivitiesForSpace(spaceId: string, limit = 50): AgentActivity[] {
   const sessions = getSessionsForSpace(spaceId);
   const sessionIds = new Set(sessions.map((s) => s.id));
 

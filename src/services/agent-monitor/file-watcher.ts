@@ -28,6 +28,7 @@ export class AgentFileWatcher extends EventEmitter {
   private knownFiles: Map<string, AgentType> = new Map(); // filePath -> agentType
   private scanInterval: NodeJS.Timeout | null = null;
   private readonly SCAN_INTERVAL_MS = 5000; // Rescan every 5 seconds
+  private readonly MAX_SCAN_DEPTH = 10; // Prevent unbounded recursion
 
   constructor() {
     super();
@@ -142,7 +143,7 @@ export class AgentFileWatcher extends EventEmitter {
 
   private async scanDirectory(agentType: AgentType, basePath: string, pattern: string): Promise<void> {
     try {
-      await this.recursiveScan(agentType, basePath, pattern);
+      await this.recursiveScan(agentType, basePath, pattern, 0);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
         console.error(`[AgentFileWatcher] Error scanning ${basePath}:`, error);
@@ -150,7 +151,18 @@ export class AgentFileWatcher extends EventEmitter {
     }
   }
 
-  private async recursiveScan(agentType: AgentType, dirPath: string, pattern: string): Promise<void> {
+  private async recursiveScan(
+    agentType: AgentType,
+    dirPath: string,
+    pattern: string,
+    depth: number
+  ): Promise<void> {
+    // Prevent unbounded recursion
+    if (depth >= this.MAX_SCAN_DEPTH) {
+      console.warn(`[AgentFileWatcher] Max scan depth reached at: ${dirPath}`);
+      return;
+    }
+
     try {
       const entries = await readdir(dirPath, { withFileTypes: true });
 
@@ -163,8 +175,8 @@ export class AgentFileWatcher extends EventEmitter {
         }
 
         if (entry.isDirectory()) {
-          // Recursively scan subdirectories
-          await this.recursiveScan(agentType, fullPath, pattern);
+          // Recursively scan subdirectories with incremented depth
+          await this.recursiveScan(agentType, fullPath, pattern, depth + 1);
         } else if (entry.isFile() && this.matchesPattern(fullPath, pattern)) {
           // Found a matching file
           if (!this.knownFiles.has(fullPath)) {

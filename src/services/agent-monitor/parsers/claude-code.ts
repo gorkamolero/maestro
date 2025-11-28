@@ -2,6 +2,7 @@
 // Parses Claude Code session JSONL files into normalized activities
 
 import { randomUUID } from 'crypto';
+import { normalize, isAbsolute } from 'path';
 import type {
   AgentActivity,
   ToolUseActivity,
@@ -169,10 +170,11 @@ function parseToolUse(
     case 'multi_edit':
       summary = `Multi-edit ${input.file_path || input.path || 'file'}`;
       break;
-    case 'bash':
+    case 'bash': {
       const cmd = String(input.command || '').slice(0, 50);
       summary = `Run: ${cmd}${String(input.command || '').length > 50 ? '...' : ''}`;
       break;
+    }
     case 'glob':
       summary = `Find files: ${input.pattern || '*'}`;
       break;
@@ -240,7 +242,15 @@ export function extractClaudeCodeSessionMeta(firstLines: string[], filePath: str
         if (projectsIndex !== -1 && projectsIndex + 1 < pathParts.length) {
           const encodedPath = pathParts[projectsIndex + 1];
           if (encodedPath.startsWith('-')) {
-            projectPath = '/' + encodedPath.slice(1).replace(/-/g, '/');
+            // Decode the path and sanitize to prevent path traversal attacks
+            const decodedPath = '/' + encodedPath.slice(1).replace(/-/g, '/');
+            const normalizedPath = normalize(decodedPath);
+
+            // Validate: must be absolute and not contain traversal after normalization
+            if (isAbsolute(normalizedPath) && !normalizedPath.includes('..')) {
+              projectPath = normalizedPath;
+            }
+            // If validation fails, fall back to parsed.cwd which is already set
           }
         }
 

@@ -6,6 +6,17 @@ All notable changes to Maestro will be documented in this file.
 
 ### Added
 
+#### Agent Monitor System - Phase A (2025-11-28)
+- **Background monitoring of AI coding agents** (Claude Code, Codex, Gemini)
+  - File watcher service monitors JSONL/JSON session logs
+  - Process scanner detects running agent processes
+  - JSONL parsers extract activities (tool use, messages, thinking)
+- **Agent Registry** tracks sessions with status (active/idle/ended)
+- **IPC handlers** for renderer to query sessions and activities
+- **Valtio store** (`agent-monitor.store.ts`) for reactive UI state
+- Supports connecting repos to spaces for filtered monitoring
+- Session pruning after 24 hours, idle detection after 30 seconds
+
 #### Space Vault Feature (2025-11-28)
 - **Activate/deactivate spaces** with resource cleanup
   - Move spaces to "Vault" to hide from main view and free resources
@@ -35,6 +46,13 @@ All notable changes to Maestro will be documented in this file.
   - Enables linking to Maestro notes from external apps
 
 ### Fixed
+
+#### Agent Monitor Security & Stability (2025-11-28)
+- **Path injection vulnerability** - Sanitize decoded project paths with `normalize()` + traversal validation
+- **IPC input validation** - Added validators for paths, sessionId, spaceId, limit (capped at 10k)
+- **Recursion depth limit** - `MAX_SCAN_DEPTH=10` prevents DoS via deep directory structures
+- **Race condition fix** - `ensureServiceStarted()` awaits initialization before processing IPC requests
+- **Memory leak fix** - Clean up `processSessionMap` when sessions end, clear all maps on service stop
 
 #### What's Next Bubble (2025-11-28)
 - Restored `NextBubble` component to SpaceCard and SpacePanesView

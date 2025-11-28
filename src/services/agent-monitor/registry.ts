@@ -203,11 +203,11 @@ export class AgentRegistry extends EventEmitter {
     return [...activities];
   }
 
-  getRecentActivities(limit: number = 50): AgentActivity[] {
+  getRecentActivities(limit = 50): AgentActivity[] {
     return this.globalActivities.slice(-limit);
   }
 
-  getActivitiesForRepo(absolutePath: string, limit: number = 100): AgentActivity[] {
+  getActivitiesForRepo(absolutePath: string, limit = 100): AgentActivity[] {
     const sessions = this.getSessionsForRepo(absolutePath);
     const sessionIds = new Set(sessions.map((s) => s.id));
 

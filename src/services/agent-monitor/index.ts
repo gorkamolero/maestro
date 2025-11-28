@@ -86,6 +86,15 @@ export class AgentMonitorService extends EventEmitter {
     this.registry.on('session:ended', (session) => {
       this.emit('session:ended', session);
       this.sendToRenderer('agent-monitor:session-ended', session);
+
+      // Clean up processSessionMap to prevent memory leak
+      // Find and remove any process mapping for this ended session
+      for (const [pid, sessionId] of this.processSessionMap.entries()) {
+        if (sessionId === session.id) {
+          this.processSessionMap.delete(pid);
+          break;
+        }
+      }
     });
 
     this.registry.on('activity:new', (activity) => {
@@ -159,6 +168,11 @@ export class AgentMonitorService extends EventEmitter {
       this.pruneInterval = null;
     }
 
+    // Clear all maps to prevent memory leaks
+    this.fileSessionMap.clear();
+    this.processSessionMap.clear();
+    this.lastProcesses = [];
+
     console.log('[AgentMonitorService] Stopped');
   }
 
@@ -229,7 +243,7 @@ export class AgentMonitorService extends EventEmitter {
     return this.registry.getRecentActivities(limit);
   }
 
-  getActivitiesForSpace(spaceId: string, limit: number = 100): AgentActivity[] {
+  getActivitiesForSpace(spaceId: string, limit = 100): AgentActivity[] {
     const sessions = this.getSessionsForSpace(spaceId);
     const sessionIds = new Set(sessions.map((s) => s.id));
 
