@@ -10,6 +10,7 @@ import { SpacePanesView } from './SpacePanesView';
 import { SpaceViewModeSelector } from './SpaceViewModeSelector';
 import { TagFilter } from './TagFilter';
 import { VaultDrawer } from './VaultDrawer';
+import { AgentVault } from '../AgentVault';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
@@ -97,6 +98,7 @@ export function ControlRoom() {
           </div>
           <SpacePanesView />
           <VaultDrawer open={isVaultOpen} onOpenChange={setIsVaultOpen} />
+          <AgentVault />
         </div>
       </TooltipProvider>
     );
@@ -169,6 +171,7 @@ export function ControlRoom() {
           </button>
         </SortableList>
         <VaultDrawer open={isVaultOpen} onOpenChange={setIsVaultOpen} />
+        <AgentVault />
       </div>
     </TooltipProvider>
   );
