@@ -6,12 +6,12 @@
   "main": ".vite/build/main.js",
   "scripts": {
     "start": "electron-forge start",
-    "dev:mobile": "vite --config src/mobile/vite.config.ts",
+    "dev:mobile": "vite --config src/mobile/vite.config.mts",
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
     "build": "npm run make && npm run build:mobile",
-    "build:mobile": "vite build --config src/mobile/vite.config.ts",
+    "build:mobile": "vite build --config src/mobile/vite.config.mts",
     "lint": "eslint --ext .ts,.tsx .",
     "update-happy": "bash scripts/update-happy-claude.sh",
     "deploy": "npm run make && rm -rf /Applications/Maestro.app && cp -R out/Maestro-darwin-arm64/Maestro.app /Applications/"
@@ -137,5 +137,9 @@
     "vaul": "^1.1.2",
     "ws": "^8.18.3",
     "yoga-layout": "^3.2.1"
+  },
+  "optionalDependencies": {
+    "bufferutil": "^4.0.9",
+    "utf-8-validate": "^6.0.5"
   }
 }
