@@ -99,6 +99,7 @@ export function XTermWrapper({
           cols: terminal.cols,
           rows: terminal.rows,
           cwd: cwd || undefined,
+          virtualId: segmentId,
         });
 
         // Transport data from PTY to terminal

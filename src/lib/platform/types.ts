@@ -29,10 +29,11 @@ export interface BrowserNavigationEvent {
 // ============================================================================
 
 export interface TerminalOptions {
-  cols: number;
-  rows: number;
+  cols?: number;
+  rows?: number;
   cwd?: string;
   env?: Record<string, string>;
+  virtualId?: string;
 }
 
 export interface Terminal {

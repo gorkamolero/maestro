@@ -8,6 +8,8 @@ import { registerPortalHandler } from './ipc/portal';
 import { registerAgentHandlers } from './ipc/agent';
 import { registerAgentMonitorHandlers, cleanupAgentMonitorHandlers } from './ipc/agent-monitor';
 import { registerPerformanceHandlers, cleanupPerformanceHandlers } from './ipc/performance';
+import { registerRemoteServerIPC } from './ipc/remote-server';
+import { registerSpaceSyncIPC } from './ipc/space-sync';
 
 // Get icon path - different in dev vs production
 const getIconPath = () => {
@@ -70,6 +72,8 @@ app.on('ready', () => {
   registerAgentHandlers(getMainWindow);
   registerAgentMonitorHandlers(getMainWindow);
   registerPerformanceHandlers(getMainWindow, getBrowserViewsMap);
+  registerRemoteServerIPC();
+  registerSpaceSyncIPC();
 });
 
 app.on('window-all-closed', () => {

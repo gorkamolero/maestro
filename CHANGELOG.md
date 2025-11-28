@@ -6,6 +6,31 @@ All notable changes to Maestro will be documented in this file.
 
 ### Added
 
+#### Maestro Remote Server v2 (2025-11-28)
+- **Remote Server Core** - Implemented Hono-based HTTP API and WebSocket server for mobile control.
+  - Authentication: Device registry, PIN-based pairing, challenge-response JWT tokens.
+  - IPC: Exposed server control (start/stop/pair) to renderer.
+  - Frontend Hook: `useRemoteServer` for UI integration.
+- **WebSocket Protocol** - Versioned message envelope, ping/pong keepalive, subscriptions.
+- **Terminal Bridge** - High-performance PTY ↔ WebSocket bridge with buffering and backlog.
+  - Registers agent PTYs with session ID for remote viewing.
+  - Registers standard terminal PTYs with tab ID for remote viewing.
+- **API Routes**:
+  - `/api/auth/*`: Public and protected endpoints for device pairing and token exchange.
+  - `/api/agents/*`: List active agent sessions, get details, send input, launch new agents remotely.
+  - `/api/spaces/*`: List spaces and their associated agents (synced from renderer).
+  - `/api/system/*`: Health check, server stats, list paired devices.
+- **State Synchronization**:
+  - Renderer (`SpaceSync` component) pushes space data to Main process for `/api/spaces`.
+
+### Fixed
+
+#### Remote Server Terminal ID Consistency (2025-11-28)
+- Ensured `terminalId` in API responses aligns with PTY IDs registered in `terminalBridge`.
+- `XTermWrapper` passes `segmentId` (tab ID) as `virtualId` to `pty.spawn`.
+- `ipc/terminal.ts` registers PTY with both internal `pty-N` and `virtualId` when provided.
+- `agentsRouter` now dynamically returns `sessionId` for `maestro-pty` agents as `terminalId`.
+
 #### Happy Coder Update Automation (2025-11-28)
 - **Automated Update Script** - Added `npm run update-happy` command
   - Updates `@anthropic-ai/claude-code` to the latest version inside the Volta-managed Happy Coder package

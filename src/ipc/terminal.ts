@@ -1,5 +1,6 @@
 import { ipcMain, BrowserWindow } from 'electron';
 import { spawn } from 'node-pty';
+import { terminalBridge } from '../services/remote-server/terminal/bridge';
 
 const ptyProcesses = new Map();
 let ptyIdCounter = 0;
@@ -10,6 +11,12 @@ export function registerTerminalHandlers(getMainWindow: () => BrowserWindow | nu
     const ptyProcess = spawn(shell, args, options);
 
     ptyProcesses.set(ptyId, ptyProcess);
+    terminalBridge.register(ptyId, ptyProcess);
+
+    // If a virtual ID (e.g., Tab ID) is provided, register it too
+    if (options?.virtualId) {
+      terminalBridge.register(options.virtualId, ptyProcess);
+    }
 
     // Forward data to renderer
     ptyProcess.onData((data) => {

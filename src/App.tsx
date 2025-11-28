@@ -4,6 +4,7 @@ import { CommandPalettePortal } from '@/components/CommandPalettePortal';
 import { StatusBar } from '@/components/StatusBar';
 import { ControlRoom } from '@/components/ControlRoom';
 import { WindowManager } from '@/components/Window';
+import { SpaceSync } from '@/components/SpaceSync';
 import { useWorkspaceStore, workspaceActions } from '@/stores/workspace.store';
 import { useWindowsStore, windowsActions, getWindowsStore } from '@/stores/windows.store';
 import { historyActions } from '@/stores/history.store';
@@ -145,6 +146,7 @@ function App() {
       <div className="flex-1 overflow-hidden">
         <ControlRoom />
       </div>
+      <SpaceSync />
       <StatusBar />
 
       {/* Window Manager - renders all floating and maximized windows */}

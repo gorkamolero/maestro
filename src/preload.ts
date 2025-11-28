@@ -398,3 +398,16 @@ contextBridge.exposeInMainWorld('agentMonitor', {
     return () => ipcRenderer.removeListener('agent-monitor:activity-new', handler);
   },
 });
+
+// ============================================================================
+// Expose Remote Server API
+// ============================================================================
+
+contextBridge.exposeInMainWorld('remoteServer', {
+  start: (port?: number) => ipcRenderer.invoke('remote-server:start', port),
+  stop: () => ipcRenderer.invoke('remote-server:stop'),
+  startPairing: (remote: boolean) => ipcRenderer.invoke('remote-server:start-pairing', remote),
+  stopPairing: () => ipcRenderer.invoke('remote-server:stop-pairing'),
+  getPairingStatus: () => ipcRenderer.invoke('remote-server:pairing-status'),
+  getConnectionInfo: () => ipcRenderer.invoke('remote-server:connection-info'),
+});

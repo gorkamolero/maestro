@@ -115,6 +115,7 @@ interface PtySpawnOptions {
   env?: Record<string, string>;
   cols?: number;
   rows?: number;
+  virtualId?: string;
 }
 
 interface PtyInstance {
@@ -129,11 +130,21 @@ interface PtyAPI {
   spawn: (shell: string, args: string[], options: PtySpawnOptions) => Promise<PtyInstance>;
 }
 
+interface RemoteServerAPI {
+  start: (port?: number) => Promise<{ urls: string[]; port: number }>;
+  stop: () => Promise<void>;
+  startPairing: (remote: boolean) => Promise<{ pin: string; expiresAt: string; remoteToken?: string }>;
+  stopPairing: () => Promise<void>;
+  getPairingStatus: () => Promise<{ active: boolean; mode: 'local' | 'remote'; expiresAt: string | null; secondsLeft: number }>;
+  getConnectionInfo: () => Promise<{ urls: string[]; port: number }>;
+}
+
 declare global {
   interface Window {
     electron: ElectronAPI;
     agent: AgentAPI;
     pty: PtyAPI;
+    remoteServer: RemoteServerAPI;
   }
 }
 

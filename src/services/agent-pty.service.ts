@@ -2,6 +2,7 @@ import { BrowserWindow } from 'electron';
 import * as pty from 'node-pty';
 import stripAnsi from 'strip-ansi';
 import { happyService } from './happy.service';
+import { terminalBridge } from './remote-server/terminal/bridge';
 
 type AgentStatus =
   | 'idle'
@@ -100,6 +101,8 @@ export class AgentPtyService {
         FORCE_COLOR: '1',
       },
     });
+
+    terminalBridge.register(sessionId, ptyProcess);
 
     const session: ActivePtySession = {
       pty: ptyProcess,

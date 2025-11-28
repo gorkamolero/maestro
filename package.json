@@ -53,6 +53,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@fontsource-variable/inter": "^5.2.8",
     "@fontsource-variable/jetbrains-mono": "^5.2.8",
+    "@hono/node-server": "^1.19.6",
     "@lexical/code": "^0.38.2",
     "@lexical/file": "^0.38.2",
     "@lexical/hashtag": "^0.38.2",
@@ -102,7 +103,9 @@
     "eventemitter3": "^5.0.1",
     "frimousse": "^0.3.0",
     "get-windows": "^9.2.3",
+    "hono": "^4.10.7",
     "idb": "^8.0.3",
+    "jose": "^6.1.2",
     "lexical": "^0.38.2",
     "lodash": "^4.17.21",
     "lucide-react": "^0.554.0",
@@ -127,6 +130,7 @@
     "valtio-history": "^1.0.0",
     "valtio-persist": "^2.2.4",
     "vaul": "^1.1.2",
+    "ws": "^8.18.3",
     "yoga-layout": "^3.2.1"
   }
 }
