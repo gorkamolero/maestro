@@ -47,11 +47,22 @@ interface GetActivitiesMessage extends WorkerMessage {
   payload: { sessionId?: string; limit?: number };
 }
 
+interface RegisterPendingTabMessage extends WorkerMessage {
+  type: 'register-pending-tab';
+  payload: {
+    tabId: string;
+    spaceId: string;
+    repoPath: string;
+    launchedAt: number;
+  };
+}
+
 type IncomingMessage =
   | ConnectRepoMessage
   | DisconnectRepoMessage
   | GetSessionsMessage
   | GetActivitiesMessage
+  | RegisterPendingTabMessage
   | { type: 'start' }
   | { type: 'stop' };
 
@@ -100,8 +111,23 @@ const dirWatchers: Map<string, fs.FSWatcher> = new Map();
 let scanInterval: NodeJS.Timeout | null = null;
 let idleCheckInterval: NodeJS.Timeout | null = null;
 
+// Track pending tool_use events (waiting for tool_result)
+// Key: sessionId, Value: { toolUseId, timestamp }
+const pendingToolUse: Map<string, { toolUseId: string; timestamp: number }> = new Map();
+
+// Track pending agent tabs (launched from Maestro, waiting to match with session)
+// Key: tabId, Value: { spaceId, repoPath, launchedAt }
+interface PendingAgentTab {
+  tabId: string;
+  spaceId: string;
+  repoPath: string;
+  launchedAt: number;
+}
+const pendingAgentTabs: Map<string, PendingAgentTab> = new Map();
+
 const SCAN_INTERVAL_MS = 5000;
 const IDLE_THRESHOLD_MS = 30000;
+const NEEDS_INPUT_THRESHOLD_MS = 5000; // 5 seconds without tool_result = needs input
 const MAX_SCAN_DEPTH = 10;
 const MAX_ACTIVITIES = 10000;
 
@@ -127,11 +153,11 @@ function extractSessionMeta(
   agentType: AgentType,
   lines: string[],
   filePath: string
-): { sessionId: string; projectPath: string } | null {
+): { sessionId: string; projectPath: string; isHappySession?: boolean } | null {
   switch (agentType) {
     case 'claude-code': {
       const meta = extractClaudeCodeSessionMeta(lines, filePath);
-      if (meta) return { sessionId: meta.sessionId, projectPath: meta.projectPath };
+      if (meta) return { sessionId: meta.sessionId, projectPath: meta.projectPath, isHappySession: meta.isHappySession };
       return null;
     }
     case 'codex': {
@@ -193,29 +219,64 @@ function isRepoConnected(projectPath: string | undefined | null): boolean {
 }
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
+const TAB_MATCH_WINDOW_MS = 60000; // 60 seconds to match session to tab
+
+/**
+ * Try to match a new session to a pending agent tab
+ */
+function matchSessionToTab(projectPath: string, sessionStartedAt: string): PendingAgentTab | null {
+  const sessionTime = new Date(sessionStartedAt).getTime();
+
+  for (const [tabId, pending] of pendingAgentTabs) {
+    // Match if:
+    // 1. Same repo path (or session path starts with repo path)
+    // 2. Session started within TAB_MATCH_WINDOW_MS of tab launch
+    const timeDiff = sessionTime - pending.launchedAt;
+    const pathMatches =
+      projectPath === pending.repoPath ||
+      projectPath.startsWith(pending.repoPath + '/');
+
+    if (pathMatches && timeDiff >= -5000 && timeDiff < TAB_MATCH_WINDOW_MS) {
+      // Found a match - remove from pending
+      pendingAgentTabs.delete(tabId);
+      return pending;
+    }
+  }
+
+  return null;
+}
 
 function getOrCreateSession(
   sessionId: string,
   agentType: AgentType,
   projectPath: string,
   filePath: string,
-  timestamp?: string
+  timestamp?: string,
+  isHappySession?: boolean
 ): AgentSession {
   let session = sessions.get(sessionId);
   if (!session) {
     const activityTime = timestamp ? new Date(timestamp) : new Date();
     const isOld = Date.now() - activityTime.getTime() > ONE_HOUR_MS;
 
+    // Try to match to a pending tab launched from Maestro
+    const matchedTab = matchSessionToTab(projectPath, activityTime.toISOString());
+
     session = {
       id: sessionId,
       agentType,
+      source: matchedTab ? 'maestro-pty' : 'external',
       projectPath,
+      cwd: projectPath, // Initially same as project path
       filePath,
       status: isOld ? 'ended' : 'active', // Mark old sessions as ended
       startedAt: activityTime.toISOString(),
       lastActivityAt: activityTime.toISOString(),
-      toolCount: 0,
-      errorCount: 0,
+      launchMode: isHappySession ? 'mobile' : 'local',
+      terminalTabId: matchedTab?.tabId,
+      spaceId: matchedTab?.spaceId,
+      messageCount: 0,
+      toolUseCount: 0,
     };
     sessions.set(sessionId, session);
 
@@ -250,11 +311,45 @@ function addActivity(activity: AgentActivity): void {
   const session = sessions.get(activity.sessionId);
   if (session) {
     session.lastActivityAt = activity.timestamp;
+
     if (activity.type === 'tool_use') {
-      session.toolCount = (session.toolCount || 0) + 1;
+      session.toolUseCount = (session.toolUseCount || 0) + 1;
+      // Track this as a pending tool use (might be waiting for permission)
+      pendingToolUse.set(activity.sessionId, {
+        toolUseId: (activity as { id: string }).id,
+        timestamp: Date.now(),
+      });
     }
-    if (activity.type === 'tool_result' && !(activity as { success?: boolean }).success) {
-      session.errorCount = (session.errorCount || 0) + 1;
+
+    if (activity.type === 'tool_result') {
+      // Clear pending tool use - we got the result
+      pendingToolUse.delete(activity.sessionId);
+
+      // If session was needs_input, restore to active
+      if (session.status === 'needs_input') {
+        session.status = 'active';
+        sendToMain('session:updated', session);
+      }
+
+      if (!(activity as { success?: boolean }).success) {
+        // Track errors (not exposed in UI currently)
+        // session.errorCount = (session.errorCount || 0) + 1;
+      }
+    }
+
+    // User prompt also clears needs_input (user responded)
+    if (activity.type === 'user_prompt') {
+      session.messageCount = (session.messageCount || 0) + 1;
+      pendingToolUse.delete(activity.sessionId);
+      if (session.status === 'needs_input') {
+        session.status = 'active';
+        sendToMain('session:updated', session);
+      }
+    }
+
+    // Count assistant messages
+    if (activity.type === 'assistant_message') {
+      session.messageCount = (session.messageCount || 0) + 1;
     }
   }
 
@@ -312,7 +407,8 @@ async function processFileChange(
           agentType,
           meta.projectPath,
           filePath,
-          fileModTime.toISOString()
+          fileModTime.toISOString(),
+          meta.isHappySession
         );
         fileSessionMap.set(filePath, sessionId);
 
@@ -449,12 +545,32 @@ function checkForIdleSessions(): void {
   const now = Date.now();
 
   for (const session of sessions.values()) {
-    if (session.status !== 'active') continue;
+    if (session.status === 'ended') continue;
 
-    const lastActivity = new Date(session.lastActivityAt).getTime();
-    if (now - lastActivity > IDLE_THRESHOLD_MS) {
-      session.status = 'idle';
-      sendToMain('session:updated', session);
+    // Check for pending tool_use that's been waiting too long
+    const pending = pendingToolUse.get(session.id);
+    if (pending && now - pending.timestamp > NEEDS_INPUT_THRESHOLD_MS) {
+      if (session.status !== 'needs_input') {
+        session.status = 'needs_input';
+        sendToMain('session:updated', session);
+      }
+      continue; // Don't check for idle if waiting for input
+    }
+
+    // Check for idle (no activity for a while)
+    if (session.status === 'active') {
+      const lastActivity = new Date(session.lastActivityAt).getTime();
+      if (now - lastActivity > IDLE_THRESHOLD_MS) {
+        session.status = 'idle';
+        sendToMain('session:updated', session);
+      }
+    }
+  }
+
+  // Cleanup orphaned pending tabs (older than match window)
+  for (const [tabId, pending] of pendingAgentTabs) {
+    if (now - pending.launchedAt > TAB_MATCH_WINDOW_MS) {
+      pendingAgentTabs.delete(tabId);
     }
   }
 }
@@ -509,6 +625,8 @@ function stop(): void {
   incompleteLines.clear();
   knownFiles.clear();
   fileSessionMap.clear();
+  pendingToolUse.clear();
+  pendingAgentTabs.clear();
 
   console.log('[AgentMonitorWorker] Stopped');
   sendToMain('stopped');
@@ -552,6 +670,13 @@ function handleMessage(message: IncomingMessage): void {
         result = activities.filter((a) => a.sessionId === sessionId);
       }
       sendToMain('activities', result.slice(-limit));
+      break;
+    }
+
+    case 'register-pending-tab': {
+      const { tabId, spaceId, repoPath, launchedAt } = message.payload;
+      pendingAgentTabs.set(tabId, { tabId, spaceId, repoPath, launchedAt });
+      console.log(`[AgentMonitorWorker] Registered pending tab: ${tabId} for ${repoPath}`);
       break;
     }
 

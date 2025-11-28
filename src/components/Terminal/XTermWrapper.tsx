@@ -17,6 +17,10 @@ interface XTermWrapperProps {
   segmentId: string;
   initialState?: TerminalState;
   theme?: TerminalTheme;
+  /** Initial working directory */
+  cwd?: string;
+  /** Initial command to run after shell spawns */
+  initialCommand?: string;
   onData?: (data: string) => void;
   onStateChange?: (state: TerminalState) => void;
   className?: string;
@@ -31,6 +35,8 @@ const THEMES = {
 export function XTermWrapper({
   segmentId,
   theme = 'termius-dark',
+  cwd,
+  initialCommand,
   onData,
   onStateChange,
   className = '',
@@ -92,6 +98,7 @@ export function XTermWrapper({
         const pty = await platform.spawnTerminal(shell, [], {
           cols: terminal.cols,
           rows: terminal.rows,
+          cwd: cwd || undefined,
         });
 
         // Transport data from PTY to terminal
@@ -119,6 +126,13 @@ export function XTermWrapper({
 
         // Store PTY reference
         (terminal as unknown as { _pty: typeof pty })._pty = pty;
+
+        // Send initial command after shell is ready (wait for prompt)
+        if (initialCommand) {
+          setTimeout(() => {
+            pty.write(initialCommand + '\n');
+          }, 300);
+        }
       } catch (err) {
         console.error('Failed to spawn shell:', err);
         terminal.writeln('\x1b[1;31mFailed to spawn shell\x1b[0m');

@@ -85,6 +85,12 @@ export interface TerminalState {
   workingDir: string | null;
   scrollPosition: number;
   theme: 'termius-dark' | 'dracula' | 'nord';
+  /** Initial working directory to spawn terminal in */
+  cwd?: string;
+  /** Initial command to run after terminal spawns */
+  initialCommand?: string;
+  /** Whether this is an agent terminal */
+  isAgentTerminal?: boolean;
 }
 
 export function saveTerminalState(

@@ -17,6 +17,25 @@ All notable changes to Maestro will be documented in this file.
 - Supports connecting repos to spaces for filtered monitoring
 - Session pruning after 24 hours, idle detection after 30 seconds
 
+#### Agent Monitor System - Phase E: Jump to Terminal & Agent Types (2025-11-28)
+- **Jump to Terminal** - Link agent sessions to terminal tabs
+  - Sessions launched from Maestro are automatically linked to their terminal
+  - Click "Terminal" button in DetailView or jump icon in ListView to open terminal
+  - `⌘J` keyboard shortcut when viewing a linked session
+  - Pending tab registry with 60-second match window
+- **Agent Type Icons** - Visual differentiation for each agent type
+  - Claude Code: Orange △ icon
+  - Codex CLI: Emerald ⬡ icon
+  - Gemini CLI: Blue ★ icon
+  - New `AgentIcons.tsx` with SVG icons and color constants
+- **Needs Input Detection** - Alert when agents wait for user response
+  - 5-second timeout heuristic (tool_use without tool_result)
+  - Orange pulsing status indicators throughout UI
+  - "❗ Needs Input" badge in DetailView
+- **System Notifications** (partial) - macOS notifications for needs_input
+  - Shows notification when agent needs input and window not focused
+  - Click notification to focus window and jump to agent
+
 #### Agent Monitor System - Phase B: Space Integration (2025-11-28)
 - **Connect repositories to Spaces** via `+` button menu or `⋯` dropdown
   - Native folder picker dialog

@@ -7,10 +7,14 @@ import type { TerminalState } from './terminal.utils';
 interface TerminalPanelProps {
   segmentId: string;
   initialState?: TerminalState;
+  /** Initial working directory */
+  cwd?: string;
+  /** Initial command to run after shell spawns */
+  initialCommand?: string;
   onStateChange?: (state: TerminalState) => void;
 }
 
-export function TerminalPanel({ segmentId, initialState, onStateChange }: TerminalPanelProps) {
+export function TerminalPanel({ segmentId, initialState, cwd, initialCommand, onStateChange }: TerminalPanelProps) {
   const [theme, setTheme] = useState<TerminalTheme>(initialState?.theme || 'termius-dark');
   const [workingDir, setWorkingDir] = useState<string | null>(initialState?.workingDir || null);
 
@@ -31,6 +35,8 @@ export function TerminalPanel({ segmentId, initialState, onStateChange }: Termin
         <XTermWrapper
           segmentId={segmentId}
           theme={theme}
+          cwd={cwd || initialState?.cwd}
+          initialCommand={initialCommand || initialState?.initialCommand}
           initialState={initialState}
           onStateChange={(state) => {
             if (state.workingDir) {

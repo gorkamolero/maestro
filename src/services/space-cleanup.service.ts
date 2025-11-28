@@ -39,9 +39,6 @@ async function closeTabResources(tab: Tab): Promise<void> {
       case 'browser':
         await closeBrowserTab(tab);
         break;
-      case 'agent':
-        await closeAgentTab(tab);
-        break;
       case 'terminal':
         await closeTerminalTab(tab);
         break;
@@ -73,26 +70,6 @@ async function closeBrowserTab(tab: Tab): Promise<void> {
 }
 
 /**
- * Stop an agent session
- */
-async function closeAgentTab(tab: Tab): Promise<void> {
-  const sessionId = tab.agentConfig?.sessionId;
-
-  if (!sessionId) {
-    console.debug(`[SpaceCleanup] Agent tab ${tab.id} has no active session`);
-    return;
-  }
-
-  try {
-    // @ts-expect-error - window.agent is defined in preload
-    await window.agent.stop(sessionId);
-    console.log(`[SpaceCleanup] Stopped agent session: ${sessionId}`);
-  } catch (error) {
-    console.error(`[SpaceCleanup] Error stopping agent ${sessionId}:`, error);
-  }
-}
-
-/**
  * Close a terminal tab's PTY process
  * Note: PTY cleanup happens when the XTermWrapper component unmounts,
  * but we can trigger a force cleanup via IPC if needed
@@ -114,7 +91,6 @@ async function closeTerminalTab(tab: Tab): Promise<void> {
 export function getSpaceResourceCount(spaceId: string): {
   browsers: number;
   terminals: number;
-  agents: number;
   total: number;
 } {
   const store = getWorkspaceStore();
@@ -122,12 +98,10 @@ export function getSpaceResourceCount(spaceId: string): {
 
   const browsers = spaceTabs.filter((t) => t.type === 'browser').length;
   const terminals = spaceTabs.filter((t) => t.type === 'terminal').length;
-  const agents = spaceTabs.filter((t) => t.type === 'agent' && t.agentConfig?.sessionId).length;
 
   return {
     browsers,
     terminals,
-    agents,
-    total: browsers + terminals + agents,
+    total: browsers + terminals,
   };
 }

@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
-import { FolderGit2, Loader2 } from 'lucide-react';
+import { FolderGit2, Loader2, Monitor, Smartphone } from 'lucide-react';
 import { useAgentSessionsWithLoading } from '@/hooks/useAgentSessions';
 import { agentVaultActions } from '@/stores/agent-vault.store';
+import { AgentTypeIcon, AGENT_TYPE_COLORS } from '@/components/AgentVault/AgentIcons';
 import type { AgentSession } from '@/types/agent-events';
 import type { Space } from '@/types';
 import { cn } from '@/lib/utils';
@@ -13,10 +14,11 @@ interface AgentStatusRowProps {
 export function AgentStatusRow({ space }: AgentStatusRowProps) {
   const { sessions, isLoading, isInitialized } = useAgentSessionsWithLoading(space.id);
 
-  const { active, idle } = useMemo(() => {
+  const { active, idle, needsInput } = useMemo(() => {
     return {
       active: sessions.filter((s) => s.status === 'active'),
       idle: sessions.filter((s) => s.status === 'idle'),
+      needsInput: sessions.filter((s) => s.status === 'needs_input'),
     };
   }, [sessions]);
 
@@ -46,7 +48,7 @@ export function AgentStatusRow({ space }: AgentStatusRowProps) {
             {folderName}
           </span>
 
-          {/* Agent status indicators - right aligned */}
+          {/* Agent status indicators - right aligned, clickable */}
           <div className="flex items-center gap-1.5 ml-auto">
             {showLoading ? (
               /* Loading spinner while scanning for agents */
@@ -55,8 +57,27 @@ export function AgentStatusRow({ space }: AgentStatusRowProps) {
                 <span className="text-[10px] text-white/30">Scanning...</span>
               </div>
             ) : hasAgents ? (
-              /* Agent counts when found */
-              <>
+              /* Agent counts - clickable to open vault */
+              <button
+                onClick={() => {
+                  // If one agent, go directly to it; otherwise open list
+                  if (sessions.length === 1) {
+                    agentVaultActions.openToAgent(sessions[0].id);
+                  } else {
+                    agentVaultActions.openList();
+                  }
+                }}
+                className="flex items-center gap-1.5 hover:opacity-80 transition-opacity cursor-pointer"
+              >
+                {/* Needs input - pulsing red/orange */}
+                {needsInput.length > 0 && (
+                  <div className="flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-orange-500 flex-shrink-0 animate-pulse" />
+                    <span className="text-[10px] tabular-nums text-orange-400 font-medium">
+                      {needsInput.length}!
+                    </span>
+                  </div>
+                )}
                 {active.length > 0 && (
                   <div className="flex items-center gap-1">
                     <div className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0 animate-pulse-slow" />
@@ -73,7 +94,7 @@ export function AgentStatusRow({ space }: AgentStatusRowProps) {
                     </span>
                   </div>
                 )}
-              </>
+              </button>
             ) : null}
           </div>
         </div>
@@ -81,20 +102,26 @@ export function AgentStatusRow({ space }: AgentStatusRowProps) {
         {/* Agent sessions - clickable to open vault */}
         {hasAgents && (
           <div className="mt-1 pl-5 space-y-0.5">
-            {sessions.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => agentVaultActions.openToAgent(s.id)}
-                className={cn(
-                  'text-[10px] truncate block w-full text-left',
-                  'hover:text-white/60 transition-colors cursor-pointer',
-                  s.status === 'active' ? 'text-white/40' : 'text-white/25'
-                )}
-              >
-                {s.status === 'active' ? '● ' : '○ '}
-                {getToolSummary(s)}
-              </button>
-            ))}
+            {sessions.map((s) => {
+              const LaunchIcon = s.launchMode === 'mobile' ? Smartphone : Monitor;
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => agentVaultActions.openToAgent(s.id)}
+                  className={cn(
+                    'flex items-center gap-1 text-[10px] truncate w-full text-left',
+                    'hover:text-white/60 transition-colors cursor-pointer',
+                    s.status === 'needs_input' ? 'text-orange-400' :
+                    s.status === 'active' ? 'text-white/40' : 'text-white/25'
+                  )}
+                >
+                  {s.status === 'needs_input' ? '❗' : s.status === 'active' ? '● ' : '○ '}
+                  <AgentTypeIcon agentType={s.agentType} className={`w-2.5 h-2.5 flex-shrink-0 ${AGENT_TYPE_COLORS[s.agentType]}`} />
+                  <LaunchIcon className="w-2.5 h-2.5 flex-shrink-0 opacity-50" />
+                  <span className="truncate">{getToolSummary(s)}</span>
+                </button>
+              );
+            })}
           </div>
         )}
       </div>

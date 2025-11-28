@@ -1,7 +1,6 @@
 import type { Tab } from '@/stores/workspace.store';
 import { BrowserPanel } from '@/components/Browser/BrowserPanel';
 import { TerminalPanel } from '@/components/Terminal/TerminalPanel';
-import { AgentPanel } from '@/components/Agent/AgentPanel';
 
 interface WindowContentProps {
   tab: Tab;
@@ -27,16 +26,12 @@ export function WindowContent({ tab, width, height }: WindowContentProps) {
   if (tab.type === 'terminal') {
     return (
       <div className="flex flex-col" style={{ width, height }}>
-        <TerminalPanel segmentId={tab.id} />
-      </div>
-    );
-  }
-
-  // For agent tabs
-  if (tab.type === 'agent') {
-    return (
-      <div className="flex flex-col" style={{ width, height }}>
-        <AgentPanel tab={tab} />
+        <TerminalPanel
+          segmentId={tab.id}
+          cwd={tab.terminalState?.workingDir || undefined}
+          initialCommand={tab.terminalState?.initialCommand}
+          initialState={tab.terminalState}
+        />
       </div>
     );
   }

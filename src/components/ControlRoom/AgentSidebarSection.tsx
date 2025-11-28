@@ -1,15 +1,15 @@
 import { useMemo } from 'react';
 import { Bot } from 'lucide-react';
 import { useAgentSessionsForSpace, formatTimeAgo } from '@/hooks/useAgentSessions';
+import { agentVaultActions } from '@/stores/agent-vault.store';
 import type { AgentSession } from '@/types/agent-events';
 import { cn } from '@/lib/utils';
 
 interface AgentSidebarSectionProps {
   spaceId: string;
-  onSelectSession?: (session: AgentSession) => void;
 }
 
-export function AgentSidebarSection({ spaceId, onSelectSession }: AgentSidebarSectionProps) {
+export function AgentSidebarSection({ spaceId }: AgentSidebarSectionProps) {
   const sessions = useAgentSessionsForSpace(spaceId);
 
   if (sessions.length === 0) {
@@ -24,7 +24,7 @@ export function AgentSidebarSection({ spaceId, onSelectSession }: AgentSidebarSe
         <AgentSessionItem
           key={session.id}
           session={session}
-          onClick={() => onSelectSession?.(session)}
+          onClick={() => agentVaultActions.openToAgent(session.id)}
         />
       ))}
     </div>

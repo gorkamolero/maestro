@@ -3,9 +3,16 @@
 
 import { EventEmitter } from 'events';
 import { resolve, join } from 'path';
-import { app, BrowserWindow, utilityProcess, UtilityProcess } from 'electron';
+import { app, BrowserWindow, utilityProcess, UtilityProcess, Notification } from 'electron';
 import { ProcessScanner } from './process-scanner';
 import { AgentRegistry } from './registry';
+
+// Agent type display names for notifications
+const AGENT_TYPE_NAMES: Record<string, string> = {
+  'claude-code': 'Claude Code',
+  codex: 'Codex CLI',
+  gemini: 'Gemini CLI',
+};
 import type {
   AgentSession,
   AgentActivity,
@@ -45,6 +52,9 @@ export class AgentMonitorService extends EventEmitter {
   private lastProcesses: DetectedProcess[] = [];
   private workerReady = false;
   private pendingMessages: Array<{ type: string; payload?: unknown }> = [];
+
+  // Track previous session status to detect transitions to needs_input
+  private previousSessionStatus: Map<string, string> = new Map();
 
   private pruneInterval: NodeJS.Timeout | null = null;
   private readonly PROCESS_SCAN_INTERVAL_MS = 5000; // 5 seconds
@@ -107,6 +117,44 @@ export class AgentMonitorService extends EventEmitter {
     this.worker?.postMessage(message);
   }
 
+  /**
+   * Show a system notification when an agent needs user input
+   */
+  private showNeedsInputNotification(session: AgentSession): void {
+    // Don't notify if window is focused
+    if (this.mainWindow && this.mainWindow.isFocused()) {
+      return;
+    }
+
+    const agentName = AGENT_TYPE_NAMES[session.agentType] || session.agentType;
+    const projectName = session.projectPath.split('/').pop() || 'Unknown';
+
+    const notification = new Notification({
+      title: `${agentName} needs input`,
+      body: `Agent in ${projectName} is waiting for your response`,
+      silent: false, // Play system sound
+    });
+
+    // Click notification to focus window and open vault to this agent
+    notification.on('click', () => {
+      if (this.mainWindow) {
+        if (this.mainWindow.isMinimized()) {
+          this.mainWindow.restore();
+        }
+        this.mainWindow.focus();
+
+        // Send message to renderer to open vault to this agent
+        this.sendToRenderer('agent-monitor:focus-agent', {
+          sessionId: session.id,
+          tabId: session.terminalTabId,
+          spaceId: session.spaceId,
+        });
+      }
+    });
+
+    notification.show();
+  }
+
   private handleWorkerMessage(message: { type: string; payload?: unknown }): void {
     switch (message.type) {
       case 'ready':
@@ -139,6 +187,16 @@ export class AgentMonitorService extends EventEmitter {
 
       case 'session:updated': {
         const session = message.payload as AgentSession;
+        const previousStatus = this.previousSessionStatus.get(session.id);
+
+        // Check if status changed to needs_input
+        if (session.status === 'needs_input' && previousStatus !== 'needs_input') {
+          this.showNeedsInputNotification(session);
+        }
+
+        // Update previous status
+        this.previousSessionStatus.set(session.id, session.status);
+
         this.registry.importSession(session);
         this.emit('session:updated', session);
         this.sendToRenderer('agent-monitor:session-updated', session);
@@ -353,6 +411,23 @@ export class AgentMonitorService extends EventEmitter {
 
   getStats() {
     return this.registry.getStats();
+  }
+
+  // ============================================
+  // PENDING TAB REGISTRATION (for Jump to Terminal)
+  // ============================================
+
+  /**
+   * Register a pending agent tab. Called when launching an agent from the UI.
+   * The worker will match this to a session when the agent starts.
+   */
+  registerPendingAgentTab(tabId: string, spaceId: string, repoPath: string): void {
+    this.sendToWorker('register-pending-tab', {
+      tabId,
+      spaceId,
+      repoPath,
+      launchedAt: Date.now(),
+    });
   }
 
   // ============================================

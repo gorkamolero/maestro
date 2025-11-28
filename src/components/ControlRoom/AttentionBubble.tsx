@@ -12,6 +12,8 @@ interface AttentionBubbleProps {
 const TYPE_ICONS: Record<NotificationType, string> = {
   'agent-done': '⚡',
   'agent-error': '✕',
+  'agent-info': 'ℹ',
+  'agent-needs-input': '❗',
   'build-failed': '✕',
   'build-success': '✓',
   'process-crashed': '💥',
@@ -21,6 +23,8 @@ const TYPE_ICONS: Record<NotificationType, string> = {
 const TYPE_COLORS: Record<NotificationType, string> = {
   'agent-done': 'text-blue-400',
   'agent-error': 'text-red-400',
+  'agent-info': 'text-blue-400',
+  'agent-needs-input': 'text-orange-400',
   'build-failed': 'text-red-400',
   'build-success': 'text-green-400',
   'process-crashed': 'text-red-400',

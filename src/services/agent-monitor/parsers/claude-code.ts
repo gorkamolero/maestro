@@ -230,19 +230,37 @@ export interface ClaudeCodeSessionMeta {
   projectPath: string;
   cwd: string;
   startedAt: string;
+  /** Whether this session was launched via Happy Coder (mobile) */
+  isHappySession?: boolean;
 }
 
 export function extractClaudeCodeSessionMeta(firstLines: string[], filePath: string): ClaudeCodeSessionMeta | null {
+  let sessionId: string | null = null;
+  let projectPath = '';
+  let cwd = '';
+  let startedAt = '';
+  let isHappySession = false;
+
+  // Check all lines for Happy Coder signature and session info
   for (const line of firstLines) {
+    // Detect Happy Coder sessions by checking for mcp__happy tool calls
+    if (line.includes('mcp__happy')) {
+      isHappySession = true;
+    }
+
     try {
       const parsed = JSON.parse(line) as ClaudeCodeMessage;
-      if (parsed.sessionId) {
+      if (parsed.sessionId && !sessionId) {
+        sessionId = parsed.sessionId;
+        startedAt = parsed.timestamp;
+        cwd = parsed.cwd || '';
+
         // Decode project path from file path
         // ~/.claude/projects/-Users-gorka-project/session.jsonl
         const pathParts = filePath.split('/');
         const projectsIndex = pathParts.indexOf('projects');
 
-        let projectPath = parsed.cwd || '';
+        projectPath = parsed.cwd || '';
 
         if (projectsIndex !== -1 && projectsIndex + 1 < pathParts.length) {
           const encodedPath = pathParts[projectsIndex + 1];
@@ -258,17 +276,19 @@ export function extractClaudeCodeSessionMeta(firstLines: string[], filePath: str
             // If validation fails, fall back to parsed.cwd which is already set
           }
         }
-
-        return {
-          sessionId: parsed.sessionId,
-          projectPath,
-          cwd: parsed.cwd || projectPath,
-          startedAt: parsed.timestamp,
-        };
       }
     } catch {
       continue;
     }
   }
-  return null;
+
+  if (!sessionId) return null;
+
+  return {
+    sessionId,
+    projectPath,
+    cwd: cwd || projectPath,
+    startedAt,
+    isHappySession,
+  };
 }

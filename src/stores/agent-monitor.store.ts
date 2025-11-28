@@ -293,6 +293,13 @@ declare global {
       }>;
       getConnectedRepos: () => Promise<ConnectedRepo[]>;
 
+      // Register pending agent tab for Jump to Terminal
+      registerPendingAgentTab: (req: {
+        tabId: string;
+        spaceId: string;
+        repoPath: string;
+      }) => Promise<{ success: boolean }>;
+
       // Event subscriptions
       onSessionCreated: (callback: (session: AgentSession) => void) => () => void;
       onSessionUpdated: (callback: (session: AgentSession) => void) => () => void;

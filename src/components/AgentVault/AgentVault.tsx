@@ -5,6 +5,8 @@ import { useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAgentMonitorStore } from '@/stores/agent-monitor.store';
 import { useAgentVaultStore, agentVaultActions } from '@/stores/agent-vault.store';
+import { windowsActions } from '@/stores/windows.store';
+import { workspaceActions } from '@/stores/workspace.store';
 import type { AgentSession } from '@/types/agent-events';
 import { PillView } from './PillView';
 import { ListView } from './ListView';
@@ -44,6 +46,18 @@ export function AgentVault() {
     }
   }, [vaultStore.view]);
 
+  // Jump to terminal handler - opens the terminal window for the agent
+  const handleJumpToTerminal = useCallback((tabId: string, spaceId: string) => {
+    // Switch to the space
+    workspaceActions.setActiveSpace(spaceId);
+
+    // Open the terminal window
+    windowsActions.openWindow(tabId, 'floating');
+
+    // Collapse the vault after jumping
+    agentVaultActions.collapse();
+  }, []);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -51,6 +65,14 @@ export function AgentVault() {
       if (e.metaKey && e.shiftKey && e.key === 'a') {
         e.preventDefault();
         handleToggle();
+      }
+
+      // Cmd+J to jump to terminal (when viewing a session with terminal link)
+      if (e.metaKey && e.key === 'j') {
+        if (vaultStore.view === 'detail' && selectedSession?.terminalTabId && selectedSession?.spaceId) {
+          e.preventDefault();
+          handleJumpToTerminal(selectedSession.terminalTabId, selectedSession.spaceId);
+        }
       }
 
       // Escape to go back or collapse
@@ -65,7 +87,7 @@ export function AgentVault() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [vaultStore.view, handleToggle, handleBack]);
+  }, [vaultStore.view, handleToggle, handleBack, handleJumpToTerminal, selectedSession]);
 
   // Don't render if no agents ever detected
   if (sessions.length === 0 && Object.keys(monitorStore.sessions).length === 0) {
@@ -90,6 +112,7 @@ export function AgentVault() {
               sessions={sessions}
               onCollapse={handleToggle}
               onSelectAgent={handleSelectAgent}
+              onJumpToTerminal={handleJumpToTerminal}
             />
           )}
 
@@ -99,6 +122,7 @@ export function AgentVault() {
               session={selectedSession}
               onBack={handleBack}
               onCollapse={handleToggle}
+              onJumpToTerminal={handleJumpToTerminal}
             />
           )}
         </AnimatePresence>

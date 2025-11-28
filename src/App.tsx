@@ -7,7 +7,6 @@ import { WindowManager } from '@/components/Window';
 import { useWorkspaceStore, workspaceActions } from '@/stores/workspace.store';
 import { useWindowsStore, windowsActions, getWindowsStore } from '@/stores/windows.store';
 import { historyActions } from '@/stores/history.store';
-import { agentActions, type AgentStatus } from '@/stores/agent.store';
 import { usePerformanceMonitor } from '@/hooks/usePerformance';
 import { startAutoBackup } from '@/lib/backup';
 import { initializeAgentMonitor } from '@/lib/agent-monitor-init';
@@ -19,39 +18,12 @@ startAutoBackup();
 // Initialize agent monitor (connects saved repos)
 initializeAgentMonitor();
 
-// Global agent IPC subscription hook
-function useAgentIpcSubscription() {
-  useEffect(() => {
-    // Subscribe to agent status updates
-    const unsubStatus = window.agent?.onStatus(
-      (data: { sessionId: string; status: string; error?: string }) => {
-        agentActions.updateStatus(data.sessionId, data.status as AgentStatus, data);
-      }
-    );
-
-    // Subscribe to agent terminal output
-    const unsubTerminal = window.agent?.onTerminalLine(
-      (data: { sessionId: string; line: string }) => {
-        agentActions.appendTerminalLine(data.sessionId, data.line);
-      }
-    );
-
-    return () => {
-      unsubStatus?.();
-      unsubTerminal?.();
-    };
-  }, []);
-}
-
 function App() {
   const [darkMode] = useState(true);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const { activeTabId } = useWorkspaceStore();
   // Windows store subscription (focusedWindowId used for potential future focus indicators)
   useWindowsStore();
-
-  // Subscribe to agent IPC events globally
-  useAgentIpcSubscription();
 
   // Initialize performance monitoring (collects metrics every 2s)
   usePerformanceMonitor(2000);

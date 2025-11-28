@@ -2,17 +2,19 @@
 
 import { useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { ArrowLeft, Minus } from 'lucide-react';
+import { ArrowLeft, Minus, Monitor, Smartphone, ExternalLink } from 'lucide-react';
 import { useAgentMonitorStore } from '@/stores/agent-monitor.store';
 import type { AgentSession, AgentActivity } from '@/types/agent-events';
+import { AgentTypeIcon, AGENT_TYPE_NAMES, AGENT_TYPE_COLORS } from './AgentIcons';
 
 interface DetailViewProps {
   session: AgentSession;
   onBack: () => void;
   onCollapse: () => void;
+  onJumpToTerminal?: (tabId: string, spaceId: string) => void;
 }
 
-export function DetailView({ session, onBack, onCollapse }: DetailViewProps) {
+export function DetailView({ session, onBack, onCollapse, onJumpToTerminal }: DetailViewProps) {
   const store = useAgentMonitorStore();
   const feedRef = useRef<HTMLDivElement>(null);
 
@@ -43,7 +45,8 @@ export function DetailView({ session, onBack, onCollapse }: DetailViewProps) {
             className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm font-medium text-white">Claude Code</span>
+            <AgentTypeIcon agentType={session.agentType} className={`w-4 h-4 ${AGENT_TYPE_COLORS[session.agentType]}`} />
+            <span className="text-sm font-medium text-white">{AGENT_TYPE_NAMES[session.agentType]}</span>
           </button>
           <button
             onClick={onCollapse}
@@ -56,6 +59,8 @@ export function DetailView({ session, onBack, onCollapse }: DetailViewProps) {
         {/* Stats */}
         <div className="flex items-center gap-2 text-xs text-gray-400">
           <span className="text-gray-300">{projectName}</span>
+          <span>•</span>
+          <LaunchModeBadge launchMode={session.launchMode} />
           <span>•</span>
           <StatusBadge status={session.status} />
           <span>•</span>
@@ -72,17 +77,45 @@ export function DetailView({ session, onBack, onCollapse }: DetailViewProps) {
         )}
       </div>
 
-      {/* Footer stats */}
-      <div className="px-4 py-2 border-t border-gray-800 flex items-center justify-between text-xs text-gray-500">
-        <span>{session.messageCount ?? 0} messages</span>
-        <span>{session.toolUseCount ?? 0} tool uses</span>
+      {/* Footer */}
+      <div className="px-4 py-2 border-t border-gray-800 flex items-center justify-between text-xs">
+        <div className="flex items-center gap-3 text-gray-500">
+          <span>{session.messageCount ?? 0} messages</span>
+          <span>{session.toolUseCount ?? 0} tool uses</span>
+        </div>
+
+        {/* Jump to Terminal button */}
+        {session.terminalTabId && session.spaceId && onJumpToTerminal && (
+          <button
+            onClick={() => onJumpToTerminal(session.terminalTabId!, session.spaceId!)}
+            className="flex items-center gap-1.5 px-2 py-1 rounded bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors"
+            title="Jump to Terminal (⌘J)"
+          >
+            <ExternalLink className="w-3 h-3" />
+            <span>Terminal</span>
+          </button>
+        )}
       </div>
     </motion.div>
   );
 }
 
+function LaunchModeBadge({ launchMode }: { launchMode?: AgentSession['launchMode'] }) {
+  const isMobile = launchMode === 'mobile';
+  const Icon = isMobile ? Smartphone : Monitor;
+  const label = isMobile ? 'Mobile' : 'Local';
+
+  return (
+    <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-700/50 text-gray-300">
+      <Icon className="w-3 h-3" />
+      <span>{label}</span>
+    </span>
+  );
+}
+
 function StatusBadge({ status }: { status: AgentSession['status'] }) {
   const config = {
+    needs_input: { bg: 'bg-orange-500/20', text: 'text-orange-400', label: '❗ Needs Input' },
     active: { bg: 'bg-green-500/20', text: 'text-green-400', label: '● Active' },
     idle: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', label: '○ Idle' },
     ended: { bg: 'bg-gray-500/20', text: 'text-gray-400', label: '◌ Ended' },
@@ -90,7 +123,7 @@ function StatusBadge({ status }: { status: AgentSession['status'] }) {
 
   const { bg, text, label } = config[status];
 
-  return <span className={`px-1.5 py-0.5 rounded ${bg} ${text}`}>{label}</span>;
+  return <span className={`px-1.5 py-0.5 rounded ${bg} ${text} ${status === 'needs_input' ? 'animate-pulse' : ''}`}>{label}</span>;
 }
 
 function ActivityRow({ activity }: { activity: AgentActivity }) {

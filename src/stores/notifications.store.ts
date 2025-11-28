@@ -4,6 +4,7 @@ export type NotificationType =
   | 'agent-done'
   | 'agent-error'
   | 'agent-info'
+  | 'agent-needs-input'
   | 'build-failed'
   | 'build-success'
   | 'process-crashed'

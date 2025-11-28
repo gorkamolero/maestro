@@ -174,6 +174,22 @@ export function registerAgentMonitorHandlers(getMainWindow: () => BrowserWindow 
     const validatedSessionId = validateSessionId(sessionId);
     return service.getSession(validatedSessionId);
   });
+
+  // Register a pending agent tab for Jump to Terminal feature
+  ipcMain.handle(
+    'agent-monitor:register-pending-tab',
+    async (_, { tabId, spaceId, repoPath }: { tabId: string; spaceId: string; repoPath: string }) => {
+      await ensureServiceStarted();
+      // Validate inputs
+      if (typeof tabId !== 'string' || tabId.length === 0 || tabId.length > 128) {
+        throw new Error('Invalid tabId');
+      }
+      const validatedSpaceId = validateSpaceId(spaceId);
+      const validatedRepoPath = validatePath(repoPath);
+      service.registerPendingAgentTab(tabId, validatedSpaceId, validatedRepoPath);
+      return { success: true };
+    }
+  );
 }
 
 export function cleanupAgentMonitorHandlers(): void {
@@ -186,6 +202,7 @@ export function cleanupAgentMonitorHandlers(): void {
   ipcMain.removeHandler('agent-monitor:get-stats');
   ipcMain.removeHandler('agent-monitor:get-connected-repos');
   ipcMain.removeHandler('agent-monitor:get-session');
+  ipcMain.removeHandler('agent-monitor:register-pending-tab');
 
   // Reset initialization state
   serviceStartPromise = null;

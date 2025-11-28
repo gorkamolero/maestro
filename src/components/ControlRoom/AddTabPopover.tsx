@@ -1,9 +1,20 @@
 import { useState } from 'react';
-import { Terminal, Globe, AppWindow, CheckSquare, StickyNote, Bot, FolderGit2 } from 'lucide-react';
+import {
+  Terminal,
+  Globe,
+  AppWindow,
+  CheckSquare,
+  StickyNote,
+  Bot,
+  FolderGit2,
+  Monitor,
+  Smartphone,
+  ChevronRight,
+} from 'lucide-react';
 import { workspaceActions } from '@/stores/workspace.store';
 import { windowsActions } from '@/stores/windows.store';
 import { launcherActions } from '@/stores/launcher.store';
-import { spacesActions } from '@/stores/spaces.store';
+import { spacesActions, useSpacesStore } from '@/stores/spaces.store';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
@@ -22,11 +33,6 @@ const TAB_OPTIONS = [
     type: 'browser' as const,
     label: 'Browser',
     icon: Globe,
-  },
-  {
-    type: 'agent' as const,
-    label: 'Agent',
-    icon: Bot,
   },
   {
     type: 'notes' as const,
@@ -48,6 +54,74 @@ const TAB_OPTIONS = [
 export function AddTabPopover({ spaceId, children }: AddTabPopoverProps) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showAgentSubmenu, setShowAgentSubmenu] = useState(false);
+
+  // Get space to check for connected repo
+  const { spaces } = useSpacesStore();
+  const space = spaces.find((s) => s.id === spaceId);
+  const hasRepo = Boolean(space?.connectedRepo?.path);
+
+  const handleLaunchLocalAgent = () => {
+    const repoPath = space?.connectedRepo?.path;
+    if (!repoPath) {
+      console.warn('[AddTabPopover] No connected repo for space:', spaceId);
+      return;
+    }
+
+    // Create a terminal tab with claude command (appears as tab in Space card)
+    const newTab = workspaceActions.openTab(spaceId, 'terminal', '🤖 Claude Code', {
+      terminalState: {
+        buffer: '',
+        workingDir: repoPath,
+        scrollPosition: 0,
+        theme: 'termius-dark',
+        cwd: repoPath,
+        initialCommand: 'claude',
+        isAgentTerminal: true,
+      },
+    });
+
+    // Register pending tab for Jump to Terminal feature
+    window.agentMonitor.registerPendingAgentTab({
+      tabId: newTab.id,
+      spaceId,
+      repoPath,
+    });
+
+    setOpen(false);
+    setShowAgentSubmenu(false);
+  };
+
+  const handleLaunchMobileAgent = () => {
+    const repoPath = space?.connectedRepo?.path;
+    if (!repoPath) {
+      console.warn('[AddTabPopover] No connected repo for space:', spaceId);
+      return;
+    }
+
+    // Create a terminal tab with happy command (appears as tab in Space card)
+    const newTab = workspaceActions.openTab(spaceId, 'terminal', '📱 Claude Code (Mobile)', {
+      terminalState: {
+        buffer: '',
+        workingDir: repoPath,
+        scrollPosition: 0,
+        theme: 'termius-dark',
+        cwd: repoPath,
+        initialCommand: 'happy',
+        isAgentTerminal: true,
+      },
+    });
+
+    // Register pending tab for Jump to Terminal feature
+    window.agentMonitor.registerPendingAgentTab({
+      tabId: newTab.id,
+      spaceId,
+      repoPath,
+    });
+
+    setOpen(false);
+    setShowAgentSubmenu(false);
+  };
 
   const handleConnectRepo = async () => {
     setIsLoading(true);
@@ -109,16 +183,6 @@ export function AddTabPopover({ spaceId, children }: AddTabPopoverProps) {
       } finally {
         setIsLoading(false);
       }
-    } else if (type === 'agent') {
-      // Agent tab with default config
-      const newTab = workspaceActions.openTab(spaceId, 'agent', 'Agent', {
-        agentConfig: {
-          workDir: '', // Will be set in AgentDrawer
-          permissionMode: 'askUser',
-        },
-      });
-      // Open window for the agent
-      windowsActions.openWindow(newTab.id, 'floating');
     } else {
       // Native tab types - open in floating window
       const titles: Record<string, string> = {
@@ -138,6 +202,9 @@ export function AddTabPopover({ spaceId, children }: AddTabPopoverProps) {
     // Don't allow closing while loading (file picker is open)
     if (!newOpen && isLoading) return;
     setOpen(newOpen);
+    if (!newOpen) {
+      setShowAgentSubmenu(false);
+    }
   };
 
   return (
@@ -160,42 +227,131 @@ export function AddTabPopover({ spaceId, children }: AddTabPopoverProps) {
           <div className="py-3 px-2 text-center text-sm text-muted-foreground">Loading...</div>
         ) : (
           <div className="flex flex-col">
-            {TAB_OPTIONS.map((option) => (
-              <button
-                key={option.type}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleSelectOption(option.type);
-                }}
-                className={cn(
-                  'flex items-center gap-3 px-2 py-2 rounded-md text-left',
-                  'hover:bg-accent transition-colors',
-                  'text-sm'
+            {showAgentSubmenu ? (
+              <>
+                {/* Back button */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowAgentSubmenu(false);
+                  }}
+                  className={cn(
+                    'flex items-center gap-3 px-2 py-2 rounded-md text-left',
+                    'hover:bg-accent transition-colors',
+                    'text-sm text-muted-foreground'
+                  )}
+                >
+                  <ChevronRight className="w-4 h-4 rotate-180" />
+                  <span>Back</span>
+                </button>
+
+                <div className="h-px bg-border my-1" />
+
+                {/* Launch Local */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleLaunchLocalAgent();
+                  }}
+                  disabled={!hasRepo}
+                  className={cn(
+                    'flex items-center gap-3 px-2 py-2 rounded-md text-left',
+                    'hover:bg-accent transition-colors',
+                    'text-sm',
+                    !hasRepo && 'opacity-50 cursor-not-allowed'
+                  )}
+                >
+                  <Monitor className="w-4 h-4 text-muted-foreground" />
+                  <div className="flex flex-col">
+                    <span>Launch Local</span>
+                    <span className="text-xs text-muted-foreground">Run Claude Code here</span>
+                  </div>
+                </button>
+
+                {/* Launch Mobile */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleLaunchMobileAgent();
+                  }}
+                  disabled={!hasRepo}
+                  className={cn(
+                    'flex items-center gap-3 px-2 py-2 rounded-md text-left',
+                    'hover:bg-accent transition-colors',
+                    'text-sm',
+                    !hasRepo && 'opacity-50 cursor-not-allowed'
+                  )}
+                >
+                  <Smartphone className="w-4 h-4 text-muted-foreground" />
+                  <div className="flex flex-col">
+                    <span>Launch Mobile</span>
+                    <span className="text-xs text-muted-foreground">Control from phone</span>
+                  </div>
+                </button>
+
+                {!hasRepo && (
+                  <p className="text-xs text-muted-foreground px-2 py-1">
+                    Connect a repo first to launch agents
+                  </p>
                 )}
-              >
-                <option.icon className="w-4 h-4 text-muted-foreground" />
-                <span>{option.label}</span>
-              </button>
-            ))}
+              </>
+            ) : (
+              <>
+                {TAB_OPTIONS.map((option) => (
+                  <button
+                    key={option.type}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSelectOption(option.type);
+                    }}
+                    className={cn(
+                      'flex items-center gap-3 px-2 py-2 rounded-md text-left',
+                      'hover:bg-accent transition-colors',
+                      'text-sm'
+                    )}
+                  >
+                    <option.icon className="w-4 h-4 text-muted-foreground" />
+                    <span>{option.label}</span>
+                  </button>
+                ))}
 
-            {/* Separator */}
-            <div className="h-px bg-border my-1" />
+                {/* Agent with submenu */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowAgentSubmenu(true);
+                  }}
+                  className={cn(
+                    'flex items-center gap-3 px-2 py-2 rounded-md text-left',
+                    'hover:bg-accent transition-colors',
+                    'text-sm'
+                  )}
+                >
+                  <Bot className="w-4 h-4 text-muted-foreground" />
+                  <span className="flex-1">Agent</span>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                </button>
 
-            {/* Connect Repository */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleConnectRepo();
-              }}
-              className={cn(
-                'flex items-center gap-3 px-2 py-2 rounded-md text-left',
-                'hover:bg-accent transition-colors',
-                'text-sm'
-              )}
-            >
-              <FolderGit2 className="w-4 h-4 text-muted-foreground" />
-              <span>Connect Repo</span>
-            </button>
+                {/* Separator */}
+                <div className="h-px bg-border my-1" />
+
+                {/* Connect Repository */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleConnectRepo();
+                  }}
+                  className={cn(
+                    'flex items-center gap-3 px-2 py-2 rounded-md text-left',
+                    'hover:bg-accent transition-colors',
+                    'text-sm'
+                  )}
+                >
+                  <FolderGit2 className="w-4 h-4 text-muted-foreground" />
+                  <span>Connect Repo</span>
+                </button>
+              </>
+            )}
           </div>
         )}
       </PopoverContent>

@@ -3,7 +3,7 @@ import { persistWithHistory } from '@/lib/persist-with-history';
 import { RECENTLY_CLOSED_TABS_LIMIT } from '@/lib/constants';
 import type { LaunchConfig, SavedState } from '@/types/launcher';
 
-export type TabType = 'terminal' | 'browser' | 'agent' | 'app-launcher' | 'tasks' | 'notes';
+export type TabType = 'terminal' | 'browser' | 'app-launcher' | 'tasks' | 'notes';
 export type TabStatus = 'active' | 'idle' | 'running';
 export type TabsViewMode = 'grid' | 'list';
 
@@ -21,6 +21,10 @@ export interface Tab {
     workingDir: string | null;
     scrollPosition: number;
     theme: 'termius-dark' | 'dracula' | 'nord';
+    /** Initial command to run when terminal spawns */
+    initialCommand?: string;
+    /** Whether this is an agent terminal (launched via Launch Agent) */
+    isAgentTerminal?: boolean;
   };
   // For app launcher items
   appLauncherConfig?: {
@@ -29,13 +33,6 @@ export interface Tab {
     color: string | null;
     launchConfig: LaunchConfig;
     savedState: SavedState | null;
-  };
-  // For agent tabs
-  agentConfig?: {
-    workDir: string;
-    permissionMode: 'acceptEdits' | 'askUser' | 'planOnly';
-    lastPrompt?: string;
-    sessionId?: string;
   };
 }
 

@@ -262,8 +262,10 @@ contextBridge.exposeInMainWorld('pty', {
 
 // Agent Monitor types
 type AgentType = 'claude-code' | 'codex' | 'gemini';
-type AgentSessionStatus = 'active' | 'idle' | 'ended';
+type AgentSessionStatus = 'active' | 'idle' | 'ended' | 'needs_input';
 type AgentSource = 'external' | 'maestro-pty' | 'maestro-sdk';
+
+type AgentLaunchMode = 'local' | 'mobile';
 
 interface AgentSession {
   id: string;
@@ -276,6 +278,9 @@ interface AgentSession {
   status: AgentSessionStatus;
   processId?: number;
   filePath: string;
+  launchMode?: AgentLaunchMode;
+  terminalTabId?: string;
+  spaceId?: string;
   messageCount: number;
   toolUseCount: number;
   tokenUsage?: {
@@ -359,6 +364,14 @@ contextBridge.exposeInMainWorld('agentMonitor', {
 
   getConnectedRepos: (): Promise<ConnectedRepo[]> =>
     ipcRenderer.invoke('agent-monitor:get-connected-repos'),
+
+  // Register pending agent tab for Jump to Terminal
+  registerPendingAgentTab: (req: {
+    tabId: string;
+    spaceId: string;
+    repoPath: string;
+  }): Promise<{ success: boolean }> =>
+    ipcRenderer.invoke('agent-monitor:register-pending-tab', req),
 
   // Event subscriptions (return unsubscribe function)
   onSessionCreated: (callback: (session: AgentSession) => void) => {

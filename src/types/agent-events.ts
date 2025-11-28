@@ -12,7 +12,10 @@ export type AgentSource =
   | 'maestro-pty' // Launched via Maestro's PTY
   | 'maestro-sdk'; // Launched via Claude SDK
 
-export type AgentSessionStatus = 'active' | 'idle' | 'ended';
+export type AgentSessionStatus = 'active' | 'idle' | 'ended' | 'needs_input';
+
+/** Launch mode for agent sessions */
+export type AgentLaunchMode = 'local' | 'mobile';
 
 export interface AgentSession {
   id: string;
@@ -25,6 +28,13 @@ export interface AgentSession {
   status: AgentSessionStatus;
   processId?: number; // If we can detect it
   filePath: string; // Path to the JSONL file
+  /** Whether this session was launched via Happy Coder (mobile) */
+  launchMode?: AgentLaunchMode;
+
+  /** Terminal tab ID if launched from Maestro */
+  terminalTabId?: string;
+  /** Space ID this session belongs to */
+  spaceId?: string;
 
   // Stats
   messageCount: number;

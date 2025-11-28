@@ -1,11 +1,9 @@
 import { useState, useMemo } from 'react';
-import { useSnapshot } from 'valtio';
 import {
   Terminal,
   Globe,
   FileText,
   AppWindow,
-  Bot,
   Trash2,
   Settings,
   Save,
@@ -22,7 +20,6 @@ import type { Tab } from '@/stores/workspace.store';
 import { workspaceActions } from '@/stores/workspace.store';
 import { windowsActions } from '@/stores/windows.store';
 import { EmojiPickerComponent } from '@/components/ui/emoji-picker';
-import { agentStore } from '@/stores/agent.store';
 import { launcherActions } from '@/stores/launcher.store';
 import { cn } from '@/lib/utils';
 import { launchTab } from '@/hooks/useTabClick';
@@ -34,13 +31,12 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
 import { TerminalStatus } from './TerminalStatus';
-import { AgentStatusBadge, TerminalPreview, AgentDrawer } from '@/components/Agent';
 import { SaveContextModal } from './SaveContextModal';
 import { getAppPreset } from '@/lib/app-presets';
 
 interface TabPreviewProps {
   tab: Tab;
-  onClick: () => void;
+  onClick?: () => void;
 }
 
 function TabTypeIcon({ type, className }: { type: Tab['type']; className?: string }) {
@@ -56,8 +52,6 @@ function TabTypeIcon({ type, className }: { type: Tab['type']; className?: strin
       return <CheckSquare className={iconClass} />;
     case 'notes':
       return <StickyNote className={iconClass} />;
-    case 'agent':
-      return <Bot className={iconClass} />;
     default:
       return <FileText className={iconClass} />;
   }
@@ -105,27 +99,15 @@ function TabIconButton({
             <TerminalStatus tabId={tab.id} />
           </div>
         )}
-
-        {/* Status indicator for agent tabs */}
-        {tab.type === 'agent' && (
-          <div className="absolute -top-2 -right-2">
-            <AgentStatusBadge tabId={tab.id} />
-          </div>
-        )}
       </div>
     </button>
   );
 }
 
 // Icon + label button view (for Control Room cards)
-export function TabPreviewIcon({ tab, onClick }: TabPreviewProps) {
-  const [isHovered, setIsHovered] = useState(false);
+export function TabPreviewIcon({ tab }: TabPreviewProps) {
   const [isContextModalOpen, setIsContextModalOpen] = useState(false);
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
-  const { sessions } = useSnapshot(agentStore);
-
-  // Get agent session for hover preview
-  const agentSession = tab.type === 'agent' ? sessions.find((s) => s.tabId === tab.id) : null;
 
   // Check if app has context set
   const hasContext =
@@ -167,9 +149,8 @@ export function TabPreviewIcon({ tab, onClick }: TabPreviewProps) {
     // For app-launcher tabs, launch the app directly
     if (tab.type === 'app-launcher') {
       launchTab(tab.id);
-    } else if (tab.type !== 'agent') {
-      // For non-agent tabs, open in a floating window
-      // Agent tabs are handled by the AgentDrawer
+    } else {
+      // Open in a floating window
       windowsActions.openWindow(tab.id, 'floating');
     }
   };
@@ -204,103 +185,11 @@ export function TabPreviewIcon({ tab, onClick }: TabPreviewProps) {
   };
 
   // Check if this tab type can be windowed
-  const canBeWindowed = ['browser', 'terminal', 'agent', 'tasks', 'notes'].includes(tab.type);
+  const canBeWindowed = ['browser', 'terminal', 'tasks', 'notes'].includes(tab.type);
 
-  // For agent tabs, wrap with AgentDrawer
-  // The AgentDrawer's FamilyDrawerTrigger handles opening the drawer on click.
-  // TabIconButton's onClick only stops propagation to prevent parent handlers.
-  if (tab.type === 'agent') {
-    return (
-      <div
-        className="relative"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
-        <ContextMenu>
-          <ContextMenuTrigger asChild>
-            <div>
-              <AgentDrawer
-                tabId={tab.id}
-                spaceId={tab.spaceId}
-                defaultWorkDir={tab.agentConfig?.workDir}
-                onMaximize={onClick}
-              >
-                {/* onClick only prevents event bubbling; drawer opens via FamilyDrawerTrigger */}
-                <TabIconButton tab={tab} onClick={(e) => e.stopPropagation()} />
-              </AgentDrawer>
-            </div>
-          </ContextMenuTrigger>
-          <ContextMenuContent onClick={(e) => e.stopPropagation()}>
-            <ContextMenuItem className="text-xs" disabled>
-              {tab.title}
-            </ContextMenuItem>
-            <ContextMenuSeparator />
-            {canBeWindowed && (
-              <>
-                <ContextMenuItem onClick={handleOpenInWindow} className="gap-2">
-                  <PictureInPicture2 className="w-3.5 h-3.5" />
-                  Open in Window
-                </ContextMenuItem>
-                <ContextMenuItem onClick={handleOpenMaximized} className="gap-2">
-                  <Maximize2 className="w-3.5 h-3.5" />
-                  Open Maximized
-                </ContextMenuItem>
-                <ContextMenuSeparator />
-              </>
-            )}
-            <ContextMenuItem onClick={() => setIsEmojiPickerOpen(true)} className="gap-2">
-              <Smile className="w-3.5 h-3.5" />
-              {tab.emoji ? 'Change Emoji' : 'Add Emoji'}
-            </ContextMenuItem>
-            {tab.emoji && (
-              <ContextMenuItem onClick={handleRemoveEmoji} className="gap-2">
-                <X className="w-3.5 h-3.5" />
-                Remove Emoji
-              </ContextMenuItem>
-            )}
-            <ContextMenuItem onClick={handleEdit} className="gap-2">
-              <Settings className="w-3.5 h-3.5" />
-              Edit
-            </ContextMenuItem>
-            <ContextMenuSeparator />
-            <ContextMenuItem
-              onClick={handleRemove}
-              className="gap-2 text-destructive focus:text-destructive"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              Remove
-            </ContextMenuItem>
-          </ContextMenuContent>
-        </ContextMenu>
-
-        {/* Emoji picker popover */}
-        <EmojiPickerComponent
-          value={tab.emoji}
-          onChange={handleEmojiChange}
-          open={isEmojiPickerOpen}
-          onOpenChange={setIsEmojiPickerOpen}
-        >
-          <span />
-        </EmojiPickerComponent>
-
-        {/* Terminal preview on hover */}
-        {agentSession && agentSession.terminalLines.length > 0 && (
-          <div className="absolute top-full left-0 z-50 w-48">
-            <TerminalPreview lines={agentSession.terminalLines} visible={isHovered} />
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // For all other tabs
   return (
     <>
-      <div
-        className="relative"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
+      <div className="relative">
         <ContextMenu>
           <ContextMenuTrigger asChild>
             <div className="relative">
