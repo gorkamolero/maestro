@@ -73,7 +73,7 @@ app.on('ready', () => {
   registerAgentMonitorHandlers(getMainWindow);
   registerPerformanceHandlers(getMainWindow, getBrowserViewsMap);
   registerRemoteServerIPC();
-  registerSpaceSyncIPC();
+  registerSpaceSyncIPC(getMainWindow);
 });
 
 app.on('window-all-closed', () => {

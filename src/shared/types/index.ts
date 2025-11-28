@@ -38,6 +38,21 @@ export interface SpaceInfo {
   repoPath?: string;
   tabCount: number;
   agentCount: number;
+  lastAccessedAt?: string;
+}
+
+export interface TabInfo {
+  id: string;
+  type: string;
+  title?: string;
+  url?: string;
+  terminalId?: string;
+  content?: string;
+  agentId?: string;
+}
+
+export interface SpaceDetail extends SpaceInfo {
+  tabs: TabInfo[];
 }
 
 export interface TerminalInfo {

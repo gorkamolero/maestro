@@ -1,9 +1,12 @@
-import { ipcMain } from 'electron';
+import { ipcMain, BrowserWindow } from 'electron';
 
 // In-memory cache of spaces data (received from renderer)
 let spacesCache: unknown[] = [];
+let _getMainWindow: (() => BrowserWindow | null) | null = null;
 
-export function registerSpaceSyncIPC() {
+export function registerSpaceSyncIPC(getMainWindow: () => BrowserWindow | null) {
+  _getMainWindow = getMainWindow;
+
   // Receive spaces update from renderer
   ipcMain.on('spaces:update', (_, spaces: unknown[]) => {
     spacesCache = spaces;
@@ -17,4 +20,18 @@ export function registerSpaceSyncIPC() {
 
 export function getCachedSpaces() {
   return spacesCache;
+}
+
+export function requestCreateTab(spaceId: string, type: string, url?: string) {
+  const win = _getMainWindow?.();
+  if (win) {
+    win.webContents.send('spaces:create-tab', { spaceId, type, url });
+  }
+}
+
+export function requestCreateTerminal(spaceId: string) {
+  const win = _getMainWindow?.();
+  if (win) {
+    win.webContents.send('spaces:create-terminal', { spaceId });
+  }
 }

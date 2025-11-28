@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { getAgentMonitorService } from '../../agent-monitor';
-import { getCachedSpaces } from '../../../ipc/space-sync';
+import { getCachedSpaces, requestCreateTab, requestCreateTerminal } from '../../../ipc/space-sync';
 
 export const spacesRouter = new Hono();
 const agentMonitorService = getAgentMonitorService();
@@ -21,7 +21,7 @@ spacesRouter.get('/', (c) => {
       icon: space.icon,
       repoPath: space.connectedRepo?.path,
       lastAccessedAt: space.lastActiveAt || new Date().toISOString(),
-      tabCount: 0, // TODO: Need tab count sync too?
+      tabCount: space.tabs?.length || 0,
       agentCount: sessions.filter(s => s.spaceId === space.id).length,
     }));
     return c.json({ spaces });
@@ -64,7 +64,17 @@ spacesRouter.get('/:id', (c) => {
       icon: space.icon,
       repoPath: space.connectedRepo?.path,
       lastAccessedAt: space.lastActiveAt || new Date().toISOString(),
-      tabs: [], // Tabs are not yet synced, but could be added to the cache payload
+      tabCount: space.tabs?.length || 0,
+      agentCount: sessions.length,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      tabs: space.tabs?.map((t: any) => ({
+        id: t.id,
+        type: t.type,
+        title: t.title,
+        url: t.url,
+        terminalId: t.terminalState ? t.id : undefined, // Use tab ID as terminal ID for mapped PTYs
+        content: t.notesContent, // Assuming notes content might be here or in separate field
+      })) || [],
       agents: sessions,
     });
   }
@@ -76,9 +86,27 @@ spacesRouter.get('/:id', (c) => {
     icon: undefined,
     repoPath: undefined,
     lastAccessedAt: new Date().toISOString(),
+    tabCount: 0,
+    agentCount: sessions.length,
     tabs: [],
     agents: sessions,
   });
+});
+
+// Create terminal in space
+spacesRouter.post('/:id/terminals', async (c) => {
+  const spaceId = c.req.param('id');
+  requestCreateTerminal(spaceId);
+  // Return success - creation is async via IPC
+  return c.json({ success: true });
+});
+
+// Create tab in space
+spacesRouter.post('/:id/tabs', async (c) => {
+  const spaceId = c.req.param('id');
+  const body = await c.req.json();
+  requestCreateTab(spaceId, body.type, body.url);
+  return c.json({ success: true });
 });
 
 // Get agents for a space
