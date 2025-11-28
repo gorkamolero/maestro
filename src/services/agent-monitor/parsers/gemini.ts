@@ -38,7 +38,7 @@ interface GeminiToolCall {
   timestamp?: string;
 }
 
-export function parseGeminiCheckpoint(content: string, filePath: string): AgentActivity[] {
+export function parseGeminiCheckpoint(content: string, _filePath: string): AgentActivity[] {
   const activities: AgentActivity[] = [];
 
   let checkpoint: GeminiCheckpoint;
@@ -49,7 +49,7 @@ export function parseGeminiCheckpoint(content: string, filePath: string): AgentA
   }
 
   const sessionId = checkpoint.sessionId || checkpoint.id || randomUUID();
-  const cwd = checkpoint.cwd || checkpoint.workingDirectory || '';
+  // cwd available for future use: checkpoint.cwd || checkpoint.workingDirectory || ''
 
   const baseProps = {
     sessionId,
@@ -125,7 +125,6 @@ function truncate(s: string, max: number): string {
 }
 
 function generateSummary(name: string, args: Record<string, unknown>): string {
-  const n = name.toLowerCase();
   if (args.path || args.file) {
     return `${name} ${args.path || args.file}`;
   }

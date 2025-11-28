@@ -59,7 +59,7 @@ const TOOL_NAME_MAP: Record<string, string> = {
 // PARSER
 // ============================================
 
-export function parseClaudeCodeLine(line: string, filePath: string): AgentActivity[] {
+export function parseClaudeCodeLine(line: string, _filePath: string): AgentActivity[] {
   const activities: AgentActivity[] = [];
 
   let parsed: ClaudeCodeMessage;

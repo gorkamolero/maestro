@@ -49,7 +49,7 @@ type CodexLine = CodexSessionMeta | CodexEventMsg;
 export function parseCodexLine(
   line: string,
   sessionId: string, // Must be provided from session meta
-  filePath: string
+  _filePath: string
 ): AgentActivity[] {
   const activities: AgentActivity[] = [];
 

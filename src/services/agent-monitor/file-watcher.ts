@@ -3,7 +3,7 @@
 
 import * as fs from 'fs';
 import { readFile, readdir, stat } from 'fs/promises';
-import { join, dirname, basename, relative } from 'path';
+import { join, basename } from 'path';
 import { EventEmitter } from 'events';
 import { AGENT_WATCH_CONFIGS } from './paths';
 import type { AgentType } from '@/types/agent-events';
@@ -260,7 +260,7 @@ export class AgentFileWatcher extends EventEmitter {
     this.dirWatchers.clear();
 
     // Close file watchers
-    for (const [path, watcher] of this.fileWatchers) {
+    for (const [, watcher] of this.fileWatchers) {
       watcher.close();
     }
     this.fileWatchers.clear();

@@ -72,6 +72,9 @@ All notable changes to Maestro will be documented in this file.
 - **Memory leak fix** - Clean up `processSessionMap` when sessions end, clear all maps on service stop
 - **Parser null safety** - Fixed crashes when `message.content` or `payload.content` is undefined in JSONL parsers
 - **Session filter null check** - Prevent `startsWith` error when `projectPath` is undefined
+- **ESLint warnings resolved** - Fixed unused variables in file-watcher, parsers, and process handlers
+  - Added eslint override for parser files allowing `_`-prefixed unused args (for API stability)
+  - Replaced non-null assertion with nullish coalescing in process exit handler
 
 #### What's Next Bubble (2025-11-28)
 - Restored `NextBubble` component to SpaceCard and SpacePanesView

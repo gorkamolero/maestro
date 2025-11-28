@@ -21,7 +21,6 @@ import type {
   AgentType,
   ConnectedRepo,
   DetectedProcess,
-  AGENT_MONITOR_CHANNELS,
 } from '@/types/agent-events';
 
 // Re-export types and channels
@@ -316,7 +315,6 @@ export class AgentMonitorService extends EventEmitter {
   }
 
   private handleFileDeleted({
-    agentType,
     filePath,
   }: {
     agentType: AgentType;
@@ -361,7 +359,8 @@ export class AgentMonitorService extends EventEmitter {
     for (const proc of this.lastProcesses) {
       if (!currentPids.has(proc.pid)) {
         console.log(`[AgentMonitorService] ${proc.agentType} process exited: PID ${proc.pid}`);
-        this.emit('process:exited', { pid: proc.pid, agentType: proc.agentType! });
+        const agentType = proc.agentType ?? 'claude-code';
+        this.emit('process:exited', { pid: proc.pid, agentType });
 
         // Update associated session
         const sessionId = this.processSessionMap.get(proc.pid);
