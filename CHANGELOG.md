@@ -23,6 +23,24 @@ All notable changes to Maestro will be documented in this file.
 - **State Synchronization**:
   - Renderer (`SpaceSync` component) pushes space data to Main process for `/api/spaces`.
 
+#### Mobile Web UI (2025-11-28)
+- **Mobile-first Interface**: Dedicated responsive UI for controlling Maestro from a phone.
+  - Served directly from Maestro's embedded web server.
+  - **Agent List**: View active, needs-input, and idle agents.
+  - **Agent Detail**: Live activity feed, status, and cost tracking.
+  - **Terminal**: Full xterm.js terminal with mobile keyboard support.
+  - **Quick Actions**: One-tap responses (Yes/No/Continue) for agents waiting for input.
+- **Real-time Updates**: WebSocket connection for live status and terminal streaming.
+- **Secure Pairing**: PIN-based pairing flow with persistent device credentials.
+
+#### Ntfy Push Notifications (2025-11-28)
+- **Push Notifications**: Integration with `ntfy.sh` for critical alerts.
+- **Events**:
+  - `needs_input`: Get notified when an agent is waiting for you.
+  - `error`: Instant alerts for agent failures.
+  - `complete`: Notification upon task completion.
+- **Actionable**: Notifications include deep links or actions (where supported).
+
 ### Fixed
 
 #### Remote Server Terminal ID Consistency (2025-11-28)

@@ -3,7 +3,10 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { WebSocketServer } from 'ws';
 import os from 'os';
-import { app } from 'electron';
+import { app as electronApp } from 'electron'; // Alias 'app' to 'electronApp' to avoid conflict with hono 'app'
+import { serveStatic } from '@hono/node-server/serve-static';
+import path from 'path';
+import fs from 'fs/promises';
 
 import { authRouter } from './auth/routes';
 import { authMiddleware } from './auth/middleware';
@@ -44,7 +47,7 @@ class RemoteServer {
     this.app.get('/api/health', (c) => {
       return c.json({
         status: 'healthy',
-        version: app.getVersion(),
+        version: electronApp.getVersion(),
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
       });
@@ -55,6 +58,26 @@ class RemoteServer {
     this.app.route('/api/agents', agentsRouter);
     this.app.route('/api/spaces', spacesRouter);
     this.app.route('/api', systemRouter);
+
+    // Serve mobile UI for all non-API routes
+    const mobilePath = electronApp.isPackaged
+      ? path.join(process.resourcesPath, 'app.asar/dist/mobile') // In packaged app, it's inside app.asar
+      : path.join(__dirname, '../../../../dist/mobile');
+
+    // Static assets
+    this.app.use('/assets/*', serveStatic({ root: mobilePath, stripEmptyParams: true }));
+    
+    // SPA fallback - serve index.html for all other routes
+    this.app.get('*', async (c) => {
+      const indexPath = path.join(mobilePath, 'index.html');
+      try {
+        const html = await fs.readFile(indexPath, 'utf8');
+        return c.html(html);
+      } catch (e) {
+        console.error('Failed to serve mobile index.html:', e);
+        return c.text('Mobile UI not found', 404);
+      }
+    });
   }
   
   async start(port: number = DEFAULT_PORT): Promise<void> {

@@ -6,6 +6,7 @@ import { resolve, join } from 'path';
 import { app, BrowserWindow, utilityProcess, UtilityProcess, Notification } from 'electron';
 import { ProcessScanner } from './process-scanner';
 import { AgentRegistry } from './registry';
+import { notifyNeedsInput, notifyAgentError } from '../remote-server/notifications';
 
 // Agent type display names for notifications
 const AGENT_TYPE_NAMES: Record<string, string> = {
@@ -195,6 +196,8 @@ export class AgentMonitorService extends EventEmitter {
         // Check if status changed to needs_input
         if (session.status === 'needs_input' && previousStatus !== 'needs_input') {
           this.showNeedsInputNotification(session);
+          // New: Ntfy notification
+          notifyNeedsInput(AGENT_TYPE_NAMES[session.agentType] || session.agentType, session.projectName || session.projectPath.split('/').pop() || 'Unknown Project');
         }
 
         // Update previous status
@@ -210,6 +213,11 @@ export class AgentMonitorService extends EventEmitter {
         const activity = message.payload as AgentActivity;
         this.registry.addActivity(activity);
         // addActivity already emits 'activity:new' via registry event forwarding
+
+        // New: Ntfy error notification
+        if (activity.type === 'error') {
+          notifyAgentError(AGENT_TYPE_NAMES[activity.agentType] || activity.agentType, activity.content || 'Unknown error');
+        }
         break;
       }
 

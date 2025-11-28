@@ -139,12 +139,25 @@ interface RemoteServerAPI {
   getConnectionInfo: () => Promise<{ urls: string[]; port: number }>;
 }
 
+interface NtfyConfig {
+  enabled: boolean;
+  topic: string;
+  server?: string;
+}
+
+interface NtfyAPI {
+  getConfig: () => Promise<NtfyConfig>;
+  setConfig: (config: Partial<NtfyConfig>) => Promise<{ success: boolean }>;
+  test: () => Promise<{ success: boolean }>;
+}
+
 declare global {
   interface Window {
     electron: ElectronAPI;
     agent: AgentAPI;
     pty: PtyAPI;
     remoteServer: RemoteServerAPI;
+    ntfy: NtfyAPI;
   }
 }
 

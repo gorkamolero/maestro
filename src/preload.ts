@@ -411,3 +411,13 @@ contextBridge.exposeInMainWorld('remoteServer', {
   getPairingStatus: () => ipcRenderer.invoke('remote-server:pairing-status'),
   getConnectionInfo: () => ipcRenderer.invoke('remote-server:connection-info'),
 });
+
+// ============================================================================
+// Expose Ntfy API
+// ============================================================================
+
+contextBridge.exposeInMainWorld('ntfy', {
+  getConfig: () => ipcRenderer.invoke('ntfy:get-config'),
+  setConfig: (config: { enabled: boolean; topic: string; server?: string }) => ipcRenderer.invoke('ntfy:set-config', config),
+  test: () => ipcRenderer.invoke('ntfy:test'),
+});
