@@ -59,6 +59,12 @@ const config: ForgeConfig = {
           config: 'vite.preload.config.ts',
           target: 'preload',
         },
+        {
+          // Agent monitor utility process - runs file watching off main thread
+          entry: 'src/services/agent-monitor/worker.ts',
+          config: 'vite.main.config.ts',
+          target: 'main',
+        },
       ],
       renderer: [
         {

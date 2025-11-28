@@ -25,6 +25,29 @@ export function useAgentSessionsForSpace(spaceId: string): AgentSession[] {
 }
 
 /**
+ * Get agent sessions for a space with loading state (reactive)
+ */
+export function useAgentSessionsWithLoading(spaceId: string): {
+  sessions: AgentSession[];
+  isLoading: boolean;
+  isInitialized: boolean;
+} {
+  const store = useAgentMonitorStore();
+
+  const sessions = useMemo(() => {
+    void store.sessions;
+    void store.connectedRepos;
+    return getSessionsForSpace(spaceId);
+  }, [spaceId, store.sessions, store.connectedRepos]);
+
+  return {
+    sessions,
+    isLoading: store.isLoading,
+    isInitialized: store.isInitialized,
+  };
+}
+
+/**
  * Get count of active agents for a space (reactive)
  */
 export function useActiveAgentCount(spaceId: string): number {

@@ -1,20 +1,11 @@
 // Agent Monitor Service
-// Main service that coordinates file watching, parsing, and process detection
+// Coordinates with utility process for file watching and manages process detection
 
 import { EventEmitter } from 'events';
-import { resolve } from 'path';
-import { BrowserWindow } from 'electron';
-import { AgentFileWatcher } from './file-watcher';
+import { resolve, join } from 'path';
+import { app, BrowserWindow, utilityProcess, UtilityProcess } from 'electron';
 import { ProcessScanner } from './process-scanner';
 import { AgentRegistry } from './registry';
-import {
-  parseClaudeCodeLine,
-  extractClaudeCodeSessionMeta,
-  parseCodexLine,
-  extractCodexSessionMeta,
-  parseGeminiCheckpoint,
-  extractGeminiSessionMeta,
-} from './parsers';
 import type {
   AgentSession,
   AgentActivity,
@@ -45,33 +36,31 @@ export interface AgentMonitorService {
 }
 
 export class AgentMonitorService extends EventEmitter {
-  private fileWatcher: AgentFileWatcher;
+  private worker: UtilityProcess | null = null;
   private processScanner: ProcessScanner;
   private registry: AgentRegistry;
   private mainWindow: BrowserWindow | null = null;
 
-  private fileSessionMap: Map<string, string> = new Map(); // filePath -> sessionId
   private processSessionMap: Map<number, string> = new Map(); // pid -> sessionId
   private lastProcesses: DetectedProcess[] = [];
+  private workerReady = false;
+  private pendingMessages: Array<{ type: string; payload?: unknown }> = [];
 
-  private idleCheckInterval: NodeJS.Timeout | null = null;
   private pruneInterval: NodeJS.Timeout | null = null;
-  private readonly IDLE_THRESHOLD_MS = 30000; // 30 seconds without activity = idle
   private readonly PROCESS_SCAN_INTERVAL_MS = 5000; // 5 seconds
   private readonly PRUNE_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
   private readonly SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
 
   constructor() {
     super();
-    this.fileWatcher = new AgentFileWatcher();
     this.processScanner = new ProcessScanner();
     this.registry = new AgentRegistry();
 
-    this.setupEventForwarding();
+    this.setupRegistryEventForwarding();
   }
 
-  private setupEventForwarding(): void {
-    // Forward registry events
+  private setupRegistryEventForwarding(): void {
+    // Forward registry events to renderer
     this.registry.on('session:created', (session) => {
       this.emit('session:created', session);
       this.sendToRenderer('agent-monitor:session-created', session);
@@ -87,7 +76,6 @@ export class AgentMonitorService extends EventEmitter {
       this.sendToRenderer('agent-monitor:session-ended', session);
 
       // Clean up processSessionMap to prevent memory leak
-      // Find and remove any process mapping for this ended session
       for (const [pid, sessionId] of this.processSessionMap.entries()) {
         if (sessionId === session.id) {
           this.processSessionMap.delete(pid);
@@ -108,6 +96,83 @@ export class AgentMonitorService extends EventEmitter {
     }
   }
 
+  private sendToWorker(type: string, payload?: unknown): void {
+    const message = { type, payload };
+
+    if (!this.workerReady) {
+      this.pendingMessages.push(message);
+      return;
+    }
+
+    this.worker?.postMessage(message);
+  }
+
+  private handleWorkerMessage(message: { type: string; payload?: unknown }): void {
+    switch (message.type) {
+      case 'ready':
+        console.log('[AgentMonitorService] Worker ready, sending start command');
+        // Worker is ready to receive messages, now we can send commands
+        this.workerReady = true;
+        // Send any pending messages (including the 'start' command)
+        for (const msg of this.pendingMessages) {
+          this.worker?.postMessage(msg);
+        }
+        this.pendingMessages = [];
+        break;
+
+      case 'started':
+        console.log('[AgentMonitorService] Worker started watching files');
+        break;
+
+      case 'stopped':
+        console.log('[AgentMonitorService] Worker stopped');
+        this.workerReady = false;
+        break;
+
+      case 'session:created': {
+        const session = message.payload as AgentSession;
+        this.registry.importSession(session);
+        this.emit('session:created', session);
+        this.sendToRenderer('agent-monitor:session-created', session);
+        break;
+      }
+
+      case 'session:updated': {
+        const session = message.payload as AgentSession;
+        this.registry.importSession(session);
+        this.emit('session:updated', session);
+        this.sendToRenderer('agent-monitor:session-updated', session);
+        break;
+      }
+
+      case 'activity:new': {
+        const activity = message.payload as AgentActivity;
+        this.registry.addActivity(activity);
+        // addActivity already emits 'activity:new' via registry event forwarding
+        break;
+      }
+
+      case 'sessions':
+        // Response to get-sessions query - handled by caller
+        break;
+
+      case 'activities':
+        // Response to get-activities query - handled by caller
+        break;
+
+      case 'repo-connected':
+        console.log('[AgentMonitorService] Repo connected:', message.payload);
+        break;
+
+      case 'repo-disconnected':
+        console.log('[AgentMonitorService] Repo disconnected:', message.payload);
+        break;
+
+      default:
+        console.warn(`[AgentMonitorService] Unknown worker message: ${message.type}`);
+    }
+  }
+
   // ============================================
   // LIFECYCLE
   // ============================================
@@ -119,29 +184,11 @@ export class AgentMonitorService extends EventEmitter {
       this.mainWindow = mainWindow;
     }
 
-    // Start file watcher
-    this.fileWatcher.on('file:created', this.handleFileCreated.bind(this));
-    this.fileWatcher.on('file:changed', this.handleFileChanged.bind(this));
-    this.fileWatcher.on('file:deleted', this.handleFileDeleted.bind(this));
-    this.fileWatcher.on('error', ({ error, context }) => {
-      console.error(`[AgentMonitorService] File watcher error:`, error, context);
-      this.emit('error', { error, context });
-    });
+    // Start utility process for file watching
+    await this.startWorker();
 
-    try {
-      await this.fileWatcher.start();
-    } catch (error) {
-      console.error('[AgentMonitorService] Failed to start file watcher:', error);
-      // Continue anyway - process scanning can still work
-    }
-
-    // Start process scanning
+    // Start process scanning (lightweight, stays on main)
     this.processScanner.startPolling(this.PROCESS_SCAN_INTERVAL_MS, this.handleProcessScan.bind(this));
-
-    // Start idle detection
-    this.idleCheckInterval = setInterval(() => {
-      this.checkForIdleSessions();
-    }, 10000); // Check every 10 seconds
 
     // Start periodic pruning
     this.pruneInterval = setInterval(() => {
@@ -151,26 +198,73 @@ export class AgentMonitorService extends EventEmitter {
     console.log('[AgentMonitorService] Started');
   }
 
+  private async startWorker(): Promise<void> {
+    // Get the path to the worker script
+    // In development, it's in .vite/build, in production it's in resources
+    const workerPath = app.isPackaged
+      ? join(process.resourcesPath, 'app.asar', '.vite', 'build', 'worker.js')
+      : join(app.getAppPath(), '.vite', 'build', 'worker.js');
+
+    console.log('[AgentMonitorService] Starting worker from:', workerPath);
+
+    try {
+      this.worker = utilityProcess.fork(workerPath);
+
+      this.worker.on('message', (message) => {
+        this.handleWorkerMessage(message as { type: string; payload?: unknown });
+      });
+
+      this.worker.on('exit', (code) => {
+        console.log(`[AgentMonitorService] Worker exited with code ${code}`);
+        this.workerReady = false;
+        this.worker = null;
+
+        // Restart worker if it crashed unexpectedly
+        if (code !== 0) {
+          console.log('[AgentMonitorService] Restarting worker after crash...');
+          setTimeout(() => this.startWorker(), 1000);
+        }
+      });
+
+      // Tell worker to start watching
+      this.sendToWorker('start');
+
+      // Re-connect any saved repos
+      for (const repo of this.registry.getConnectedRepos()) {
+        this.sendToWorker('connect-repo', {
+          path: repo.path,
+          absolutePath: repo.absolutePath,
+          spaceId: repo.spaceId,
+        });
+      }
+    } catch (error) {
+      console.error('[AgentMonitorService] Failed to start worker:', error);
+      // Fall back to no file watching - process scanning still works
+    }
+  }
+
   async stop(): Promise<void> {
     console.log('[AgentMonitorService] Stopping...');
 
-    await this.fileWatcher.stop();
-    this.processScanner.stopPolling();
-
-    if (this.idleCheckInterval) {
-      clearInterval(this.idleCheckInterval);
-      this.idleCheckInterval = null;
+    // Stop worker
+    if (this.worker) {
+      this.sendToWorker('stop');
+      this.worker.kill();
+      this.worker = null;
     }
+
+    this.processScanner.stopPolling();
 
     if (this.pruneInterval) {
       clearInterval(this.pruneInterval);
       this.pruneInterval = null;
     }
 
-    // Clear all maps to prevent memory leaks
-    this.fileSessionMap.clear();
+    // Clear maps to prevent memory leaks
     this.processSessionMap.clear();
     this.lastProcesses = [];
+    this.pendingMessages = [];
+    this.workerReady = false;
 
     console.log('[AgentMonitorService] Stopped');
   }
@@ -185,6 +279,8 @@ export class AgentMonitorService extends EventEmitter {
 
   connectRepo(path: string, spaceId: string, options: Partial<ConnectedRepo> = {}): void {
     const absolutePath = resolve(path);
+
+    // Save to registry
     this.registry.connectRepo({
       path,
       absolutePath,
@@ -193,11 +289,15 @@ export class AgentMonitorService extends EventEmitter {
       autoCreateSegments: true,
       ...options,
     });
+
+    // Tell worker to watch this repo
+    this.sendToWorker('connect-repo', { path, absolutePath, spaceId });
   }
 
   disconnectRepo(path: string): void {
     const absolutePath = resolve(path);
     this.registry.disconnectRepo(absolutePath);
+    this.sendToWorker('disconnect-repo', { absolutePath });
   }
 
   getConnectedRepos(): ConnectedRepo[] {
@@ -221,7 +321,6 @@ export class AgentMonitorService extends EventEmitter {
   }
 
   getSessionsForSpace(spaceId: string): AgentSession[] {
-    // Find repos connected to this space
     const sessions: AgentSession[] = [];
 
     for (const session of this.registry.getAllSessions()) {
@@ -247,85 +346,13 @@ export class AgentMonitorService extends EventEmitter {
     const sessionIds = new Set(sessions.map((s) => s.id));
 
     return this.registry
-      .getRecentActivities(limit * 2) // Get more to filter
+      .getRecentActivities(limit * 2)
       .filter((a) => sessionIds.has(a.sessionId))
       .slice(-limit);
   }
 
   getStats() {
     return this.registry.getStats();
-  }
-
-  // ============================================
-  // FILE EVENT HANDLERS
-  // ============================================
-
-  private handleFileCreated({
-    agentType,
-    filePath,
-  }: {
-    agentType: AgentType;
-    filePath: string;
-  }): void {
-    console.log(`[AgentMonitorService] New ${agentType} file: ${filePath}`);
-    // The file:changed event will handle parsing
-  }
-
-  private handleFileChanged({
-    agentType,
-    filePath,
-    newContent,
-  }: {
-    agentType: AgentType;
-    filePath: string;
-    newContent: string;
-  }): void {
-    const lines = newContent.split('\n').filter((l) => l.trim());
-    if (lines.length === 0) return;
-
-    // Get or create session
-    let sessionId = this.fileSessionMap.get(filePath);
-
-    if (!sessionId) {
-      // Try to extract session metadata
-      const meta = this.extractSessionMeta(agentType, lines, filePath);
-      if (meta) {
-        sessionId = meta.sessionId;
-
-        // Check if this repo is connected (or accept all if no repos connected)
-        const connectedRepos = this.registry.getConnectedRepos();
-        if (connectedRepos.length > 0 && !this.registry.isRepoConnected(meta.projectPath)) {
-          // Skip sessions for non-connected repos when repos are configured
-          return;
-        }
-
-        this.registry.getOrCreateSession(sessionId, agentType, meta.projectPath, filePath);
-        this.fileSessionMap.set(filePath, sessionId);
-      } else {
-        // Can't determine session, skip
-        return;
-      }
-    }
-
-    // Parse and add activities
-    const activities = this.parseLines(agentType, lines, sessionId, filePath);
-    for (const activity of activities) {
-      this.registry.addActivity(activity);
-    }
-  }
-
-  private handleFileDeleted({
-    filePath,
-  }: {
-    agentType: AgentType;
-    filePath: string;
-  }): void {
-    const sessionId = this.fileSessionMap.get(filePath);
-    if (sessionId) {
-      // Don't end the session - file deletion might be due to rotation or cleanup
-      // The session will be marked idle if no more activity
-      this.fileSessionMap.delete(filePath);
-    }
   }
 
   // ============================================
@@ -372,90 +399,6 @@ export class AgentMonitorService extends EventEmitter {
     }
 
     this.lastProcesses = processes;
-  }
-
-  // ============================================
-  // PARSING HELPERS
-  // ============================================
-
-  private extractSessionMeta(
-    agentType: AgentType,
-    lines: string[],
-    filePath: string
-  ): { sessionId: string; projectPath: string } | null {
-    switch (agentType) {
-      case 'claude-code': {
-        const meta = extractClaudeCodeSessionMeta(lines, filePath);
-        if (meta) {
-          return { sessionId: meta.sessionId, projectPath: meta.projectPath };
-        }
-        return null;
-      }
-      case 'codex': {
-        const meta = extractCodexSessionMeta(lines[0]);
-        if (meta) {
-          return { sessionId: meta.sessionId, projectPath: meta.cwd };
-        }
-        return null;
-      }
-      case 'gemini': {
-        const meta = extractGeminiSessionMeta(lines.join('\n'));
-        if (meta && meta.sessionId) {
-          return { sessionId: meta.sessionId, projectPath: meta.cwd };
-        }
-        return null;
-      }
-      default:
-        return null;
-    }
-  }
-
-  private parseLines(
-    agentType: AgentType,
-    lines: string[],
-    sessionId: string,
-    filePath: string
-  ): AgentActivity[] {
-    const activities: AgentActivity[] = [];
-
-    for (const line of lines) {
-      let parsed: AgentActivity[];
-
-      switch (agentType) {
-        case 'claude-code':
-          parsed = parseClaudeCodeLine(line, filePath);
-          break;
-        case 'codex':
-          parsed = parseCodexLine(line, sessionId, filePath);
-          break;
-        case 'gemini':
-          // Gemini checkpoints are full JSON, not JSONL
-          parsed = parseGeminiCheckpoint(line, filePath);
-          break;
-        default:
-          parsed = [];
-      }
-
-      activities.push(...parsed);
-    }
-
-    return activities;
-  }
-
-  // ============================================
-  // IDLE DETECTION
-  // ============================================
-
-  private checkForIdleSessions(): void {
-    const now = Date.now();
-
-    for (const session of this.registry.getActiveSessions()) {
-      const lastActivity = new Date(session.lastActivityAt).getTime();
-
-      if (now - lastActivity > this.IDLE_THRESHOLD_MS) {
-        this.registry.markSessionIdle(session.id);
-      }
-    }
   }
 }
 

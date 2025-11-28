@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { FolderGit2 } from 'lucide-react';
-import { useAgentSessionsForSpace, formatTimeAgo } from '@/hooks/useAgentSessions';
+import { FolderGit2, Loader2 } from 'lucide-react';
+import { useAgentSessionsWithLoading, formatTimeAgo } from '@/hooks/useAgentSessions';
 import type { AgentSession } from '@/types/agent-events';
 import type { Space } from '@/types';
 import { cn } from '@/lib/utils';
@@ -10,7 +10,7 @@ interface AgentStatusRowProps {
 }
 
 export function AgentStatusRow({ space }: AgentStatusRowProps) {
-  const sessions = useAgentSessionsForSpace(space.id);
+  const { sessions, isLoading, isInitialized } = useAgentSessionsWithLoading(space.id);
 
   const { active, idle } = useMemo(() => {
     return {
@@ -26,6 +26,9 @@ export function AgentStatusRow({ space }: AgentStatusRowProps) {
 
   // Extract folder name from path
   const folderName = space.connectedRepo.path.split('/').pop() || 'repo';
+
+  // Show loading state while initializing
+  const showLoading = !isInitialized || isLoading;
 
   // Get activity summary
   const latestActive = active[0];
@@ -51,39 +54,56 @@ export function AgentStatusRow({ space }: AgentStatusRowProps) {
           </span>
 
           {/* Agent status indicators - right aligned */}
-          {hasAgents && (
-            <div className="flex items-center gap-1.5 ml-auto">
-              {active.length > 0 && (
-                <div className="flex items-center gap-1">
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0 animate-pulse-slow" />
-                  <span className="text-[10px] tabular-nums text-green-400/80">
-                    {active.length}
-                  </span>
-                </div>
-              )}
-              {idle.length > 0 && (
-                <div className="flex items-center gap-1">
-                  <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 flex-shrink-0" />
-                  <span className="text-[10px] tabular-nums text-yellow-400/60">
-                    {idle.length}
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
+          <div className="flex items-center gap-1.5 ml-auto">
+            {showLoading ? (
+              /* Loading spinner while scanning for agents */
+              <div className="flex items-center gap-1">
+                <Loader2 className="w-3 h-3 text-white/30 animate-spin" />
+                <span className="text-[10px] text-white/30">Scanning...</span>
+              </div>
+            ) : hasAgents ? (
+              /* Agent counts when found */
+              <>
+                {active.length > 0 && (
+                  <div className="flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0 animate-pulse-slow" />
+                    <span className="text-[10px] tabular-nums text-green-400/80">
+                      {active.length}
+                    </span>
+                  </div>
+                )}
+                {idle.length > 0 && (
+                  <div className="flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 flex-shrink-0" />
+                    <span className="text-[10px] tabular-nums text-yellow-400/60">
+                      {idle.length}
+                    </span>
+                  </div>
+                )}
+              </>
+            ) : null}
+          </div>
         </div>
 
-        {/* Activity summary - only when agents exist */}
-        {hasAgents && activityText && (
-          <div className="mt-1 pl-5">
-            <span
-              className={cn(
-                'text-[10px] truncate block',
-                active.length > 0 ? 'text-white/40' : 'text-white/25'
-              )}
-            >
-              {activityText}
-            </span>
+        {/* Activity summary and session IDs - for debugging */}
+        {hasAgents && (
+          <div className="mt-1 pl-5 space-y-0.5">
+            {activityText && (
+              <span
+                className={cn(
+                  'text-[10px] truncate block',
+                  active.length > 0 ? 'text-white/40' : 'text-white/25'
+                )}
+              >
+                {activityText}
+              </span>
+            )}
+            {/* Show session IDs for debugging */}
+            {sessions.map((s) => (
+              <div key={s.id} className="text-[9px] text-white/20 truncate font-mono">
+                {s.id.slice(0, 8)}... ({s.status})
+              </div>
+            ))}
           </div>
         )}
       </div>

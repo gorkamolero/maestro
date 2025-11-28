@@ -135,6 +135,24 @@ export class AgentRegistry extends EventEmitter {
     }
   }
 
+  /**
+   * Import a session from the utility process worker
+   * Silently creates or updates the session - caller handles events
+   */
+  importSession(session: AgentSession): void {
+    const existing = this.sessions.get(session.id);
+    if (existing) {
+      // Update existing session silently
+      Object.assign(existing, session);
+    } else {
+      // Create new session silently
+      this.sessions.set(session.id, session);
+      if (!this.activities.has(session.id)) {
+        this.activities.set(session.id, []);
+      }
+    }
+  }
+
   getSession(sessionId: string): AgentSession | undefined {
     return this.sessions.get(sessionId);
   }

@@ -14,6 +14,7 @@ import { AgentSidebarSection } from './AgentSidebarSection';
 import { TagSelector } from './TagSelector';
 import { CollapsibleSection } from './CollapsibleSection';
 import { NextBubble } from './NextBubble';
+import { AgentStatusRow } from './AgentStatusRow';
 import { useAgentSessionsForSpace } from '@/hooks/useAgentSessions';
 import { EmojiPickerComponent } from '@/components/ui/emoji-picker';
 import {
@@ -421,6 +422,9 @@ const SpacePane = memo(function SpacePane({
             </CollapsibleSection>
           )}
         </div>
+
+        {/* Connected Repo + Agent Status - at bottom like SpaceCard */}
+        <AgentStatusRow space={space} />
       </div>
     </div>
   );
