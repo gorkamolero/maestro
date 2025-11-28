@@ -255,3 +255,133 @@ contextBridge.exposeInMainWorld('pty', {
     };
   },
 });
+
+// ============================================================================
+// Expose Agent Monitor API for external agent detection
+// ============================================================================
+
+// Agent Monitor types
+type AgentType = 'claude-code' | 'codex' | 'gemini';
+type AgentSessionStatus = 'active' | 'idle' | 'ended';
+type AgentSource = 'external' | 'maestro-pty' | 'maestro-sdk';
+
+interface AgentSession {
+  id: string;
+  agentType: AgentType;
+  source: AgentSource;
+  projectPath: string;
+  cwd: string;
+  startedAt: string;
+  lastActivityAt: string;
+  status: AgentSessionStatus;
+  processId?: number;
+  filePath: string;
+  messageCount: number;
+  toolUseCount: number;
+  tokenUsage?: {
+    input: number;
+    output: number;
+  };
+}
+
+type AgentActivityType =
+  | 'session_start'
+  | 'session_end'
+  | 'user_prompt'
+  | 'assistant_message'
+  | 'assistant_thinking'
+  | 'tool_use'
+  | 'tool_result'
+  | 'error';
+
+interface AgentActivity {
+  id: string;
+  sessionId: string;
+  agentType: AgentType;
+  timestamp: string;
+  type: AgentActivityType;
+  // Additional fields depend on activity type
+  [key: string]: unknown;
+}
+
+interface ConnectedRepo {
+  path: string;
+  absolutePath: string;
+  spaceId: string;
+  monitoringEnabled: boolean;
+  autoCreateSegments: boolean;
+}
+
+interface ConnectRepoRequest {
+  path: string;
+  spaceId: string;
+  options?: {
+    monitoringEnabled?: boolean;
+    autoCreateSegments?: boolean;
+  };
+}
+
+contextBridge.exposeInMainWorld('agentMonitor', {
+  // Commands
+  connectRepo: (req: ConnectRepoRequest): Promise<{ success: boolean }> =>
+    ipcRenderer.invoke('agent-monitor:connect-repo', req),
+
+  disconnectRepo: (path: string): Promise<{ success: boolean }> =>
+    ipcRenderer.invoke('agent-monitor:disconnect-repo', path),
+
+  // Queries
+  getSessions: (): Promise<AgentSession[]> => ipcRenderer.invoke('agent-monitor:get-sessions'),
+
+  getActiveSessions: (): Promise<AgentSession[]> =>
+    ipcRenderer.invoke('agent-monitor:get-active-sessions'),
+
+  getSessionsForSpace: (req: { spaceId: string }): Promise<AgentSession[]> =>
+    ipcRenderer.invoke('agent-monitor:get-sessions-for-space', req),
+
+  getSession: (sessionId: string): Promise<AgentSession | undefined> =>
+    ipcRenderer.invoke('agent-monitor:get-session', { sessionId }),
+
+  getActivities: (req: { sessionId: string; limit?: number }): Promise<AgentActivity[]> =>
+    ipcRenderer.invoke('agent-monitor:get-activities', req),
+
+  getActivitiesForSpace: (req: { spaceId: string; limit?: number }): Promise<AgentActivity[]> =>
+    ipcRenderer.invoke('agent-monitor:get-activities-for-space', req),
+
+  getRecentActivities: (req: { limit?: number }): Promise<AgentActivity[]> =>
+    ipcRenderer.invoke('agent-monitor:get-recent-activities', req),
+
+  getStats: (): Promise<{
+    totalSessions: number;
+    activeSessions: number;
+    totalActivities: number;
+    connectedRepos: number;
+  }> => ipcRenderer.invoke('agent-monitor:get-stats'),
+
+  getConnectedRepos: (): Promise<ConnectedRepo[]> =>
+    ipcRenderer.invoke('agent-monitor:get-connected-repos'),
+
+  // Event subscriptions (return unsubscribe function)
+  onSessionCreated: (callback: (session: AgentSession) => void) => {
+    const handler = (_: IpcRendererEvent, session: AgentSession) => callback(session);
+    ipcRenderer.on('agent-monitor:session-created', handler);
+    return () => ipcRenderer.removeListener('agent-monitor:session-created', handler);
+  },
+
+  onSessionUpdated: (callback: (session: AgentSession) => void) => {
+    const handler = (_: IpcRendererEvent, session: AgentSession) => callback(session);
+    ipcRenderer.on('agent-monitor:session-updated', handler);
+    return () => ipcRenderer.removeListener('agent-monitor:session-updated', handler);
+  },
+
+  onSessionEnded: (callback: (session: AgentSession) => void) => {
+    const handler = (_: IpcRendererEvent, session: AgentSession) => callback(session);
+    ipcRenderer.on('agent-monitor:session-ended', handler);
+    return () => ipcRenderer.removeListener('agent-monitor:session-ended', handler);
+  },
+
+  onActivityNew: (callback: (activity: AgentActivity) => void) => {
+    const handler = (_: IpcRendererEvent, activity: AgentActivity) => callback(activity);
+    ipcRenderer.on('agent-monitor:activity-new', handler);
+    return () => ipcRenderer.removeListener('agent-monitor:activity-new', handler);
+  },
+});

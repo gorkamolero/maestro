@@ -6,6 +6,7 @@ import { registerTerminalHandlers } from './ipc/terminal';
 import { registerLauncherHandlers } from './ipc/launcher';
 import { registerPortalHandler } from './ipc/portal';
 import { registerAgentHandlers } from './ipc/agent';
+import { registerAgentMonitorHandlers, cleanupAgentMonitorHandlers } from './ipc/agent-monitor';
 import { registerPerformanceHandlers, cleanupPerformanceHandlers } from './ipc/performance';
 
 // Get icon path - different in dev vs production
@@ -67,11 +68,13 @@ app.on('ready', () => {
   registerTerminalHandlers(getMainWindow);
   registerLauncherHandlers();
   registerAgentHandlers(getMainWindow);
+  registerAgentMonitorHandlers(getMainWindow);
   registerPerformanceHandlers(getMainWindow, getBrowserViewsMap);
 });
 
 app.on('window-all-closed', () => {
   cleanupPerformanceHandlers();
+  cleanupAgentMonitorHandlers();
   if (process.platform !== 'darwin') {
     app.quit();
   }
