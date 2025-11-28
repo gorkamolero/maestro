@@ -32,9 +32,10 @@ All notable changes to Maestro will be documented in this file.
   - 5-second timeout heuristic (tool_use without tool_result)
   - Orange pulsing status indicators throughout UI
   - "❗ Needs Input" badge in DetailView
-- **System Notifications** (partial) - macOS notifications for needs_input
+- **System Notifications** - macOS notifications for needs_input
   - Shows notification when agent needs input and window not focused
-  - Click notification to focus window and jump to agent
+  - Click notification to focus window, open Agent Vault, and jump to terminal
+  - Tracks previous session status to detect transitions to needs_input
 
 #### Agent Monitor System - Phase B: Space Integration (2025-11-28)
 - **Connect repositories to Spaces** via `+` button menu or `⋯` dropdown

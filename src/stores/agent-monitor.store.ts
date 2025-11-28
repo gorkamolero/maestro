@@ -148,6 +148,30 @@ export const agentMonitorActions = {
       }
     });
 
+    // Listen for focus-agent events (from system notification clicks)
+    window.electron.on('agent-monitor:focus-agent', (data: unknown) => {
+      const { sessionId, tabId, spaceId } = data as {
+        sessionId: string;
+        tabId?: string;
+        spaceId?: string;
+      };
+
+      // Import vault actions lazily to avoid circular deps
+      import('@/stores/agent-vault.store').then(({ agentVaultActions }) => {
+        agentVaultActions.openToAgent(sessionId);
+      });
+
+      // If we have terminal info, also open the terminal window
+      if (tabId && spaceId) {
+        import('@/stores/workspace.store').then(({ workspaceActions }) => {
+          workspaceActions.setActiveSpace(spaceId);
+        });
+        import('@/stores/windows.store').then(({ windowsActions }) => {
+          windowsActions.openWindow(tabId, 'floating');
+        });
+      }
+    });
+
     // Load initial data
     await this.refresh();
     agentMonitorStore.isInitialized = true;
