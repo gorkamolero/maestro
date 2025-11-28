@@ -10,6 +10,7 @@ import {
   CheckSquare,
   FileText,
   Pencil,
+  Archive,
 } from 'lucide-react';
 import { useSpaceTabsPerformance } from '@/hooks/usePerformance';
 import { useSpaceTasks } from '@/hooks/useSpaceTasks';
@@ -80,6 +81,10 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
 
   const handleDeleteSpace = useCallback(() => {
     spacesActions.removeSpace(space.id);
+  }, [space.id]);
+
+  const handleMoveToVault = useCallback(async () => {
+    await spacesActions.deactivateSpace(space.id);
   }, [space.id]);
 
   const handleOpenEmojiPicker = useCallback(() => {
@@ -243,6 +248,10 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
               <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleMoveToVault}>
+                <Archive className="w-4 h-4 mr-2" />
+                Move to Vault
+              </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={handleDeleteSpace}
                 className="text-destructive focus:text-destructive"

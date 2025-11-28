@@ -6,6 +6,21 @@ All notable changes to Maestro will be documented in this file.
 
 ### Added
 
+#### Space Vault Feature (2025-11-28)
+- **Activate/deactivate spaces** with resource cleanup
+  - Move spaces to "Vault" to hide from main view and free resources
+  - Browser views are destroyed (memory freed)
+  - Agent sessions are stopped
+  - Terminal PTYs cleaned up on unmount
+- **Vault drawer** accessible from toolbar (Archive icon)
+  - Shows archived spaces with resource counts (browsers, terminals, agents)
+  - Restore button to bring spaces back
+  - Delete button for permanent removal
+- **"Move to Vault" option** in space dropdown menus (both Cards and Panes views)
+- New `isActive` field on Space type (defaults to true, migrates existing spaces)
+- `space-cleanup.service.ts` - handles destroying BrowserViews, stopping agents
+- `Sheet` UI component for slide-in drawers
+
 #### Space Reordering (2025-11-28)
 - **Drag-and-drop reordering for spaces** in both views
   - **Cards view**: Uses react-easy-sort with SortableList/SortableItem wrappers

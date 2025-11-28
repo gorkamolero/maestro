@@ -1,5 +1,5 @@
-import { useRef, useCallback, useState, memo, useEffect } from 'react';
-import { Plus, CheckSquare, FileText } from 'lucide-react';
+import { useRef, useCallback, useState, memo, useEffect, useMemo } from 'react';
+import { Plus, CheckSquare, FileText, MoreHorizontal, Archive, Trash2 } from 'lucide-react';
 import { arrayMoveImmutable } from 'array-move';
 import { useSpacesStore, spacesActions } from '@/stores/spaces.store';
 import { useWorkspaceStore } from '@/stores/workspace.store';
@@ -14,6 +14,13 @@ import { TagSelector } from './TagSelector';
 import { CollapsibleSection } from './CollapsibleSection';
 import { NextBubble } from './NextBubble';
 import { EmojiPickerComponent } from '@/components/ui/emoji-picker';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 
 // Pane configuration
@@ -29,7 +36,14 @@ export function SpacePanesView() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { spaces } = useSpacesStore();
   const { tabs } = useWorkspaceStore();
-  const [focusedSpaceId, setFocusedSpaceId] = useState<string | null>(spaces[0]?.id || null);
+
+  // Filter out inactive spaces (vault)
+  const activeSpaces = useMemo(
+    () => spaces.filter((space) => space.isActive !== false),
+    [spaces]
+  );
+
+  const [focusedSpaceId, setFocusedSpaceId] = useState<string | null>(activeSpaces[0]?.id || null);
 
   // Drag state for reordering
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
@@ -43,7 +57,7 @@ export function SpacePanesView() {
   );
 
   const handleNewSpace = useCallback(() => {
-    const name = `Space ${spaces.length + 1}`;
+    const name = `Space ${activeSpaces.length + 1}`;
     const newSpace = spacesActions.addSpace(name);
     setFocusedSpaceId(newSpace.id);
     // Scroll to the new pane
@@ -55,7 +69,7 @@ export function SpacePanesView() {
         });
       }
     }, 50);
-  }, [spaces.length]);
+  }, [activeSpaces.length]);
 
   const handlePaneClick = useCallback((spaceId: string, index: number) => {
     setFocusedSpaceId(spaceId);
@@ -88,16 +102,26 @@ export function SpacePanesView() {
 
   const handleDragEnd = useCallback(() => {
     if (draggingIndex !== null && dropIndex !== null && draggingIndex !== dropIndex) {
-      const reordered = arrayMoveImmutable(spaces, draggingIndex, dropIndex);
+      // Get the space being moved from active spaces
+      const movedSpace = activeSpaces[draggingIndex];
+      const targetSpace = activeSpaces[dropIndex];
+      if (!movedSpace || !targetSpace) return;
+
+      // Find actual indices in full spaces array
+      const actualOldIndex = spaces.findIndex((s) => s.id === movedSpace.id);
+      const actualNewIndex = spaces.findIndex((s) => s.id === targetSpace.id);
+      if (actualOldIndex === -1 || actualNewIndex === -1) return;
+
+      const reordered = arrayMoveImmutable(spaces, actualOldIndex, actualNewIndex);
       spacesActions.reorderSpaces(reordered);
     }
     setDraggingIndex(null);
     setDropIndex(null);
     setMousePos(null);
-  }, [draggingIndex, dropIndex, spaces]);
+  }, [draggingIndex, dropIndex, spaces, activeSpaces]);
 
   // Get the space being dragged for ghost rendering
-  const draggingSpace = draggingIndex !== null ? spaces[draggingIndex] : null;
+  const draggingSpace = draggingIndex !== null ? activeSpaces[draggingIndex] : null;
 
   // Global mouse listeners for drag
   useEffect(() => {
@@ -121,13 +145,13 @@ export function SpacePanesView() {
       ref={containerRef}
       className="flex h-full overflow-x-auto overflow-y-hidden bg-background scroll-smooth"
     >
-      {spaces.map((space, index) => (
+      {activeSpaces.map((space, index) => (
         <SpacePane
           key={space.id}
           space={space}
           tabs={getSpaceTabs(space.id)}
           index={index}
-          totalPanes={spaces.length}
+          totalPanes={activeSpaces.length}
           isFocused={space.id === focusedSpaceId}
           onClick={() => handlePaneClick(space.id, index)}
           isDragging={draggingIndex === index}
@@ -178,7 +202,7 @@ export function SpacePanesView() {
         className="flex-shrink-0 flex items-center justify-center"
         style={{
           minWidth: PANE_WIDTH,
-          marginLeft: spaces.length > 0 ? 0 : undefined,
+          marginLeft: activeSpaces.length > 0 ? 0 : undefined,
         }}
       >
         <button
@@ -417,6 +441,14 @@ const SpacePaneHeaderContent = memo(function SpacePaneHeaderContent({ space, tab
     [space.id]
   );
 
+  const handleMoveToVault = useCallback(async () => {
+    await spacesActions.deactivateSpace(space.id);
+  }, [space.id]);
+
+  const handleDeleteSpace = useCallback(() => {
+    spacesActions.removeSpace(space.id);
+  }, [space.id]);
+
   return (
     <>
       {/* Icon picker */}
@@ -467,7 +499,33 @@ const SpacePaneHeaderContent = memo(function SpacePaneHeaderContent({ space, tab
       )}
 
       {/* Tags */}
-      <TagSelector spaceId={space.id} spaceTags={space.tags || []} className="ml-auto" />
+      <TagSelector spaceId={space.id} spaceTags={space.tags || []} className="" />
+
+      {/* Actions dropdown */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            className="p-0.5 rounded hover:bg-white/10 transition-colors"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <MoreHorizontal className="w-3.5 h-3.5 text-muted-foreground" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={handleMoveToVault}>
+            <Archive className="w-4 h-4 mr-2" />
+            Move to Vault
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={handleDeleteSpace}
+            className="text-destructive focus:text-destructive"
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Delete space
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </>
   );
 });

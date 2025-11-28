@@ -2,6 +2,7 @@ import { useSnapshot } from 'valtio';
 import { persistWithHistory } from '@/lib/persist-with-history';
 import type { Space, Segment, SpaceContentMode } from '@/types';
 import { SPACE_COLOR_PALETTE } from '@/types';
+import { closeSpaceTabs } from '@/services/space-cleanup.service';
 
 export type SpacesViewMode = 'cards' | 'panes';
 
@@ -48,6 +49,12 @@ const migrateSpaces = () => {
     if (space.lastActiveAt === undefined) {
       needsMigration = true;
       space.lastActiveAt = null;
+    }
+
+    // Add `isActive` field if missing (default to true)
+    if (space.isActive === undefined) {
+      needsMigration = true;
+      space.isActive = true;
     }
   });
 
@@ -96,6 +103,7 @@ export const spacesActions = {
       markers: [],
       next: null,
       lastActiveAt: new Date().toISOString(),
+      isActive: true,
     };
     store.spaces.push(newSpace);
     return newSpace;
@@ -286,5 +294,40 @@ export const spacesActions = {
         space.tags.splice(index, 1);
       }
     }
+  },
+
+  /**
+   * Deactivate a space (move to vault)
+   * This closes all browser views, terminals, and agents in the space
+   */
+  deactivateSpace: async (spaceId: string): Promise<void> => {
+    const store = getSpacesStore();
+    const space = store.spaces.find((s) => s.id === spaceId);
+    if (!space) return;
+
+    // First, close all resources (browser views, agents, etc.)
+    await closeSpaceTabs(spaceId);
+
+    // Then mark as inactive
+    space.isActive = false;
+  },
+
+  /**
+   * Activate a space (restore from vault)
+   */
+  activateSpace: (spaceId: string): void => {
+    const store = getSpacesStore();
+    const space = store.spaces.find((s) => s.id === spaceId);
+    if (space) {
+      space.isActive = true;
+    }
+  },
+
+  /**
+   * Get all inactive spaces (vault)
+   */
+  getInactiveSpaces: (): Space[] => {
+    const store = getSpacesStore();
+    return store.spaces.filter((s) => s.isActive === false);
   },
 };

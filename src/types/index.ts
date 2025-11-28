@@ -145,6 +145,8 @@ export interface Space {
   notesContent?: string;
   /** Tag IDs assigned to this space */
   tags?: string[];
+  /** Whether the space is active (visible in main view) or in the vault */
+  isActive?: boolean;
 }
 
 // Color palette for spaces - 8 professional color pairs
