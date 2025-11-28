@@ -1,5 +1,6 @@
-import { useRef, useCallback, useState, memo } from 'react';
+import { useRef, useCallback, useState, memo, useEffect } from 'react';
 import { Plus, CheckSquare, FileText } from 'lucide-react';
+import { arrayMoveImmutable } from 'array-move';
 import { useSpacesStore, spacesActions } from '@/stores/spaces.store';
 import { useWorkspaceStore } from '@/stores/workspace.store';
 import { useEditableTitle } from '@/hooks/useEditableTitle';
@@ -19,6 +20,9 @@ import { cn } from '@/lib/utils';
 const PANE_WIDTH = 480;
 const SPINE_WIDTH = 36;
 
+// Drop indicator color (Obsidian-style yellow)
+const DROP_INDICATOR_COLOR = '#E5C07B';
+
 /**
  * SpacePanesView implements the Andy Matuschak / Obsidian sliding panes pattern for Spaces.
  * Each pane has a spine attached to its left edge. When scrolling horizontally,
@@ -29,6 +33,10 @@ export function SpacePanesView() {
   const { spaces } = useSpacesStore();
   const { tabs } = useWorkspaceStore();
   const [focusedSpaceId, setFocusedSpaceId] = useState<string | null>(spaces[0]?.id || null);
+
+  // Drag state for reordering
+  const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
+  const [dropIndex, setDropIndex] = useState<number | null>(null);
 
   // Get tabs for a space
   const getSpaceTabs = useCallback(
@@ -62,6 +70,51 @@ export function SpacePanesView() {
     }
   }, []);
 
+  // Drag handlers for spine reordering
+  const handleDragStart = useCallback((index: number) => {
+    setDraggingIndex(index);
+    setDropIndex(index);
+  }, []);
+
+  const handleDragOver = useCallback(
+    (e: React.MouseEvent, targetIndex: number) => {
+      if (draggingIndex === null) return;
+      e.preventDefault();
+
+      // Determine if we're dropping before or after this pane
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      const midpoint = rect.left + rect.width / 2;
+      const newDropIndex = e.clientX < midpoint ? targetIndex : targetIndex + 1;
+
+      if (newDropIndex !== dropIndex) {
+        setDropIndex(newDropIndex);
+      }
+    },
+    [draggingIndex, dropIndex]
+  );
+
+  const handleDragEnd = useCallback(() => {
+    if (draggingIndex !== null && dropIndex !== null && draggingIndex !== dropIndex) {
+      // Adjust drop index if dropping after the dragged item
+      const adjustedDropIndex = dropIndex > draggingIndex ? dropIndex - 1 : dropIndex;
+      if (adjustedDropIndex !== draggingIndex) {
+        const reordered = arrayMoveImmutable(spaces, draggingIndex, adjustedDropIndex);
+        spacesActions.reorderSpaces(reordered);
+      }
+    }
+    setDraggingIndex(null);
+    setDropIndex(null);
+  }, [draggingIndex, dropIndex, spaces]);
+
+  // Global mouse up listener to handle drag end
+  useEffect(() => {
+    if (draggingIndex !== null) {
+      const handleMouseUp = () => handleDragEnd();
+      window.addEventListener('mouseup', handleMouseUp);
+      return () => window.removeEventListener('mouseup', handleMouseUp);
+    }
+  }, [draggingIndex, handleDragEnd]);
+
   return (
     <div
       ref={containerRef}
@@ -76,8 +129,24 @@ export function SpacePanesView() {
           totalPanes={spaces.length}
           isFocused={space.id === focusedSpaceId}
           onClick={() => handlePaneClick(space.id, index)}
+          isDragging={draggingIndex === index}
+          showDropIndicator={dropIndex === index && draggingIndex !== null && draggingIndex !== index}
+          onDragStart={() => handleDragStart(index)}
+          onDragOver={(e) => handleDragOver(e, index)}
         />
       ))}
+
+      {/* Drop indicator at the end */}
+      {dropIndex === spaces.length && draggingIndex !== null && (
+        <div
+          className="absolute top-0 bottom-0 w-[3px] z-50"
+          style={{
+            left: spaces.length * SPINE_WIDTH + (spaces.length - 1) * (PANE_WIDTH - SPINE_WIDTH),
+            backgroundColor: DROP_INDICATOR_COLOR,
+            boxShadow: `0 0 8px ${DROP_INDICATOR_COLOR}`,
+          }}
+        />
+      )}
 
       {/* New Space button at the end */}
       <div
@@ -85,6 +154,11 @@ export function SpacePanesView() {
         style={{
           minWidth: PANE_WIDTH,
           marginLeft: spaces.length > 0 ? 0 : undefined,
+        }}
+        onMouseMove={() => {
+          if (draggingIndex !== null) {
+            setDropIndex(spaces.length);
+          }
         }}
       >
         <button
@@ -113,13 +187,28 @@ interface SpacePaneProps {
   totalPanes: number;
   isFocused: boolean;
   onClick: () => void;
+  isDragging: boolean;
+  showDropIndicator: boolean;
+  onDragStart: () => void;
+  onDragOver: (e: React.MouseEvent) => void;
 }
 
 /**
  * A single pane with its spine. The entire pane uses position:sticky
  * so it pins to the left edge as the user scrolls, creating the stacking effect.
  */
-const SpacePane = memo(function SpacePane({ space, tabs, index, totalPanes, isFocused, onClick }: SpacePaneProps) {
+const SpacePane = memo(function SpacePane({
+  space,
+  tabs,
+  index,
+  totalPanes,
+  isFocused,
+  onClick,
+  isDragging,
+  showDropIndicator,
+  onDragStart,
+  onDragOver,
+}: SpacePaneProps) {
   // Calculate right offset for right-side stacking
   const rightOffset = (totalPanes - 1 - index) * SPINE_WIDTH;
 
@@ -137,7 +226,8 @@ const SpacePane = memo(function SpacePane({ space, tabs, index, totalPanes, isFo
       className={cn(
         'relative flex-shrink-0 border-r border-border/30',
         'transition-shadow duration-200',
-        isFocused && 'shadow-2xl shadow-black/30'
+        isFocused && 'shadow-2xl shadow-black/30',
+        isDragging && 'opacity-50'
       )}
       style={{
         position: 'sticky',
@@ -146,14 +236,32 @@ const SpacePane = memo(function SpacePane({ space, tabs, index, totalPanes, isFo
         width: `calc(100vw - ${index * SPINE_WIDTH}px - ${rightOffset}px)`,
         maxWidth: PANE_WIDTH,
       }}
+      onMouseMove={onDragOver}
     >
-      {/* Spine - vertical strip on the left */}
+      {/* Drop indicator line (Obsidian-style) */}
+      {showDropIndicator && (
+        <div
+          className="absolute left-0 top-0 bottom-0 w-[3px] z-50 pointer-events-none"
+          style={{
+            backgroundColor: DROP_INDICATOR_COLOR,
+            boxShadow: `0 0 8px ${DROP_INDICATOR_COLOR}`,
+          }}
+        />
+      )}
+
+      {/* Spine - vertical strip on the left - drag handle */}
       <div
         onClick={handleSpineClick}
+        onMouseDown={(e) => {
+          e.preventDefault();
+          onDragStart();
+        }}
         className={cn(
           'absolute left-0 top-0 bottom-0',
           'border-r border-white/[0.08]',
-          'cursor-pointer select-none transition-all duration-200'
+          'cursor-grab select-none transition-all duration-200',
+          'active:cursor-grabbing',
+          isDragging && 'cursor-grabbing'
         )}
         style={{
           width: SPINE_WIDTH,
