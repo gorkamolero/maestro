@@ -1,12 +1,12 @@
 import { useEffect } from 'react';
 import { useSnapshot } from 'valtio';
-import { spacesHistory } from '@/stores/spaces.store';
-import { workspaceHistory, workspaceActions } from '@/stores/workspace.store';
+import { useSpacesStore } from '@/stores/spaces.store';
+import { useWorkspaceStore, workspaceActions } from '@/stores/workspace.store';
 import { browserStore } from '@/stores/browser.store';
 
 export function SpaceSync() {
-  const { spaces } = useSnapshot(spacesHistory);
-  const { tabs } = useSnapshot(workspaceHistory);
+  const { spaces } = useSpacesStore();
+  const { tabs } = useWorkspaceStore();
   const browserState = useSnapshot(browserStore);
   
   // Sync spaces to main process
