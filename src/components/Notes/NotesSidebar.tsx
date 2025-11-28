@@ -12,7 +12,9 @@ import {
   MoreVertical,
   FolderPlus,
   Trash2,
+  Link,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { notesStore, notesActions, notesComputed, TreeNode } from '@/stores/notes.store';
 import { Input } from '@/components/ui/input';
@@ -283,6 +285,27 @@ function TreeNodeComponent({ node, level }: TreeNodeComponentProps) {
     }
   };
 
+  const handleCopyLink = async () => {
+    if (node.type === 'note') {
+      // Get the note to access its path
+      const note = snap.notes.find((n) => n.id === node.id);
+      if (note) {
+        // Format as Obsidian Advanced URI
+        // filepath should be the relative path without leading slash
+        const filepath = note.path.startsWith('/') ? note.path.slice(1) : note.path;
+        const encodedPath = encodeURIComponent(filepath);
+        const advancedUri = `obsidian://advanced-uri?filepath=${encodedPath}`;
+
+        try {
+          await navigator.clipboard.writeText(advancedUri);
+          toast.success('Copied Obsidian URI to clipboard');
+        } catch {
+          toast.error('Failed to copy link');
+        }
+      }
+    }
+  };
+
   const isActive = snap.activeNoteId === node.id;
 
   return (
@@ -336,7 +359,13 @@ function TreeNodeComponent({ node, level }: TreeNodeComponentProps) {
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={handleRename}>Rename</DropdownMenuItem>
             {node.type === 'note' && (
-              <DropdownMenuItem onClick={handlePin}>{isPinned ? 'Unpin' : 'Pin'}</DropdownMenuItem>
+              <>
+                <DropdownMenuItem onClick={handlePin}>{isPinned ? 'Unpin' : 'Pin'}</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleCopyLink}>
+                  <Link size={14} className="mr-2" />
+                  Copy Obsidian URI
+                </DropdownMenuItem>
+              </>
             )}
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleDelete} className="text-destructive">
