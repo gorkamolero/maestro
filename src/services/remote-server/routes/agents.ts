@@ -192,11 +192,12 @@ agentsRouter.post('/launch', async (c) => {
 
     });
 
-  } catch (err: any) {
+  } catch (err) {
 
+    const errorMessage = err instanceof Error ? err.message : 'launch_failed';
     console.error('[RemoteServer] Failed to launch agent:', err);
 
-    return c.json({ error: err.message || 'launch_failed' }, 500);
+    return c.json({ error: errorMessage }, 500);
 
   }
 

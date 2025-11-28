@@ -87,7 +87,11 @@ export function DetailView({ session, onBack, onCollapse, onJumpToTerminal }: De
         {/* Jump to Terminal button */}
         {session.terminalTabId && session.spaceId && onJumpToTerminal && (
           <button
-            onClick={() => onJumpToTerminal(session.terminalTabId!, session.spaceId!)}
+            onClick={() =>
+              session.terminalTabId &&
+              session.spaceId &&
+              onJumpToTerminal(session.terminalTabId, session.spaceId)
+            }
             className="flex items-center gap-1.5 px-2 py-1 rounded bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors"
             title="Jump to Terminal (⌘J)"
           >
@@ -145,23 +149,27 @@ function ActivityRow({ activity }: { activity: AgentActivity }) {
 
   // Generate summary based on activity type
   const getSummary = (): string => {
+    // Cast to any to access type-specific fields that might not be in the base union type
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const act = activity as any;
+    
     switch (activity.type) {
       case 'tool_use':
-        return activity.summary;
+        return act.summary || act.toolName || 'Tool use';
       case 'user_prompt':
-        return activity.content.slice(0, 60) + (activity.content.length > 60 ? '...' : '');
+        return (act.content || '').slice(0, 60) + ((act.content || '').length > 60 ? '...' : '');
       case 'assistant_message':
-        return activity.content.slice(0, 60) + (activity.content.length > 60 ? '...' : '');
+        return (act.content || '').slice(0, 60) + ((act.content || '').length > 60 ? '...' : '');
       case 'assistant_thinking':
-        return activity.content.slice(0, 60) + (activity.content.length > 60 ? '...' : '');
+        return (act.content || '').slice(0, 60) + ((act.content || '').length > 60 ? '...' : '');
       case 'tool_result':
-        return activity.success ? (activity.output?.slice(0, 40) || 'Success') : (activity.error?.slice(0, 40) || 'Error');
+        return act.success ? (act.output?.slice(0, 40) || 'Success') : (act.error?.slice(0, 40) || 'Error');
       case 'error':
-        return activity.message;
+        return act.message || act.content || 'Error';
       case 'session_start':
-        return `Started in ${activity.projectPath.split('/').pop()}`;
+        return `Started in ${act.projectPath?.split('/').pop() || 'project'}`;
       case 'session_end':
-        return `Session ended (${activity.reason || 'unknown'})`;
+        return `Session ended (${act.reason || 'unknown'})`;
       default:
         return activity.type;
     }
@@ -175,7 +183,6 @@ function ActivityRow({ activity }: { activity: AgentActivity }) {
     </div>
   );
 }
-
 function formatDuration(startedAt: Date | string): string {
   const start = new Date(startedAt).getTime();
   const minutes = Math.floor((Date.now() - start) / 60000);

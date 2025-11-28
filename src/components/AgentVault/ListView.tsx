@@ -85,8 +85,8 @@ function AgentListItem({ session, onClick, onJumpToTerminal }: AgentListItemProp
 
   const handleJump = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (canJump) {
-      onJumpToTerminal(session.terminalTabId!, session.spaceId!);
+    if (canJump && session.terminalTabId && session.spaceId) {
+      onJumpToTerminal(session.terminalTabId, session.spaceId);
     }
   };
 

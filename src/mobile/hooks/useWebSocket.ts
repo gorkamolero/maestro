@@ -133,7 +133,10 @@ export function useWebSocket() {
     if (!handlersRef.current.has(type)) {
       handlersRef.current.set(type, new Set());
     }
-    handlersRef.current.get(type)!.add(handler);
+    const handlers = handlersRef.current.get(type);
+    if (handlers) {
+      handlers.add(handler);
+    }
 
     return () => {
       handlersRef.current.get(type)?.delete(handler);

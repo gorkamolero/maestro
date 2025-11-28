@@ -7,12 +7,14 @@ const agentMonitorService = getAgentMonitorService();
 
 // List all spaces
 spacesRouter.get('/', (c) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const cachedSpaces = getCachedSpaces() as any[];
   const sessions = agentMonitorService.getSessions();
   
   // If we have cached spaces from renderer, use them
   if (cachedSpaces && cachedSpaces.length > 0) {
-    const spaces = cachedSpaces.map(space => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const spaces = cachedSpaces.map((space: any) => ({
       id: space.id,
       name: space.name,
       color: space.primaryColor, // Use primary color
@@ -45,12 +47,14 @@ spacesRouter.get('/', (c) => {
 // Get single space with tabs
 spacesRouter.get('/:id', (c) => {
   const id = c.req.param('id');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const cachedSpaces = getCachedSpaces() as any[];
   
   const sessions = agentMonitorService.getSessions()
     .filter(s => s.spaceId === id && s.status !== 'ended');
 
-  const space = cachedSpaces?.find(s => s.id === id);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const space = cachedSpaces?.find((s: any) => s.id === id);
 
   if (space) {
     return c.json({

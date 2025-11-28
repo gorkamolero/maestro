@@ -62,6 +62,7 @@ class WSManager {
     if (!client) return;
     
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const msg = JSON.parse(raw) as WSEnvelope<any>;
       
       switch (msg.type) {

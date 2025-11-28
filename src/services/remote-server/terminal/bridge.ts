@@ -111,8 +111,10 @@ class TerminalBridge {
     
     // Trim old data if too large
     while (backlog.totalBytes > MAX_BACKLOG_BYTES && backlog.chunks.length > 0) {
-      const removed = backlog.chunks.shift()!;
-      backlog.totalBytes -= removed.length;
+      const removed = backlog.chunks.shift();
+      if (removed) {
+        backlog.totalBytes -= removed.length;
+      }
     }
   }
   

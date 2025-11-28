@@ -71,9 +71,11 @@ export function verifyPin(pin: string): boolean {
   if (!isPairingActive()) return false;
   
   const hash = crypto.createHash('sha256').update(pin).digest('hex');
+  if (!state.pinHash) return false;
+
   const valid = crypto.timingSafeEqual(
     Buffer.from(hash, 'hex'),
-    Buffer.from(state.pinHash!, 'hex')
+    Buffer.from(state.pinHash, 'hex')
   );
   
   if (!valid) {

@@ -7,6 +7,8 @@ import { app as electronApp } from 'electron'; // Alias 'app' to 'electronApp' t
 import { serveStatic } from '@hono/node-server/serve-static';
 import path from 'path';
 import fs from 'fs/promises';
+import { IncomingMessage } from 'http';
+import { Socket } from 'net';
 
 import { authRouter } from './auth/routes';
 import { authMiddleware } from './auth/middleware';
@@ -101,8 +103,9 @@ class RemoteServer {
     
     this.wss = new WebSocketServer({ noServer: true });
     
-    (this.server as any).on('upgrade', (request: any, socket: any, head: any) => {
-      const url = new URL(request.url, `http://localhost:${this.port}`);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (this.server as any).on('upgrade', (request: IncomingMessage, socket: Socket, head: Buffer) => {
+      const url = new URL(request.url || '', `http://localhost:${this.port}`);
       
       if (url.pathname !== '/ws') {
         socket.destroy();
@@ -116,9 +119,11 @@ class RemoteServer {
         return;
       }
       
-      this.wss!.handleUpgrade(request, socket, head, (ws) => {
-        wsManager.handleUpgrade(ws as any, token);
-      });
+      if (this.wss) {
+        this.wss.handleUpgrade(request, socket, head, (ws) => {
+          wsManager.handleUpgrade(ws, token);
+        });
+      }
     });
   }
   
