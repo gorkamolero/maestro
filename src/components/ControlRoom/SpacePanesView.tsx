@@ -238,11 +238,12 @@ const SpacePane = memo(function SpacePane({
       }}
       onMouseMove={onDragOver}
     >
-      {/* Drop indicator line (Obsidian-style) */}
+      {/* Drop indicator line (Obsidian-style) - appears to the right of the spine */}
       {showDropIndicator && (
         <div
-          className="absolute left-0 top-0 bottom-0 w-[3px] z-50 pointer-events-none"
+          className="absolute top-0 bottom-0 w-[3px] z-50 pointer-events-none"
           style={{
+            left: SPINE_WIDTH,
             backgroundColor: DROP_INDICATOR_COLOR,
             boxShadow: `0 0 8px ${DROP_INDICATOR_COLOR}`,
           }}
