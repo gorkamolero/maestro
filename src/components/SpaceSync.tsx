@@ -18,7 +18,7 @@ export function SpaceSync() {
       secondaryColor: s.secondaryColor,
       icon: s.icon,
       lastActiveAt: s.lastActiveAt,
-      connectedRepo: s.connectedRepo,
+      connectedRepo: s.connectedRepo ? { ...s.connectedRepo } : undefined,
       tabs: tabs.filter(t => t.spaceId === s.id).map(t => ({
         id: t.id,
         type: t.type,
