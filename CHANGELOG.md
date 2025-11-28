@@ -7,10 +7,12 @@ All notable changes to Maestro will be documented in this file.
 ### Added
 
 #### Space Reordering (2025-11-28)
-- **Drag-and-drop reordering for spaces** in Cards view using react-easy-sort
-  - SortableList/SortableItem wrappers handle drag behavior
-  - Visual feedback with opacity during drag
-  - Note: Panes view doesn't support reordering (sticky positioning conflicts with drag transforms)
+- **Drag-and-drop reordering for spaces** in both views
+  - **Cards view**: Uses react-easy-sort with SortableList/SortableItem wrappers
+  - **Panes view**: Custom implementation with floating ghost spine (Obsidian-inspired)
+    - Grab spine to drag, ghost follows cursor
+    - Drop preview appears at target position
+    - Works with sticky positioning (no transform conflicts)
 
 #### Notes Enhancements (2025-11-28)
 - **Copy Obsidian URI**: Right-click note → "Copy Obsidian URI"
