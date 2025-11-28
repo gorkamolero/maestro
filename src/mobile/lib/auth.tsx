@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { v4 as uuidv4 } from 'uuid';
+import { sha256 as jsSha256 } from 'js-sha256';
 import { api } from './api';
 
 interface AuthState {
@@ -33,7 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         // Sign: sha256(secret + "\n" + deviceId + "\n" + nonce)
         const message = `${secret}\n${devId}\n${nonce}`;
-        const signature = await sha256(message);
+        const signature = sha256(message);
         
         // Exchange for token
         const { token: newToken, expiresAt } = await api.post<{ token: string; expiresAt: string }>(
@@ -147,7 +149,7 @@ export function useAuth() {
 
 // Helpers
 function generateDeviceId(): string {
-  return 'mobile-' + crypto.randomUUID();
+  return 'mobile-' + uuidv4();
 }
 
 function getDeviceName(): string {
@@ -162,9 +164,6 @@ function getPlatform(): 'ios' | 'android' {
   return /iPhone|iPad/.test(navigator.userAgent) ? 'ios' : 'android';
 }
 
-async function sha256(message: string): Promise<string> {
-  const msgBuffer = new TextEncoder().encode(message);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+function sha256(message: string): string {
+  return jsSha256(message);
 }

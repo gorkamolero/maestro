@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import { useAuth } from '../lib/auth';
 
 interface WSMessage {
@@ -78,7 +79,7 @@ export function useWebSocket() {
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({
           v: 1,
-          id: crypto.randomUUID(),
+          id: uuidv4(),
           ts: new Date().toISOString(),
           type: 'ping',
           payload: null,
@@ -113,7 +114,7 @@ export function useWebSocket() {
     
     wsRef.current.send(JSON.stringify({
       v: 1,
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       ts: new Date().toISOString(),
       type,
       payload,

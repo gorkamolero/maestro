@@ -1,11 +1,11 @@
-// DetailView - Single agent activity feed
+// DetailView - Single agent activity feed using AI Elements
 
-import { useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, Minus, Monitor, Smartphone, ExternalLink } from 'lucide-react';
 import { useAgentMonitorStore } from '@/stores/agent-monitor.store';
-import type { AgentSession, AgentActivity } from '@/types/agent-events';
+import type { AgentSession } from '@/types/agent-events';
 import { AgentTypeIcon, AGENT_TYPE_NAMES, AGENT_TYPE_COLORS } from './AgentIcons';
+import { AgentConversation } from '@/components/AgentConversation';
 
 interface DetailViewProps {
   session: AgentSession;
@@ -16,17 +16,9 @@ interface DetailViewProps {
 
 export function DetailView({ session, onBack, onCollapse, onJumpToTerminal }: DetailViewProps) {
   const store = useAgentMonitorStore();
-  const feedRef = useRef<HTMLDivElement>(null);
 
   // Get activities for this session from the store
   const activities = store.recentActivities.filter((a) => a.sessionId === session.id).slice(-50);
-
-  // Auto-scroll on new activity
-  useEffect(() => {
-    if (feedRef.current) {
-      feedRef.current.scrollTop = feedRef.current.scrollHeight;
-    }
-  }, [activities.length]);
 
   const projectName = session.projectPath.split('/').pop() || 'Unknown';
 
@@ -68,13 +60,12 @@ export function DetailView({ session, onBack, onCollapse, onJumpToTerminal }: De
         </div>
       </div>
 
-      {/* Activity feed */}
-      <div ref={feedRef} className="h-72 overflow-y-auto p-2 space-y-0.5">
-        {activities.length === 0 ? (
-          <div className="text-center text-gray-500 text-sm py-8">Waiting for activity...</div>
-        ) : (
-          activities.map((activity) => <ActivityRow key={activity.id} activity={activity} />)
-        )}
+      {/* Activity feed - now using AI Elements conversation */}
+      <div className="h-80">
+        <AgentConversation
+          activities={activities}
+          emptyMessage="Waiting for activity..."
+        />
       </div>
 
       {/* Footer */}
@@ -130,59 +121,6 @@ function StatusBadge({ status }: { status: AgentSession['status'] }) {
   return <span className={`px-1.5 py-0.5 rounded ${bg} ${text} ${status === 'needs_input' ? 'animate-pulse' : ''}`}>{label}</span>;
 }
 
-function ActivityRow({ activity }: { activity: AgentActivity }) {
-  const time = new Date(activity.timestamp).toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-
-  const icons: Record<string, string> = {
-    user_prompt: '💬',
-    assistant_message: '🤖',
-    assistant_thinking: '🤔',
-    tool_use: '🔧',
-    tool_result: '✓',
-    error: '✗',
-    session_start: '▶',
-    session_end: '⏹',
-  };
-
-  // Generate summary based on activity type
-  const getSummary = (): string => {
-    // Cast to any to access type-specific fields that might not be in the base union type
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const act = activity as any;
-    
-    switch (activity.type) {
-      case 'tool_use':
-        return act.summary || act.toolName || 'Tool use';
-      case 'user_prompt':
-        return (act.content || '').slice(0, 60) + ((act.content || '').length > 60 ? '...' : '');
-      case 'assistant_message':
-        return (act.content || '').slice(0, 60) + ((act.content || '').length > 60 ? '...' : '');
-      case 'assistant_thinking':
-        return (act.content || '').slice(0, 60) + ((act.content || '').length > 60 ? '...' : '');
-      case 'tool_result':
-        return act.success ? (act.output?.slice(0, 40) || 'Success') : (act.error?.slice(0, 40) || 'Error');
-      case 'error':
-        return act.message || act.content || 'Error';
-      case 'session_start':
-        return `Started in ${act.projectPath?.split('/').pop() || 'project'}`;
-      case 'session_end':
-        return `Session ended (${act.reason || 'unknown'})`;
-      default:
-        return activity.type;
-    }
-  };
-
-  return (
-    <div className="flex items-start gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-800/50 transition-colors">
-      <span className="text-xs text-gray-500 w-10 flex-shrink-0 pt-0.5">{time}</span>
-      <span className="text-sm">{icons[activity.type] || '•'}</span>
-      <span className="text-xs text-gray-300 flex-1 truncate">{getSummary()}</span>
-    </div>
-  );
-}
 function formatDuration(startedAt: Date | string): string {
   const start = new Date(startedAt).getTime();
   const minutes = Math.floor((Date.now() - start) / 60000);

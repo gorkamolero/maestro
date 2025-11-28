@@ -53,8 +53,8 @@ export function App() {
 
 function LoadingScreen() {
   return (
-    <div className="h-screen flex items-center justify-center bg-black">
-      <div className="animate-pulse text-white/50">Loading...</div>
+    <div className="h-screen flex items-center justify-center bg-surface-primary">
+      <div className="animate-pulse text-content-tertiary">Loading...</div>
     </div>
   );
 }

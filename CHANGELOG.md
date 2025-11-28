@@ -6,6 +6,37 @@ All notable changes to Maestro will be documented in this file.
 
 ### Added
 
+#### AI Elements Agent Conversation UI (2025-11-28)
+- **Desktop AgentConversation**: New chat-like display for agent activity using AI Elements.
+  - Message bubbles for user prompts and assistant responses with markdown support.
+  - Collapsible Tool component showing input/output with status indicators (running/success/error).
+  - Reasoning component for assistant thinking with auto-collapse.
+  - Session start/end markers.
+- **Mobile AI Elements**: Adapted components for mobile web UI.
+  - Touch-friendly collapsible tool displays.
+  - Optimized message bubbles for mobile screens.
+  - Updated ActivityFeed to use new AgentConversation component.
+
+#### Mobile Sync Button (2025-11-28)
+- **Desktop Pairing UI**: New MobileSyncButton in ControlRoom toolbar.
+  - Displays 6-digit PIN for mobile pairing.
+  - Countdown timer showing expiration.
+  - Copy to clipboard functionality.
+  - Refresh PIN option.
+  - Shows connection URL for mobile access.
+
+#### Development Scripts (2025-11-28)
+- Added `pnpm dev` - runs desktop Electron app.
+- Added `pnpm dev:all` - runs desktop and mobile concurrently with colored output.
+
+### Fixed
+
+#### Mobile Crypto Compatibility (2025-11-28)
+- Replaced `crypto.randomUUID()` with `uuid` package for HTTP compatibility.
+- Replaced `crypto.subtle.digest()` with `js-sha256` for non-HTTPS environments.
+- Auto-start remote server on app launch for mobile connections.
+- Fixed mobile build inclusion in packaged app via `extraResource`.
+
 #### Maestro Remote Server v2 (2025-11-28)
 - **Remote Server Core** - Implemented Hono-based HTTP API and WebSocket server for mobile control.
   - Authentication: Device registry, PIN-based pairing, challenge-response JWT tokens.

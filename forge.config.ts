@@ -20,6 +20,7 @@ const config: ForgeConfig = {
     // Include node_modules for native module resolution
     extraResource: [
       path.join(__dirname, 'resources'),
+      path.join(__dirname, 'dist', 'mobile'),
     ],
   },
   hooks: {

@@ -11,6 +11,7 @@ import { SpaceViewModeSelector } from './SpaceViewModeSelector';
 import { TagFilter } from './TagFilter';
 import { VaultDrawer } from './VaultDrawer';
 import { AgentVault } from '../AgentVault';
+import { MobileSyncButton } from '../MobileSyncButton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
@@ -95,6 +96,7 @@ export function ControlRoom() {
                 <p className="text-xs">Vault</p>
               </TooltipContent>
             </Tooltip>
+            <MobileSyncButton />
           </div>
           <SpacePanesView />
           <VaultDrawer open={isVaultOpen} onOpenChange={setIsVaultOpen} />
@@ -134,6 +136,7 @@ export function ControlRoom() {
               <p className="text-xs">Vault</p>
             </TooltipContent>
           </Tooltip>
+          <MobileSyncButton />
         </div>
 
         {/* Horizontal scrolling spaces with drag-and-drop */}

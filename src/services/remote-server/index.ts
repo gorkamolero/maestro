@@ -63,7 +63,7 @@ class RemoteServer {
 
     // Serve mobile UI for all non-API routes
     const mobilePath = electronApp.isPackaged
-      ? path.join(process.resourcesPath, 'app.asar/dist/mobile') // In packaged app, it's inside app.asar
+      ? path.join(process.resourcesPath, 'mobile') // In packaged app, it's in Resources/mobile
       : path.join(__dirname, '../../../../dist/mobile');
 
     // Static assets - serve from root to handle manifest.json, icons, etc.

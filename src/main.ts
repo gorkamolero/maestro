@@ -10,6 +10,7 @@ import { registerAgentMonitorHandlers, cleanupAgentMonitorHandlers } from './ipc
 import { registerPerformanceHandlers, cleanupPerformanceHandlers } from './ipc/performance';
 import { registerRemoteServerIPC } from './ipc/remote-server';
 import { registerSpaceSyncIPC } from './ipc/space-sync';
+import { remoteServer } from './services/remote-server';
 
 // Get icon path - different in dev vs production
 const getIconPath = () => {
@@ -74,6 +75,13 @@ app.on('ready', () => {
   registerPerformanceHandlers(getMainWindow, getBrowserViewsMap);
   registerRemoteServerIPC();
   registerSpaceSyncIPC(getMainWindow);
+
+  // Auto-start remote server for mobile connections
+  remoteServer.start().then(() => {
+    console.log('[Main] Remote server started');
+  }).catch(err => {
+    console.error('[Main] Failed to start remote server:', err);
+  });
 });
 
 app.on('window-all-closed', () => {

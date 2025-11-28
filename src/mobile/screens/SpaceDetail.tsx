@@ -73,21 +73,24 @@ export function SpaceDetail() {
   }
 
   return (
-    <div className="h-screen bg-black text-white flex flex-col">
+    <div className="h-screen bg-surface-primary text-content-primary flex flex-col">
       {/* Header */}
-      <header className="flex-none border-b border-white/10">
+      <header className="flex-none border-b border-white/[0.06] bg-surface-primary/90 backdrop-blur-lg">
         <div className="flex items-center gap-3 px-4 py-3">
-          <button onClick={() => navigate(-1)} className="p-1 -ml-1">
-            <ChevronLeftIcon className="w-6 h-6" />
+          <button
+            onClick={() => navigate(-1)}
+            className="p-2 -ml-2 rounded-lg active:bg-surface-hover transition-colors"
+          >
+            <ChevronLeftIcon className="w-5 h-5 text-content-secondary" />
           </button>
           <div className="flex-1 min-w-0">
-            <h1 className="font-semibold truncate">{space.name}</h1>
+            <h1 className="text-page-title font-semibold truncate">{space.name}</h1>
           </div>
           <button
             onClick={() => setShowActions(true)}
-            className="p-2 -mr-2"
+            className="p-2 -mr-2 rounded-lg active:bg-surface-hover transition-colors"
           >
-            <PlusIcon className="w-5 h-5" />
+            <PlusIcon className="w-5 h-5 text-content-secondary" />
           </button>
         </div>
 
@@ -124,11 +127,14 @@ export function SpaceDetail() {
 function EmptySpaceState({ onAddTab }: { onAddTab: () => void }) {
   return (
     <div className="h-full flex flex-col items-center justify-center p-6">
-      <div className="text-4xl mb-4">📭</div>
-      <p className="text-white/50 text-center mb-4">This space is empty</p>
+      <div className="w-14 h-14 rounded-xl bg-surface-card flex items-center justify-center mb-4">
+        <FolderIcon className="w-7 h-7 text-content-tertiary" />
+      </div>
+      <p className="text-content-secondary font-medium text-sm text-center mb-1">This space is empty</p>
+      <p className="text-content-tertiary text-[12px] text-center mb-5">Add a tab to get started</p>
       <button
         onClick={onAddTab}
-        className="px-4 py-2 bg-white/10 rounded-lg text-sm"
+        className="px-4 py-2 bg-accent text-white font-medium text-sm rounded-button active:bg-accent-hover transition-colors"
       >
         Add Tab
       </button>
@@ -138,9 +144,17 @@ function EmptySpaceState({ onAddTab }: { onAddTab: () => void }) {
 
 function LoadingState() {
   return (
-    <div className="h-screen flex items-center justify-center bg-black">
-      <div className="animate-pulse text-white/50">Loading space...</div>
+    <div className="h-screen flex items-center justify-center bg-surface-primary">
+      <div className="animate-pulse text-content-tertiary">Loading space...</div>
     </div>
+  );
+}
+
+function FolderIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+      <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+    </svg>
   );
 }
 

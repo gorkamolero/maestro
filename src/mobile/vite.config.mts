@@ -1,10 +1,14 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
-  plugins: [react()],
-  root: path.resolve(__dirname),
+  plugins: [react(), tailwindcss()],
+  root: __dirname,
   base: '/',
   build: {
     outDir: path.resolve(__dirname, '../../dist/mobile'),
@@ -12,8 +16,8 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@shared': path.resolve(__dirname, '../../shared'),
-      '@mobile': path.resolve(__dirname),
+      '@shared': path.resolve(__dirname, '../shared'),
+      '@mobile': __dirname,
     },
   },
 });

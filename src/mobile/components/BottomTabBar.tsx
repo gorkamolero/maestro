@@ -17,21 +17,21 @@ export function BottomTabBar() {
   if (shouldHide) return null;
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 bg-black/90 backdrop-blur border-t border-white/10">
-      <div className="flex justify-around items-center h-16 pb-[env(safe-area-inset-bottom)]">
+    <nav className="fixed inset-x-0 bottom-0 z-30 bg-surface-primary/95 backdrop-blur-lg border-t border-white/[0.06]">
+      <div className="flex justify-around items-center h-14 pb-[env(safe-area-inset-bottom)]">
         {tabs.map(tab => (
           <NavLink
             key={tab.path}
             to={tab.path}
             end={tab.path === '/'}
             className={({ isActive }) =>
-              `flex flex-col items-center gap-1 px-6 py-2 ${
-                isActive ? 'text-white' : 'text-white/40'
+              `flex flex-col items-center gap-0.5 px-6 py-2 transition-colors ${
+                isActive ? 'text-accent' : 'text-content-tertiary'
               }`
             }
           >
-            <tab.icon className="w-6 h-6" />
-            <span className="text-xs">{tab.label}</span>
+            <tab.icon className="w-5 h-5" />
+            <span className="text-[11px] font-medium">{tab.label}</span>
           </NavLink>
         ))}
       </div>

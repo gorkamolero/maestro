@@ -65,31 +65,34 @@ export function AgentDetail() {
 
   if (isLoading || !agent) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        Loading...
+      <div className="min-h-screen bg-surface-primary text-content-primary flex items-center justify-center">
+        <div className="animate-pulse text-content-tertiary">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col">
+    <div className="min-h-screen bg-surface-primary text-content-primary flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-black/80 backdrop-blur border-b border-white/10 px-4 py-3">
+      <header className="sticky top-0 z-10 bg-surface-primary/90 backdrop-blur-lg border-b border-white/[0.06] px-4 py-3">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="p-1 -ml-1">
-            <ChevronLeftIcon className="w-6 h-6" />
+          <button
+            onClick={() => navigate(-1)}
+            className="p-2 -ml-2 rounded-lg active:bg-surface-hover transition-colors"
+          >
+            <ChevronLeftIcon className="w-5 h-5 text-content-secondary" />
           </button>
           <div className="flex-1 min-w-0">
-            <h1 className="text-lg font-semibold truncate">{agent.projectName}</h1>
+            <h1 className="text-page-title font-semibold truncate">{agent.projectName}</h1>
             <div className="flex items-center gap-2 mt-0.5">
-              <StatusBadge status={agent.status} />
-              <span className="text-xs text-white/40">{agent.type}</span>
+              <StatusBadge status={agent.status} size="sm" />
+              <span className="text-small text-content-tertiary">{agent.type === 'claude-code' ? 'Claude Code' : agent.type}</span>
             </div>
           </div>
           {agent.terminalId && (
             <Link
               to={`/terminal/${agent.terminalId}`}
-              className="px-3 py-1.5 bg-white/10 rounded-lg text-sm"
+              className="px-3 py-1.5 bg-surface-card border border-white/[0.06] rounded-button text-small font-medium text-content-primary active:bg-surface-hover transition-colors"
             >
               Terminal
             </Link>
@@ -99,7 +102,7 @@ export function AgentDetail() {
 
       {/* Quick Actions */}
       {agent.status === 'needs_input' && (
-        <div className="border-b border-white/10">
+        <div className="border-b border-white/[0.06] bg-status-warning/5">
           <QuickActions onSend={sendInput} />
         </div>
       )}
@@ -126,9 +129,9 @@ function InputBar({ onSend }: { onSend: (text: string) => void }) {
   };
 
   return (
-    <form 
+    <form
       onSubmit={handleSubmit}
-      className="sticky bottom-0 bg-black border-t border-white/10 p-3"
+      className="sticky bottom-0 bg-surface-primary/95 backdrop-blur-lg border-t border-white/[0.06] p-3"
     >
       <div className="flex gap-2">
         <input
@@ -136,12 +139,12 @@ function InputBar({ onSend }: { onSend: (text: string) => void }) {
           value={text}
           onChange={e => setText(e.target.value)}
           placeholder="Send input..."
-          className="w-full bg-white/10 rounded-lg px-4 py-2 text-white placeholder:text-white/40 outline-none focus:ring-1 focus:ring-white/20"
+          className="flex-1 bg-surface-card border border-white/[0.06] rounded-input px-3 py-2.5 text-sm text-content-primary placeholder:text-content-tertiary outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20 transition-colors"
         />
         <button
           type="submit"
           disabled={!text.trim()}
-          className="px-4 py-2 bg-white text-black rounded-lg font-medium disabled:opacity-50"
+          className="px-4 py-2.5 bg-accent text-white font-medium text-sm rounded-button disabled:opacity-40 active:bg-accent-hover transition-colors"
         >
           Send
         </button>
