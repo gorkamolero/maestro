@@ -20,9 +20,6 @@ import { cn } from '@/lib/utils';
 const PANE_WIDTH = 480;
 const SPINE_WIDTH = 36;
 
-// Drop indicator color (Obsidian-style yellow)
-const DROP_INDICATOR_COLOR = '#E5C07B';
-
 /**
  * SpacePanesView implements the Andy Matuschak / Obsidian sliding panes pattern for Spaces.
  * Each pane has a spine attached to its left edge. When scrolling horizontally,
@@ -73,21 +70,15 @@ export function SpacePanesView() {
   // Drag handlers for spine reordering
   const handleDragStart = useCallback((index: number) => {
     setDraggingIndex(index);
-    setDropIndex(index);
+    setDropIndex(null);
   }, []);
 
-  const handleDragOver = useCallback(
-    (e: React.MouseEvent, targetIndex: number) => {
+  const handleDragOverSpine = useCallback(
+    (targetIndex: number) => {
       if (draggingIndex === null) return;
-      e.preventDefault();
-
-      // Determine if we're dropping before or after this pane
-      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-      const midpoint = rect.left + rect.width / 2;
-      const newDropIndex = e.clientX < midpoint ? targetIndex : targetIndex + 1;
-
-      if (newDropIndex !== dropIndex) {
-        setDropIndex(newDropIndex);
+      // Simply set the target index - hovering over a spine means "insert here"
+      if (targetIndex !== dropIndex && targetIndex !== draggingIndex) {
+        setDropIndex(targetIndex);
       }
     },
     [draggingIndex, dropIndex]
@@ -95,16 +86,15 @@ export function SpacePanesView() {
 
   const handleDragEnd = useCallback(() => {
     if (draggingIndex !== null && dropIndex !== null && draggingIndex !== dropIndex) {
-      // Adjust drop index if dropping after the dragged item
-      const adjustedDropIndex = dropIndex > draggingIndex ? dropIndex - 1 : dropIndex;
-      if (adjustedDropIndex !== draggingIndex) {
-        const reordered = arrayMoveImmutable(spaces, draggingIndex, adjustedDropIndex);
-        spacesActions.reorderSpaces(reordered);
-      }
+      const reordered = arrayMoveImmutable(spaces, draggingIndex, dropIndex);
+      spacesActions.reorderSpaces(reordered);
     }
     setDraggingIndex(null);
     setDropIndex(null);
   }, [draggingIndex, dropIndex, spaces]);
+
+  // Get the space being dragged for ghost rendering
+  const draggingSpace = draggingIndex !== null ? spaces[draggingIndex] : null;
 
   // Global mouse up listener to handle drag end
   useEffect(() => {
@@ -130,23 +120,11 @@ export function SpacePanesView() {
           isFocused={space.id === focusedSpaceId}
           onClick={() => handlePaneClick(space.id, index)}
           isDragging={draggingIndex === index}
-          showDropIndicator={dropIndex === index && draggingIndex !== null && draggingIndex !== index}
+          ghostSpace={dropIndex === index && draggingSpace ? draggingSpace : null}
           onDragStart={() => handleDragStart(index)}
-          onDragOver={(e) => handleDragOver(e, index)}
+          onDragOverSpine={() => handleDragOverSpine(index)}
         />
       ))}
-
-      {/* Drop indicator at the end */}
-      {dropIndex === spaces.length && draggingIndex !== null && (
-        <div
-          className="absolute top-0 bottom-0 w-[3px] z-50"
-          style={{
-            left: spaces.length * SPINE_WIDTH + (spaces.length - 1) * (PANE_WIDTH - SPINE_WIDTH),
-            backgroundColor: DROP_INDICATOR_COLOR,
-            boxShadow: `0 0 8px ${DROP_INDICATOR_COLOR}`,
-          }}
-        />
-      )}
 
       {/* New Space button at the end */}
       <div
@@ -154,11 +132,6 @@ export function SpacePanesView() {
         style={{
           minWidth: PANE_WIDTH,
           marginLeft: spaces.length > 0 ? 0 : undefined,
-        }}
-        onMouseMove={() => {
-          if (draggingIndex !== null) {
-            setDropIndex(spaces.length);
-          }
         }}
       >
         <button
@@ -188,9 +161,9 @@ interface SpacePaneProps {
   isFocused: boolean;
   onClick: () => void;
   isDragging: boolean;
-  showDropIndicator: boolean;
+  ghostSpace: Space | null; // The space being dragged, shown as ghost at drop position
   onDragStart: () => void;
-  onDragOver: (e: React.MouseEvent) => void;
+  onDragOverSpine: () => void;
 }
 
 /**
@@ -205,9 +178,9 @@ const SpacePane = memo(function SpacePane({
   isFocused,
   onClick,
   isDragging,
-  showDropIndicator,
+  ghostSpace,
   onDragStart,
-  onDragOver,
+  onDragOverSpine,
 }: SpacePaneProps) {
   // Calculate right offset for right-side stacking
   const rightOffset = (totalPanes - 1 - index) * SPINE_WIDTH;
@@ -236,18 +209,38 @@ const SpacePane = memo(function SpacePane({
         width: `calc(100vw - ${index * SPINE_WIDTH}px - ${rightOffset}px)`,
         maxWidth: PANE_WIDTH,
       }}
-      onMouseMove={onDragOver}
     >
-      {/* Drop indicator line (Obsidian-style) - appears to the right of the spine */}
-      {showDropIndicator && (
+      {/* Ghost spine - shows where the dragged pane will be inserted */}
+      {ghostSpace && (
         <div
-          className="absolute top-0 bottom-0 w-[3px] z-50 pointer-events-none"
+          className="absolute left-0 top-0 bottom-0 z-50 pointer-events-none opacity-60"
           style={{
-            left: SPINE_WIDTH,
-            backgroundColor: DROP_INDICATOR_COLOR,
-            boxShadow: `0 0 8px ${DROP_INDICATOR_COLOR}`,
+            width: SPINE_WIDTH,
+            borderLeft: ghostSpace.primaryColor
+              ? `3px solid ${ghostSpace.primaryColor}`
+              : '3px solid hsl(var(--border))',
+            background: ghostSpace.primaryColor
+              ? `linear-gradient(180deg, color-mix(in srgb, ${ghostSpace.primaryColor} 30%, rgb(16, 17, 19)) 0%, rgb(12, 13, 15) 100%)`
+              : 'linear-gradient(180deg, rgb(18, 19, 21) 0%, rgb(12, 13, 15) 100%)',
+            boxShadow: `0 0 12px ${ghostSpace.primaryColor || 'rgba(255,255,255,0.3)'}`,
           }}
-        />
+        >
+          {/* Ghost spine title */}
+          <div
+            className="absolute inset-0 flex items-center justify-center overflow-hidden"
+            style={{
+              writingMode: 'vertical-rl',
+              textOrientation: 'mixed',
+            }}
+          >
+            <div className="flex items-center gap-1.5 text-xs text-foreground/80 font-medium">
+              <span className="text-sm">{ghostSpace.icon || '📁'}</span>
+              <span className="truncate" style={{ maxWidth: '60vh' }}>
+                {ghostSpace.name}
+              </span>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Spine - vertical strip on the left - drag handle */}
@@ -257,6 +250,7 @@ const SpacePane = memo(function SpacePane({
           e.preventDefault();
           onDragStart();
         }}
+        onMouseEnter={onDragOverSpine}
         className={cn(
           'absolute left-0 top-0 bottom-0',
           'border-r border-white/[0.08]',
