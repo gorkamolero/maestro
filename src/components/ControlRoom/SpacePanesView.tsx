@@ -34,6 +34,7 @@ export function SpacePanesView() {
   // Drag state for reordering
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
+  const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
 
   // Get tabs for a space
   const getSpaceTabs = useCallback(
@@ -68,9 +69,10 @@ export function SpacePanesView() {
   }, []);
 
   // Drag handlers for spine reordering
-  const handleDragStart = useCallback((index: number) => {
+  const handleDragStart = useCallback((index: number, e: React.MouseEvent) => {
     setDraggingIndex(index);
     setDropIndex(null);
+    setMousePos({ x: e.clientX, y: e.clientY });
   }, []);
 
   const handleDragOverSpine = useCallback(
@@ -91,17 +93,26 @@ export function SpacePanesView() {
     }
     setDraggingIndex(null);
     setDropIndex(null);
+    setMousePos(null);
   }, [draggingIndex, dropIndex, spaces]);
 
   // Get the space being dragged for ghost rendering
   const draggingSpace = draggingIndex !== null ? spaces[draggingIndex] : null;
 
-  // Global mouse up listener to handle drag end
+  // Global mouse listeners for drag
   useEffect(() => {
     if (draggingIndex !== null) {
+      const handleMouseMove = (e: MouseEvent) => {
+        setMousePos({ x: e.clientX, y: e.clientY });
+      };
       const handleMouseUp = () => handleDragEnd();
+
+      window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
-      return () => window.removeEventListener('mouseup', handleMouseUp);
+      return () => {
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', handleMouseUp);
+      };
     }
   }, [draggingIndex, handleDragEnd]);
 
@@ -121,10 +132,46 @@ export function SpacePanesView() {
           onClick={() => handlePaneClick(space.id, index)}
           isDragging={draggingIndex === index}
           ghostSpace={dropIndex === index && draggingSpace ? draggingSpace : null}
-          onDragStart={() => handleDragStart(index)}
+          onDragStart={(e) => handleDragStart(index, e)}
           onDragOverSpine={() => handleDragOverSpine(index)}
         />
       ))}
+
+      {/* Floating ghost spine that follows cursor */}
+      {draggingSpace && mousePos && (
+        <div
+          className="fixed z-[100] pointer-events-none"
+          style={{
+            left: mousePos.x - SPINE_WIDTH / 2,
+            top: 0,
+            bottom: 0,
+            width: SPINE_WIDTH,
+            opacity: 0.8,
+            borderLeft: draggingSpace.primaryColor
+              ? `3px solid ${draggingSpace.primaryColor}`
+              : '3px solid hsl(var(--border))',
+            background: draggingSpace.primaryColor
+              ? `linear-gradient(180deg, color-mix(in srgb, ${draggingSpace.primaryColor} 20%, rgb(16, 17, 19)) 0%, rgb(12, 13, 15) 100%)`
+              : 'linear-gradient(180deg, rgb(18, 19, 21) 0%, rgb(12, 13, 15) 100%)',
+            boxShadow: `0 0 20px ${draggingSpace.primaryColor || 'rgba(0,0,0,0.5)'}`,
+          }}
+        >
+          <div
+            className="absolute inset-0 flex items-center justify-center overflow-hidden"
+            style={{
+              writingMode: 'vertical-rl',
+              textOrientation: 'mixed',
+            }}
+          >
+            <div className="flex items-center gap-1.5 text-xs text-foreground font-medium">
+              <span className="text-sm">{draggingSpace.icon || '📁'}</span>
+              <span className="truncate" style={{ maxWidth: '60vh' }}>
+                {draggingSpace.name}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* New Space button at the end */}
       <div
@@ -162,7 +209,7 @@ interface SpacePaneProps {
   onClick: () => void;
   isDragging: boolean;
   ghostSpace: Space | null; // The space being dragged, shown as ghost at drop position
-  onDragStart: () => void;
+  onDragStart: (e: React.MouseEvent) => void;
   onDragOverSpine: () => void;
 }
 
@@ -248,7 +295,7 @@ const SpacePane = memo(function SpacePane({
         onClick={handleSpineClick}
         onMouseDown={(e) => {
           e.preventDefault();
-          onDragStart();
+          onDragStart(e);
         }}
         onMouseEnter={onDragOverSpine}
         className={cn(
