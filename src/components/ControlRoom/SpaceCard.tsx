@@ -1,8 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useSnapshot } from 'valtio';
 import { AnimatePresence } from 'motion/react';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import {
   MoreHorizontal,
   Plus,
@@ -55,16 +53,6 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
   const { notifications } = useSnapshot(notificationsStore);
   const { totalMemoryKB, avgCpuPercent } = useSpaceTabsPerformance(space.id);
 
-  // Sortable hook for drag-and-drop reordering
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: space.id });
-
   // Get tasks for this space
   const { tasks: spaceTasks } = useSpaceTasks(space.id);
 
@@ -98,32 +86,28 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
     setIsEmojiPickerOpen(true);
   }, []);
 
-  // Sortable styles
-  const sortableStyle = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
   return (
     <TooltipProvider delayDuration={TOOLTIP_DELAY_DURATION}>
       <div
-        ref={setNodeRef}
+        className={cn(
+          'group relative flex flex-col flex-shrink-0',
+          'w-[280px] h-full rounded-xl overflow-hidden',
+          'backdrop-blur-xl',
+          'transition-all duration-300'
+        )}
         style={{
-          ...sortableStyle,
           // Glassmorphism + left accent bar with subtle color tint
           borderLeft: space.primaryColor
             ? `3px solid ${space.primaryColor}${isHovered ? '' : 'D9'}`
             : undefined,
-          boxShadow: isDragging
-            ? `0 20px 60px -10px rgba(0,0,0,0.8)${space.primaryColor ? `, 0 0 40px -10px ${space.primaryColor}80` : ''}`
-            : isHovered
-              ? `
+          boxShadow: isHovered
+            ? `
               inset 0 1px 0 0 rgba(255,255,255,0.08),
               inset 0 0 0 1px rgba(255,255,255,0.12),
               0 12px 40px -8px rgba(0,0,0,0.6)
               ${space.primaryColor ? `, 0 0 30px -10px ${space.primaryColor}50` : ''}
             `
-              : `
+            : `
               inset 0 1px 0 0 rgba(255,255,255,0.05),
               inset 0 0 0 1px rgba(255,255,255,0.08),
               0 8px 32px -8px rgba(0,0,0,0.5)
@@ -132,13 +116,6 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
             ? `linear-gradient(180deg, ${space.primaryColor}${isHovered ? '18' : '10'} 0%, transparent 50%), rgba(25, 25, 28, ${isHovered ? '0.85' : '0.8'})`
             : `rgba(25, 25, 28, ${isHovered ? '0.85' : '0.8'})`,
         }}
-        className={cn(
-          'group relative flex flex-col flex-shrink-0',
-          'w-[280px] h-full rounded-xl overflow-hidden',
-          'backdrop-blur-xl',
-          'transition-all duration-300',
-          isDragging && 'z-50 opacity-90 scale-105'
-        )}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
@@ -159,7 +136,6 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
           tabs={tabs}
           isEmojiPickerOpen={isEmojiPickerOpen}
           setIsEmojiPickerOpen={setIsEmojiPickerOpen}
-          dragHandleProps={{ ...attributes, ...listeners }}
         />
 
         {/* What's Next bubble - primary focus indicator */}

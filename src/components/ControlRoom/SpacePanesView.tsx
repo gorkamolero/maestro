@@ -1,22 +1,5 @@
-import { useRef, useCallback, useState, memo, useMemo } from 'react';
+import { useRef, useCallback, useState, memo } from 'react';
 import { Plus, CheckSquare, FileText } from 'lucide-react';
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  horizontalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import { useSpacesStore, spacesActions } from '@/stores/spaces.store';
 import { useWorkspaceStore } from '@/stores/workspace.store';
 import { useEditableTitle } from '@/hooks/useEditableTitle';
@@ -46,35 +29,6 @@ export function SpacePanesView() {
   const { spaces } = useSpacesStore();
   const { tabs } = useWorkspaceStore();
   const [focusedSpaceId, setFocusedSpaceId] = useState<string | null>(spaces[0]?.id || null);
-
-  // Space IDs for sortable context
-  const spaceIds = useMemo(() => spaces.map((s) => s.id), [spaces]);
-
-  // DnD sensors
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  const handleDragEnd = useCallback(
-    (event: DragEndEvent) => {
-      const { active, over } = event;
-
-      if (over && active.id !== over.id) {
-        const oldIndex = spaces.findIndex((s) => s.id === active.id);
-        const newIndex = spaces.findIndex((s) => s.id === over.id);
-        const reordered = arrayMove(spaces, oldIndex, newIndex);
-        spacesActions.reorderSpaces(reordered);
-      }
-    },
-    [spaces]
-  );
 
   // Get tabs for a space
   const getSpaceTabs = useCallback(
@@ -109,50 +63,46 @@ export function SpacePanesView() {
   }, []);
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-      <SortableContext items={spaceIds} strategy={horizontalListSortingStrategy}>
-        <div
-          ref={containerRef}
-          className="flex h-full overflow-x-auto overflow-y-hidden bg-background scroll-smooth"
-        >
-          {spaces.map((space, index) => (
-            <SpacePane
-              key={space.id}
-              space={space}
-              tabs={getSpaceTabs(space.id)}
-              index={index}
-              totalPanes={spaces.length}
-              isFocused={space.id === focusedSpaceId}
-              onClick={() => handlePaneClick(space.id, index)}
-            />
-          ))}
+    <div
+      ref={containerRef}
+      className="flex h-full overflow-x-auto overflow-y-hidden bg-background scroll-smooth"
+    >
+      {spaces.map((space, index) => (
+        <SpacePane
+          key={space.id}
+          space={space}
+          tabs={getSpaceTabs(space.id)}
+          index={index}
+          totalPanes={spaces.length}
+          isFocused={space.id === focusedSpaceId}
+          onClick={() => handlePaneClick(space.id, index)}
+        />
+      ))}
 
-          {/* New Space button at the end */}
-          <div
-            className="flex-shrink-0 flex items-center justify-center"
-            style={{
-              minWidth: PANE_WIDTH,
-              marginLeft: spaces.length > 0 ? 0 : undefined,
-            }}
-          >
-            <button
-              type="button"
-              onClick={handleNewSpace}
-              className={cn(
-                'flex flex-col items-center justify-center gap-3 p-8',
-                'text-muted-foreground hover:text-foreground',
-                'bg-transparent hover:bg-accent/50',
-                'border border-dashed border-border/50 hover:border-border',
-                'rounded-xl transition-all duration-150'
-              )}
-            >
-              <Plus className="w-6 h-6" />
-              <span className="text-sm font-medium">New space</span>
-            </button>
-          </div>
-        </div>
-      </SortableContext>
-    </DndContext>
+      {/* New Space button at the end */}
+      <div
+        className="flex-shrink-0 flex items-center justify-center"
+        style={{
+          minWidth: PANE_WIDTH,
+          marginLeft: spaces.length > 0 ? 0 : undefined,
+        }}
+      >
+        <button
+          type="button"
+          onClick={handleNewSpace}
+          className={cn(
+            'flex flex-col items-center justify-center gap-3 p-8',
+            'text-muted-foreground hover:text-foreground',
+            'bg-transparent hover:bg-accent/50',
+            'border border-dashed border-border/50 hover:border-border',
+            'rounded-xl transition-all duration-150'
+          )}
+        >
+          <Plus className="w-6 h-6" />
+          <span className="text-sm font-medium">New space</span>
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -170,16 +120,6 @@ interface SpacePaneProps {
  * so it pins to the left edge as the user scrolls, creating the stacking effect.
  */
 const SpacePane = memo(function SpacePane({ space, tabs, index, totalPanes, isFocused, onClick }: SpacePaneProps) {
-  // Sortable hook for drag-and-drop reordering
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: space.id });
-
   // Calculate right offset for right-side stacking
   const rightOffset = (totalPanes - 1 - index) * SPINE_WIDTH;
 
@@ -191,24 +131,15 @@ const SpacePane = memo(function SpacePane({ space, tabs, index, totalPanes, isFo
   // Get tasks for this space to determine if section should be open
   const { tasks: spaceTasks } = useSpaceTasks(space.id);
 
-  // Sortable styles
-  const sortableStyle = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
   return (
     <div
-      ref={setNodeRef}
       data-pane-id={space.id}
       className={cn(
         'relative flex-shrink-0 border-r border-border/30',
         'transition-shadow duration-200',
-        isFocused && 'shadow-2xl shadow-black/30',
-        isDragging && 'z-50 opacity-90'
+        isFocused && 'shadow-2xl shadow-black/30'
       )}
       style={{
-        ...sortableStyle,
         position: 'sticky',
         left: index * SPINE_WIDTH,
         minWidth: PANE_WIDTH,
@@ -216,15 +147,13 @@ const SpacePane = memo(function SpacePane({ space, tabs, index, totalPanes, isFo
         maxWidth: PANE_WIDTH,
       }}
     >
-      {/* Spine - vertical strip on the left - serves as drag handle */}
+      {/* Spine - vertical strip on the left */}
       <div
         onClick={handleSpineClick}
         className={cn(
           'absolute left-0 top-0 bottom-0',
           'border-r border-white/[0.08]',
-          'cursor-grab select-none transition-all duration-200',
-          'active:cursor-grabbing',
-          isDragging && 'cursor-grabbing'
+          'cursor-pointer select-none transition-all duration-200'
         )}
         style={{
           width: SPINE_WIDTH,
@@ -237,8 +166,6 @@ const SpacePane = memo(function SpacePane({ space, tabs, index, totalPanes, isFo
           boxShadow:
             isFocused && space.primaryColor ? `inset 0 0 30px ${space.primaryColor}25` : undefined,
         }}
-        {...attributes}
-        {...listeners}
       >
         {/* Rotated title text */}
         <div

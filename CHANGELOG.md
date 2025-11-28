@@ -6,6 +6,24 @@ All notable changes to Maestro will be documented in this file.
 
 ### Added
 
+#### Space Reordering (2025-11-28)
+- **Drag-and-drop reordering for spaces** in Cards view using react-easy-sort
+  - SortableList/SortableItem wrappers handle drag behavior
+  - Visual feedback with opacity during drag
+  - Note: Panes view doesn't support reordering (sticky positioning conflicts with drag transforms)
+
+#### Notes Enhancements (2025-11-28)
+- **Copy Obsidian URI**: Right-click note → "Copy Obsidian URI"
+  - Copies Advanced URI format: `obsidian://advanced-uri?filepath=path/to/note.md`
+  - Enables linking to Maestro notes from external apps
+
+### Fixed
+
+#### What's Next Bubble (2025-11-28)
+- Restored `NextBubble` component to SpaceCard and SpacePanesView
+- Shows "→ What's next?" prompt with red dot indicator when empty
+- Click to edit, persists to `space.next` field
+
 #### Component Refactoring (2025-11-27)
 - **AgentDrawer refactored**: 732 → 103 lines (main component)
   - Extracted `AgentDrawerContext.tsx` - Context and hook for child views
