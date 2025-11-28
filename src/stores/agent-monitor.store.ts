@@ -164,7 +164,7 @@ export const agentMonitorActions = {
       // If we have terminal info, also open the terminal window
       if (tabId && spaceId) {
         import('@/stores/workspace.store').then(({ workspaceActions }) => {
-          workspaceActions.setActiveSpace(spaceId);
+          workspaceActions.switchSpace(spaceId);
         });
         import('@/stores/windows.store').then(({ windowsActions }) => {
           windowsActions.openWindow(tabId, 'floating');

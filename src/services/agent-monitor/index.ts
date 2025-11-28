@@ -92,6 +92,9 @@ export class AgentMonitorService extends EventEmitter {
           break;
         }
       }
+
+      // Clean up previousSessionStatus to prevent memory leak
+      this.previousSessionStatus.delete(session.id);
     });
 
     this.registry.on('activity:new', (activity) => {
@@ -137,7 +140,7 @@ export class AgentMonitorService extends EventEmitter {
 
     // Click notification to focus window and open vault to this agent
     notification.on('click', () => {
-      if (this.mainWindow) {
+      if (this.mainWindow && !this.mainWindow.isDestroyed()) {
         if (this.mainWindow.isMinimized()) {
           this.mainWindow.restore();
         }
