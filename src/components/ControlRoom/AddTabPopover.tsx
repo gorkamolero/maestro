@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Terminal, Globe, AppWindow, CheckSquare, StickyNote, Bot } from 'lucide-react';
+import { Terminal, Globe, AppWindow, CheckSquare, StickyNote, Bot, FolderGit2 } from 'lucide-react';
 import { workspaceActions } from '@/stores/workspace.store';
 import { windowsActions } from '@/stores/windows.store';
 import { launcherActions } from '@/stores/launcher.store';
+import { spacesActions } from '@/stores/spaces.store';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
@@ -47,6 +48,38 @@ const TAB_OPTIONS = [
 export function AddTabPopover({ spaceId, children }: AddTabPopoverProps) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  const handleConnectRepo = async () => {
+    setIsLoading(true);
+    try {
+      const path = await window.electron.invoke('dialog:openDirectory');
+      if (path) {
+        // Update space with connected repo
+        spacesActions.updateSpace(spaceId, {
+          connectedRepo: {
+            path,
+            connectedAt: new Date().toISOString(),
+            monitorAgents: true,
+          },
+        });
+
+        // Connect to agent monitor service
+        await window.agentMonitor.connectRepo({
+          path,
+          spaceId,
+          options: {
+            monitoringEnabled: true,
+            autoCreateSegments: false,
+          },
+        });
+      }
+    } catch (error) {
+      console.error('[AddTabPopover] Failed to connect repo:', error);
+    } finally {
+      setIsLoading(false);
+      setOpen(false);
+    }
+  };
 
   const handleSelectOption = async (type: (typeof TAB_OPTIONS)[number]['type']) => {
     if (type === 'app') {
@@ -144,6 +177,25 @@ export function AddTabPopover({ spaceId, children }: AddTabPopoverProps) {
                 <span>{option.label}</span>
               </button>
             ))}
+
+            {/* Separator */}
+            <div className="h-px bg-border my-1" />
+
+            {/* Connect Repository */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleConnectRepo();
+              }}
+              className={cn(
+                'flex items-center gap-3 px-2 py-2 rounded-md text-left',
+                'hover:bg-accent transition-colors',
+                'text-sm'
+              )}
+            >
+              <FolderGit2 className="w-4 h-4 text-muted-foreground" />
+              <span>Connect Repo</span>
+            </button>
           </div>
         )}
       </PopoverContent>

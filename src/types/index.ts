@@ -147,6 +147,15 @@ export interface Space {
   tags?: string[];
   /** Whether the space is active (visible in main view) or in the vault */
   isActive?: boolean;
+  /** Connected repository for agent monitoring */
+  connectedRepo?: {
+    /** Absolute path to the repository */
+    path: string;
+    /** When the repo was connected */
+    connectedAt: string;
+    /** Whether agent monitoring is enabled */
+    monitorAgents: boolean;
+  };
 }
 
 // Color palette for spaces - 8 professional color pairs

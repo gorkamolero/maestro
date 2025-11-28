@@ -17,6 +17,23 @@ All notable changes to Maestro will be documented in this file.
 - Supports connecting repos to spaces for filtered monitoring
 - Session pruning after 24 hours, idle detection after 30 seconds
 
+#### Agent Monitor System - Phase B: Space Integration (2025-11-28)
+- **Connect repositories to Spaces** via `+` button menu or `⋯` dropdown
+  - Native folder picker dialog
+  - "Connect Repo" option in AddTabPopover and Panes header menu
+  - Connected repo shown in Space card footer and Panes header
+- **Agent status on Space cards** (Control Room)
+  - Shows folder name + active (green pulsing) / idle (yellow) agent counts
+  - Last activity summary (tool count or idle time)
+  - Only shows active agents and idle agents from last hour
+- **Agents section in Panes view** (maximized spaces)
+  - Collapsible section with session cards
+  - Session status, tool count, time since last activity
+- **Startup persistence** - automatically reconnects saved repos
+- New components: `SpaceSettingsModal`, `AgentStatusRow`, `AgentSidebarSection`
+- New hook: `useAgentSessionsForSpace` for reactive session data
+- Custom `pulse-slow` animation (2s breathing) for active agent dots
+
 #### Space Vault Feature (2025-11-28)
 - **Activate/deactivate spaces** with resource cleanup
   - Move spaces to "Vault" to hide from main view and free resources
@@ -53,6 +70,8 @@ All notable changes to Maestro will be documented in this file.
 - **Recursion depth limit** - `MAX_SCAN_DEPTH=10` prevents DoS via deep directory structures
 - **Race condition fix** - `ensureServiceStarted()` awaits initialization before processing IPC requests
 - **Memory leak fix** - Clean up `processSessionMap` when sessions end, clear all maps on service stop
+- **Parser null safety** - Fixed crashes when `message.content` or `payload.content` is undefined in JSONL parsers
+- **Session filter null check** - Prevent `startsWith` error when `projectPath` is undefined
 
 #### What's Next Bubble (2025-11-28)
 - Restored `NextBubble` component to SpaceCard and SpacePanesView

@@ -11,6 +11,7 @@ import {
   FileText,
   Pencil,
   Archive,
+  Settings,
 } from 'lucide-react';
 import { useSpaceTabsPerformance } from '@/hooks/usePerformance';
 import { useSpaceTasks } from '@/hooks/useSpaceTasks';
@@ -30,6 +31,8 @@ import { CollapsibleSection } from './CollapsibleSection';
 import { TabPreviewList } from './TabPreviewList';
 import { SpaceCardHeader } from './SpaceCardHeader';
 import { NextBubble } from './NextBubble';
+import { SpaceSettingsModal } from './SpaceSettingsModal';
+import { AgentStatusRow } from './AgentStatusRow';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AgentProgressBar } from './AgentProgressBar';
 import {
@@ -50,6 +53,7 @@ interface SpaceCardProps {
 
 export function SpaceCard({ space, tabs }: SpaceCardProps) {
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const { notifications } = useSnapshot(notificationsStore);
   const { totalMemoryKB, avgCpuPercent } = useSpaceTabsPerformance(space.id);
@@ -185,6 +189,9 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
           </CollapsibleSection>
         </div>
 
+        {/* Connected Repo + Agent Status */}
+        <AgentStatusRow space={space} />
+
         {/* Footer */}
         <div className="flex items-center justify-between px-3 py-2 border-t border-border/50">
           <Tooltip>
@@ -229,6 +236,11 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setIsSettingsOpen(true)}>
+                <Settings className="w-4 h-4 mr-2" />
+                Settings
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleOpenEmojiPicker}>
                 <Pencil className="w-4 h-4 mr-2" />
                 Rename
@@ -265,6 +277,13 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
         {/* Agent progress bar */}
         {hasRunningAgent && <AgentProgressBar />}
       </div>
+
+      {/* Settings Modal */}
+      <SpaceSettingsModal
+        space={space}
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
     </TooltipProvider>
   );
 }

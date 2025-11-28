@@ -81,24 +81,26 @@ export function parseCodexLine(
 
     switch (payload.type) {
       case 'user_message': {
+        const content = payload.content ?? '';
         const activity: UserPromptActivity = {
           ...baseProps,
           id: randomUUID(),
           type: 'user_prompt',
-          content: truncate(payload.content, 2000),
-          truncated: payload.content.length > 2000,
+          content: truncate(content, 2000),
+          truncated: content.length > 2000,
         };
         activities.push(activity);
         break;
       }
 
       case 'agent_message': {
+        const content = payload.content ?? '';
         const activity: AssistantMessageActivity = {
           ...baseProps,
           id: randomUUID(),
           type: 'assistant_message',
-          content: truncate(payload.content, 2000),
-          truncated: payload.content.length > 2000,
+          content: truncate(content, 2000),
+          truncated: content.length > 2000,
         };
         activities.push(activity);
         break;
@@ -191,7 +193,8 @@ export function parseCodexLine(
   return activities;
 }
 
-function truncate(s: string, max: number): string {
+function truncate(s: string | undefined | null, max: number): string {
+  if (!s) return '';
   return s.length <= max ? s : s.slice(0, max - 3) + '...';
 }
 

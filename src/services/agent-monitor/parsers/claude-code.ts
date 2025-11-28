@@ -77,8 +77,13 @@ export function parseClaudeCodeLine(line: string, filePath: string): AgentActivi
   };
 
   // Process based on message type
+  const contents = parsed.message?.content;
+  if (!Array.isArray(contents)) {
+    return activities;
+  }
+
   if (parsed.type === 'user') {
-    for (const content of parsed.message.content) {
+    for (const content of contents) {
       if (content.type === 'text') {
         const activity: UserPromptActivity = {
           ...baseProps,
@@ -91,7 +96,7 @@ export function parseClaudeCodeLine(line: string, filePath: string): AgentActivi
       }
     }
   } else if (parsed.type === 'assistant') {
-    for (const content of parsed.message.content) {
+    for (const content of contents) {
       if (content.type === 'text') {
         const activity: AssistantMessageActivity = {
           ...baseProps,
@@ -127,7 +132,7 @@ export function parseClaudeCodeLine(line: string, filePath: string): AgentActivi
     }
   } else if (parsed.type === 'system') {
     // System messages often indicate session boundaries
-    const text = parsed.message.content
+    const text = contents
       .filter((c): c is { type: 'text'; text: string } => c.type === 'text')
       .map((c) => c.text)
       .join('\n');

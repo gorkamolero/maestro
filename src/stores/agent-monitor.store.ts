@@ -65,8 +65,23 @@ export function getSessionsForSpace(spaceId: string): AgentSession[] {
   const repoPath = agentMonitorStore.connectedRepos[spaceId];
   if (!repoPath) return [];
 
+  const oneHourAgo = Date.now() - 60 * 60 * 1000;
+
   return Object.values(agentMonitorStore.sessions)
-    .filter((s) => s.projectPath === repoPath || s.projectPath.startsWith(repoPath + '/'))
+    .filter((s) => {
+      // Must have a matching project path
+      if (!s.projectPath || (s.projectPath !== repoPath && !s.projectPath.startsWith(repoPath + '/'))) {
+        return false;
+      }
+      // Always show active sessions
+      if (s.status === 'active') return true;
+      // Show idle sessions only if recent (within last hour)
+      if (s.status === 'idle') {
+        return new Date(s.lastActivityAt).getTime() > oneHourAgo;
+      }
+      // Hide ended sessions
+      return false;
+    })
     .sort((a, b) => new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime());
 }
 

@@ -1,5 +1,5 @@
 import { useRef, useCallback, useState, memo, useEffect, useMemo } from 'react';
-import { Plus, CheckSquare, FileText, MoreHorizontal, Archive, Trash2 } from 'lucide-react';
+import { Plus, CheckSquare, FileText, MoreHorizontal, Archive, Trash2, Bot, FolderGit2 } from 'lucide-react';
 import { arrayMoveImmutable } from 'array-move';
 import { useSpacesStore, spacesActions } from '@/stores/spaces.store';
 import { useWorkspaceStore } from '@/stores/workspace.store';
@@ -10,9 +10,11 @@ import type { Tab } from '@/stores/workspace.store';
 import { TabPreviewList } from './TabPreviewList';
 import { SpaceTasksSection } from './SpaceTasksSection';
 import { SpaceNotesEditor } from './SpaceNotesEditor';
+import { AgentSidebarSection } from './AgentSidebarSection';
 import { TagSelector } from './TagSelector';
 import { CollapsibleSection } from './CollapsibleSection';
 import { NextBubble } from './NextBubble';
+import { useAgentSessionsForSpace } from '@/hooks/useAgentSessions';
 import { EmojiPickerComponent } from '@/components/ui/emoji-picker';
 import {
   DropdownMenu,
@@ -264,6 +266,9 @@ const SpacePane = memo(function SpacePane({
   // Get tasks for this space to determine if section should be open
   const { tasks: spaceTasks } = useSpaceTasks(space.id);
 
+  // Get agent sessions for this space
+  const agentSessions = useAgentSessionsForSpace(space.id);
+
   return (
     <div
       data-pane-id={space.id}
@@ -404,6 +409,17 @@ const SpacePane = memo(function SpacePane({
           >
             <SpaceNotesEditor spaceId={space.id} initialContent={space.notesContent} />
           </CollapsibleSection>
+
+          {/* Agents section - only show if repo connected */}
+          {space.connectedRepo && (
+            <CollapsibleSection
+              icon={<Bot className="w-3 h-3" />}
+              label="Agents"
+              defaultOpen={agentSessions.length > 0}
+            >
+              <AgentSidebarSection spaceId={space.id} />
+            </CollapsibleSection>
+          )}
         </div>
       </div>
     </div>
@@ -421,6 +437,7 @@ interface SpacePaneHeaderContentProps {
  */
 const SpacePaneHeaderContent = memo(function SpacePaneHeaderContent({ space, tabs }: SpacePaneHeaderContentProps) {
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
 
   // Use shared editable title hook
   const {
@@ -448,6 +465,34 @@ const SpacePaneHeaderContent = memo(function SpacePaneHeaderContent({ space, tab
   const handleDeleteSpace = useCallback(() => {
     spacesActions.removeSpace(space.id);
   }, [space.id]);
+
+  const handleConnectRepo = useCallback(async () => {
+    setIsConnecting(true);
+    try {
+      const path = await window.electron.invoke('dialog:openDirectory');
+      if (path) {
+        spacesActions.updateSpace(space.id, {
+          connectedRepo: {
+            path,
+            connectedAt: new Date().toISOString(),
+            monitorAgents: true,
+          },
+        });
+        await window.agentMonitor.connectRepo({
+          path,
+          spaceId: space.id,
+          options: { monitoringEnabled: true, autoCreateSegments: false },
+        });
+      }
+    } catch (error) {
+      console.error('[SpacePanesView] Failed to connect repo:', error);
+    } finally {
+      setIsConnecting(false);
+    }
+  }, [space.id]);
+
+  // Extract folder name from connected repo path
+  const folderName = space.connectedRepo?.path.split('/').pop();
 
   return (
     <>
@@ -498,6 +543,14 @@ const SpacePaneHeaderContent = memo(function SpacePaneHeaderContent({ space, tab
         <span className="text-muted-foreground/60 tabular-nums">{tabs.length}</span>
       )}
 
+      {/* Connected repo indicator */}
+      {folderName && (
+        <span className="flex items-center gap-1 text-white/40 text-[10px]">
+          <FolderGit2 className="w-2.5 h-2.5" />
+          <span className="truncate max-w-[80px]">{folderName}</span>
+        </span>
+      )}
+
       {/* Tags */}
       <TagSelector spaceId={space.id} spaceTags={space.tags || []} className="" />
 
@@ -512,6 +565,15 @@ const SpacePaneHeaderContent = memo(function SpacePaneHeaderContent({ space, tab
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          {!space.connectedRepo && (
+            <>
+              <DropdownMenuItem onClick={handleConnectRepo} disabled={isConnecting}>
+                <FolderGit2 className="w-4 h-4 mr-2" />
+                {isConnecting ? 'Connecting...' : 'Connect Repo'}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          )}
           <DropdownMenuItem onClick={handleMoveToVault}>
             <Archive className="w-4 h-4 mr-2" />
             Move to Vault

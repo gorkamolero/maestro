@@ -10,10 +10,14 @@ import { historyActions } from '@/stores/history.store';
 import { agentActions, type AgentStatus } from '@/stores/agent.store';
 import { usePerformanceMonitor } from '@/hooks/usePerformance';
 import { startAutoBackup } from '@/lib/backup';
+import { initializeAgentMonitor } from '@/lib/agent-monitor-init';
 import '@/components/editor/themes/editor-theme.css';
 
 // Start automatic database backups
 startAutoBackup();
+
+// Initialize agent monitor (connects saved repos)
+initializeAgentMonitor();
 
 // Global agent IPC subscription hook
 function useAgentIpcSubscription() {
