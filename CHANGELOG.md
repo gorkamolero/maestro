@@ -6,6 +6,13 @@ All notable changes to Maestro will be documented in this file.
 
 ### Added
 
+#### Happy Coder Update Automation (2025-11-28)
+- **Automated Update Script** - Added `npm run update-happy` command
+  - Updates `@anthropic-ai/claude-code` to the latest version inside the Volta-managed Happy Coder package
+  - Eliminates manual directory navigation and npm install commands
+  - Verifies successful installation and reports new version
+- **Documentation Update** - Updated `CLAUDE.md` with new workflow instructions
+
 #### Agent Monitor System - Phase A (2025-11-28)
 - **Background monitoring of AI coding agents** (Claude Code, Codex, Gemini)
   - File watcher service monitors JSONL/JSON session logs

@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 When the user asks to upgrade Happy Coder (or update Claude Code version in Happy Coder), run:
 
 ```bash
-cd /Users/gorkolas/.volta/tools/image/packages/happy-coder/lib/node_modules/happy-coder && npm install @anthropic-ai/claude-code@latest
+npm run update-happy
 ```
 
 Then verify with `happy --version`.

@@ -10,6 +10,7 @@
     "make": "electron-forge make",
     "publish": "electron-forge publish",
     "lint": "eslint --ext .ts,.tsx .",
+    "update-happy": "bash scripts/update-happy-claude.sh",
     "deploy": "npm run make && rm -rf /Applications/Maestro.app && cp -R out/Maestro-darwin-arm64/Maestro.app /Applications/"
   },
   "keywords": [],
