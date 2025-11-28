@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { FolderGit2, Loader2 } from 'lucide-react';
-import { useAgentSessionsWithLoading, formatTimeAgo } from '@/hooks/useAgentSessions';
+import { useAgentSessionsWithLoading } from '@/hooks/useAgentSessions';
+import { agentVaultActions } from '@/stores/agent-vault.store';
 import type { AgentSession } from '@/types/agent-events';
 import type { Space } from '@/types';
 import { cn } from '@/lib/utils';
@@ -29,14 +30,6 @@ export function AgentStatusRow({ space }: AgentStatusRowProps) {
 
   // Show loading state while initializing
   const showLoading = !isInitialized || isLoading;
-
-  // Get activity summary
-  const latestActive = active[0];
-  const activityText = latestActive
-    ? getToolSummary(latestActive)
-    : idle[0]
-      ? `Idle ${formatTimeAgo(idle[0].lastActivityAt)}`
-      : null;
 
   const hasAgents = sessions.length > 0;
 
@@ -85,24 +78,22 @@ export function AgentStatusRow({ space }: AgentStatusRowProps) {
           </div>
         </div>
 
-        {/* Activity summary and session IDs - for debugging */}
+        {/* Agent sessions - clickable to open vault */}
         {hasAgents && (
           <div className="mt-1 pl-5 space-y-0.5">
-            {activityText && (
-              <span
+            {sessions.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => agentVaultActions.openToAgent(s.id)}
                 className={cn(
-                  'text-[10px] truncate block',
-                  active.length > 0 ? 'text-white/40' : 'text-white/25'
+                  'text-[10px] truncate block w-full text-left',
+                  'hover:text-white/60 transition-colors cursor-pointer',
+                  s.status === 'active' ? 'text-white/40' : 'text-white/25'
                 )}
               >
-                {activityText}
-              </span>
-            )}
-            {/* Show session IDs for debugging */}
-            {sessions.map((s) => (
-              <div key={s.id} className="text-[9px] text-white/20 truncate font-mono">
-                {s.id.slice(0, 8)}... ({s.status})
-              </div>
+                {s.status === 'active' ? '● ' : '○ '}
+                {getToolSummary(s)}
+              </button>
             ))}
           </div>
         )}

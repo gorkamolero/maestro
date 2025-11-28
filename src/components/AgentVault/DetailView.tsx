@@ -99,20 +99,46 @@ function ActivityRow({ activity }: { activity: AgentActivity }) {
     minute: '2-digit',
   });
 
-  const icons: Record<AgentActivity['type'], string> = {
+  const icons: Record<string, string> = {
     user_prompt: '💬',
     assistant_message: '🤖',
-    thinking: '🤔',
+    assistant_thinking: '🤔',
     tool_use: '🔧',
     tool_result: '✓',
     error: '✗',
+    session_start: '▶',
+    session_end: '⏹',
+  };
+
+  // Generate summary based on activity type
+  const getSummary = (): string => {
+    switch (activity.type) {
+      case 'tool_use':
+        return activity.summary;
+      case 'user_prompt':
+        return activity.content.slice(0, 60) + (activity.content.length > 60 ? '...' : '');
+      case 'assistant_message':
+        return activity.content.slice(0, 60) + (activity.content.length > 60 ? '...' : '');
+      case 'assistant_thinking':
+        return activity.content.slice(0, 60) + (activity.content.length > 60 ? '...' : '');
+      case 'tool_result':
+        return activity.success ? (activity.output?.slice(0, 40) || 'Success') : (activity.error?.slice(0, 40) || 'Error');
+      case 'error':
+        return activity.message;
+      case 'session_start':
+        return `Started in ${activity.projectPath.split('/').pop()}`;
+      case 'session_end':
+        return `Session ended (${activity.reason || 'unknown'})`;
+      default:
+        return activity.type;
+    }
   };
 
   return (
     <div className="flex items-start gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-800/50 transition-colors">
       <span className="text-xs text-gray-500 w-10 flex-shrink-0 pt-0.5">{time}</span>
       <span className="text-sm">{icons[activity.type] || '•'}</span>
-      <span className="text-xs text-gray-300 flex-1 truncate">{activity.summary}</span>
+      <span className="text-xs text-gray-300 flex-1 truncate">{getSummary()}</span>
     </div>
   );
 }
