@@ -15,6 +15,8 @@ interface SpaceCardHeaderProps {
   tabs: Tab[];
   isEmojiPickerOpen: boolean;
   setIsEmojiPickerOpen: (open: boolean) => void;
+  /** Props for the drag handle (applied to emoji icon) */
+  dragHandleProps?: React.HTMLAttributes<HTMLElement>;
 }
 
 export function SpaceCardHeader({
@@ -22,6 +24,7 @@ export function SpaceCardHeader({
   tabs,
   isEmojiPickerOpen,
   setIsEmojiPickerOpen,
+  dragHandleProps,
 }: SpaceCardHeaderProps) {
   // Editable title hook
   const {
@@ -60,7 +63,7 @@ export function SpaceCardHeader({
   return (
     <div className="flex flex-col gap-2 px-3 pt-3 pb-2">
       <div className="flex items-center gap-2">
-        {/* Icon */}
+        {/* Icon - serves as drag handle */}
         <EmojiPickerComponent
           value={space.icon}
           onChange={handleIconChange}
@@ -68,8 +71,12 @@ export function SpaceCardHeader({
           onOpenChange={setIsEmojiPickerOpen}
         >
           <span
-            className="text-lg cursor-pointer hover:scale-110 transition-transform"
+            className={cn(
+              'text-lg cursor-grab hover:scale-110 transition-transform',
+              'active:cursor-grabbing'
+            )}
             onClick={handleIconClick}
+            {...dragHandleProps}
           >
             {space.icon || '📁'}
           </span>

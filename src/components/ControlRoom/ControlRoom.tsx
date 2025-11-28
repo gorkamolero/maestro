@@ -1,5 +1,20 @@
 import { useCallback, useMemo } from 'react';
 import { Plus } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  horizontalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import { useSpacesStore, spacesActions } from '@/stores/spaces.store';
 import { useWorkspaceStore } from '@/stores/workspace.store';
 import { useTagsStore } from '@/stores/tags.store';
@@ -24,6 +39,35 @@ export function ControlRoom() {
       return activeFilters.some((filterId) => spaceTags.includes(filterId));
     });
   }, [spaces, activeFilters]);
+
+  // Space IDs for sortable context
+  const spaceIds = useMemo(() => filteredSpaces.map((s) => s.id), [filteredSpaces]);
+
+  // DnD sensors with activation constraint to allow clicks
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+
+      if (over && active.id !== over.id) {
+        const oldIndex = spaces.findIndex((s) => s.id === active.id);
+        const newIndex = spaces.findIndex((s) => s.id === over.id);
+        const reordered = arrayMove(spaces, oldIndex, newIndex);
+        spacesActions.reorderSpaces(reordered);
+      }
+    },
+    [spaces]
+  );
 
   const handleNewSpace = useCallback(() => {
     const name = `Space ${spaces.length + 1}`;
@@ -53,30 +97,34 @@ export function ControlRoom() {
         <SpaceViewModeSelector />
       </div>
 
-      {/* Horizontal scrolling spaces */}
-      <div className="flex-1 flex items-stretch overflow-x-auto overflow-y-hidden px-6 py-4 gap-4">
-        {filteredSpaces.map((space) => {
-          const spaceTabs = tabs.filter((t) => t.spaceId === space.id);
-          return <SpaceCard key={space.id} space={space} tabs={spaceTabs} />;
-        })}
+      {/* Horizontal scrolling spaces with drag-and-drop */}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={spaceIds} strategy={horizontalListSortingStrategy}>
+          <div className="flex-1 flex items-stretch overflow-x-auto overflow-y-hidden px-6 py-4 gap-4">
+            {filteredSpaces.map((space) => {
+              const spaceTabs = tabs.filter((t) => t.spaceId === space.id);
+              return <SpaceCard key={space.id} space={space} tabs={spaceTabs} />;
+            })}
 
-        {/* New Space button - Zed/Telegram style */}
-        <button
-          type="button"
-          onClick={handleNewSpace}
-          className={cn(
-            'flex-shrink-0 flex flex-col items-center justify-center gap-3',
-            'w-[280px] rounded-lg',
-            'text-muted-foreground hover:text-foreground',
-            'bg-transparent hover:bg-accent',
-            'border border-dashed border-border hover:border-transparent',
-            'transition-all duration-150'
-          )}
-        >
-          <Plus className="w-5 h-5" />
-          <span className="text-sm font-medium">New space</span>
-        </button>
-      </div>
+            {/* New Space button - Zed/Telegram style */}
+            <button
+              type="button"
+              onClick={handleNewSpace}
+              className={cn(
+                'flex-shrink-0 flex flex-col items-center justify-center gap-3',
+                'w-[280px] rounded-lg',
+                'text-muted-foreground hover:text-foreground',
+                'bg-transparent hover:bg-accent',
+                'border border-dashed border-border hover:border-transparent',
+                'transition-all duration-150'
+              )}
+            >
+              <Plus className="w-5 h-5" />
+              <span className="text-sm font-medium">New space</span>
+            </button>
+          </div>
+        </SortableContext>
+      </DndContext>
     </div>
   );
 }
