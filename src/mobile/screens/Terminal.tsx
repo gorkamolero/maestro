@@ -72,7 +72,6 @@ export function Terminal() {
     if (!isConnected || !id) return;
 
     // Attach to terminal (requests backlog)
-    send('term:attach', { id }); // This is not in the spec's websocket/protocol.ts. Should be subscribe.
     subscribe('terminal', id);
 
     const offFrame = on('term:frame', (msg) => {
@@ -92,7 +91,6 @@ export function Terminal() {
     return () => {
       offFrame();
       offExit();
-      // send('term:detach', { id }); // This is not in the spec's websocket/protocol.ts. Should be unsubscribe.
       unsubscribe('terminal', id);
     };
   }, [isConnected, id, send, subscribe, on]);

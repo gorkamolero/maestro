@@ -66,8 +66,8 @@ class RemoteServer {
       ? path.join(process.resourcesPath, 'app.asar/dist/mobile') // In packaged app, it's inside app.asar
       : path.join(__dirname, '../../../../dist/mobile');
 
-    // Static assets
-    this.app.use('/assets/*', serveStatic({ root: mobilePath, stripEmptyParams: true }));
+    // Static assets - serve from root to handle manifest.json, icons, etc.
+    this.app.use('/*', serveStatic({ root: mobilePath, stripEmptyParams: true }));
     
     // SPA fallback - serve index.html for all other routes
     this.app.get('*', async (c) => {
