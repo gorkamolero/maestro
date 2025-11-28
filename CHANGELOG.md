@@ -6,6 +6,55 @@ All notable changes to Maestro will be documented in this file.
 
 ### Added
 
+#### Mobile Spaces Extension (2025-11-29)
+- **Full Spaces Experience on Mobile**: Replicated desktop Space cards and panes on mobile.
+  - **4 View Modes**: Grid cards, compact list, Andy Matuschak-style stacked panes, horizontal carousel.
+  - **Space Cards**: What's Next bubble, task preview, notes preview, activity indicators, tab icons.
+  - **Pane View**: Swipe navigation between spaces, collapsible spines with vertical labels.
+  - **Zed/Telegram Aesthetic**: Deep slate backgrounds, electric blue accents, subtle animations.
+- **Task Management from Mobile**:
+  - Create tasks with inline input in pane view.
+  - Toggle task completion with space-colored checkboxes.
+  - Delete tasks with swipe-to-delete gesture.
+  - All changes sync back to desktop via IPC.
+- **Space Editing from Mobile**:
+  - Edit space name, "What's Next", and color via bottom sheet.
+  - 10 color options with live preview.
+- **Tab Management from Mobile**:
+  - View all tabs with type icons and working directory.
+  - Close tabs with tap (syncs to desktop).
+  - Create terminals remotely.
+- **Enhanced API Endpoints**:
+  - `PATCH /api/spaces/:id` - Update space properties.
+  - `PUT /api/spaces/:id/next` - Set What's Next.
+  - `POST /api/spaces/:id/tasks` - Create task.
+  - `POST /api/spaces/:id/tasks/:taskId/toggle` - Toggle task.
+  - `PATCH /api/spaces/:id/tasks/:taskId` - Update task content.
+  - `DELETE /api/spaces/:id/tasks/:taskId` - Delete task.
+  - `DELETE /api/spaces/:id/tabs/:tabId` - Close tab.
+- **IPC Bridge Extensions**:
+  - `requestToggleTask`, `requestCreateTask`, `requestDeleteTask`, `requestUpdateTask`.
+  - `requestUpdateSpace`, `requestSetSpaceNext`, `requestCloseTab`.
+  - Task sync from renderer to main process.
+
+### Security
+
+#### Mobile Remote Server Hardening (2025-11-29)
+- **CSRF Protection**: Added `X-Maestro-Client: mobile` header requirement.
+  - Blocks cross-origin requests from malicious websites.
+- **Auth Bypass Safety**: Dev mode bypass now requires explicit opt-in.
+  - Must set `MAESTRO_DEV_AUTH_BYPASS=true` AND `NODE_ENV=development`.
+  - Updated `dev:all` script to enable bypass for local testing.
+- **Input Validation**: Tab creation validates type against whitelist, URL format for browser tabs.
+- **Space ID Validation**: All space endpoints validate ID format before processing.
+
+### Fixed
+
+#### Code Quality Improvements (2025-11-29)
+- Added proper `LexicalNode` TypeScript interface for notes text extraction.
+- Fixed race condition in task toggle - now waits for API success before UI update.
+- Removed ESLint disable comments where proper types were added.
+
 #### AI Elements Agent Conversation UI (2025-11-28)
 - **Desktop AgentConversation**: New chat-like display for agent activity using AI Elements.
   - Message bubbles for user prompts and assistant responses with markdown support.

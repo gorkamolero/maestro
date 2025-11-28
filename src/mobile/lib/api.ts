@@ -20,11 +20,12 @@ class ApiClient {
     body?: unknown
   ): Promise<T> {
     const token = this.getToken();
-    
+
     const res = await fetch(`${this.baseUrl}${path}`, {
       method,
       headers: {
         'Content-Type': 'application/json',
+        'X-Maestro-Client': 'mobile', // CSRF protection header
         ...(token ? { Authorization: `Maestro ${token}` } : {}),
       },
       body: body ? JSON.stringify(body) : undefined,
@@ -52,9 +53,68 @@ class ApiClient {
     return this.request<T>('POST', path, body);
   }
 
+  patch<T>(path: string, body?: unknown): Promise<T> {
+    return this.request<T>('PATCH', path, body);
+  }
+
+  put<T>(path: string, body?: unknown): Promise<T> {
+    return this.request<T>('PUT', path, body);
+  }
+
   delete<T>(path: string): Promise<T> {
     return this.request<T>('DELETE', path);
   }
 }
 
 export const api = new ApiClient();
+
+// === Typed API Helpers ===
+
+export interface SpaceUpdatePayload {
+  name?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+  icon?: string;
+  next?: string | null;
+  isActive?: boolean;
+}
+
+export const spacesApi = {
+  // Update space properties
+  updateSpace: (spaceId: string, updates: SpaceUpdatePayload) =>
+    api.patch<{ success: boolean }>(`/api/spaces/${spaceId}`, updates),
+
+  // Set "What's Next"
+  setNext: (spaceId: string, next: string | null) =>
+    api.put<{ success: boolean }>(`/api/spaces/${spaceId}/next`, { next }),
+
+  // Create terminal
+  createTerminal: (spaceId: string) =>
+    api.post<{ success: boolean }>(`/api/spaces/${spaceId}/terminals`),
+
+  // Create tab
+  createTab: (spaceId: string, type: string, url?: string) =>
+    api.post<{ success: boolean }>(`/api/spaces/${spaceId}/tabs`, { type, url }),
+
+  // Close tab
+  closeTab: (spaceId: string, tabId: string) =>
+    api.delete<{ success: boolean }>(`/api/spaces/${spaceId}/tabs/${tabId}`),
+};
+
+export const tasksApi = {
+  // Create task
+  create: (spaceId: string, content: string) =>
+    api.post<{ success: boolean }>(`/api/spaces/${spaceId}/tasks`, { content }),
+
+  // Toggle task completion
+  toggle: (spaceId: string, taskId: string) =>
+    api.post<{ success: boolean }>(`/api/spaces/${spaceId}/tasks/${taskId}/toggle`),
+
+  // Update task content
+  update: (spaceId: string, taskId: string, content: string) =>
+    api.patch<{ success: boolean }>(`/api/spaces/${spaceId}/tasks/${taskId}`, { content }),
+
+  // Delete task
+  delete: (spaceId: string, taskId: string) =>
+    api.delete<{ success: boolean }>(`/api/spaces/${spaceId}/tasks/${taskId}`),
+};

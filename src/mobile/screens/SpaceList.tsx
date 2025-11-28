@@ -1,15 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { api } from '../lib/api';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { SpaceCard } from '../components/SpaceCard';
-import type { SpaceInfo } from '@shared/types';
+import { SpacePanesView, SpaceCarouselView } from '../components/SpacePanesView';
+import type { SpaceInfo, SpaceDetail } from '@shared/types';
+
+type ViewMode = 'grid' | 'list' | 'panes' | 'carousel';
 
 export function SpaceList() {
   const [spaces, setSpaces] = useState<SpaceInfo[]>([]);
+  const [spaceDetails, setSpaceDetails] = useState<Record<string, SpaceDetail>>({});
   const [isLoading, setIsLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const { isConnected, subscribe, on } = useWebSocket();
 
+  // Fetch spaces
   useEffect(() => {
     api.get<{ spaces: SpaceInfo[] }>('/api/spaces')
       .then(({ spaces }) => {
@@ -31,7 +36,38 @@ export function SpaceList() {
     return off;
   }, [isConnected, subscribe, on]);
 
-  // Sort: recently accessed first, then by agent activity
+  // Fetch space details for grid view (to get tabs)
+  useEffect(() => {
+    if (viewMode !== 'grid' && viewMode !== 'list') return;
+
+    spaces.forEach((space) => {
+      if (!spaceDetails[space.id]) {
+        api.get<SpaceDetail>(`/api/spaces/${space.id}`)
+          .then((data) => {
+            setSpaceDetails((prev) => ({ ...prev, [space.id]: data }));
+          });
+      }
+    });
+  }, [spaces, viewMode, spaceDetails]);
+
+  // Handle task toggle
+  const handleTaskToggle = useCallback((spaceId: string, taskId: string, completed: boolean) => {
+    // Optimistic update
+    setSpaces((prev) =>
+      prev.map((s) => {
+        if (s.id !== spaceId || !s.tasks) return s;
+        return {
+          ...s,
+          tasks: s.tasks.map((t) => (t.id === taskId ? { ...t, completed } : t)),
+        };
+      })
+    );
+
+    // TODO: Send to API
+    api.post(`/api/spaces/${spaceId}/tasks/${taskId}`, { completed });
+  }, []);
+
+  // Sort: active agents first, then by last accessed
   const sortedSpaces = [...spaces].sort((a, b) => {
     // Spaces with active agents first
     if (a.agentCount > 0 && b.agentCount === 0) return -1;
@@ -40,35 +76,51 @@ export function SpaceList() {
     return new Date(b.lastAccessedAt || 0).getTime() - new Date(a.lastAccessedAt || 0).getTime();
   });
 
+  // Filter to only active spaces
+  const activeSpaces = sortedSpaces.filter((s) => s.isActive !== false);
+
   return (
-    <div className="min-h-screen bg-surface-primary text-content-primary pb-20">
+    <div className="min-h-screen bg-surface-primary text-content-primary flex flex-col">
       {/* Header */}
       <header className="sticky top-0 z-10 bg-surface-primary/90 backdrop-blur-lg border-b border-white/[0.06] px-4 py-3">
         <div className="flex items-center justify-between">
           <h1 className="text-page-title font-semibold">Spaces</h1>
           <div className="flex items-center gap-3">
-            <ViewToggle mode={viewMode} onChange={setViewMode} />
+            <ViewModeToggle mode={viewMode} onChange={setViewMode} />
             <ConnectionIndicator connected={isConnected} />
           </div>
         </div>
       </header>
 
       {/* Content */}
-      <main className="p-4">
+      <main className="flex-1">
         {isLoading ? (
-          <LoadingGrid />
+          <LoadingState viewMode={viewMode} />
         ) : spaces.length === 0 ? (
           <EmptyState />
+        ) : viewMode === 'panes' ? (
+          <SpacePanesView
+            spaces={activeSpaces}
+            onTaskToggle={handleTaskToggle}
+          />
+        ) : viewMode === 'carousel' ? (
+          <SpaceCarouselView spaces={activeSpaces} />
         ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-2 gap-3">
-            {sortedSpaces.map(space => (
-              <SpaceCard key={space.id} space={space} variant="grid" />
+          <div className="p-4 grid grid-cols-1 gap-3">
+            {activeSpaces.map((space, index) => (
+              <SpaceCard
+                key={space.id}
+                space={space}
+                variant="grid"
+                tabs={spaceDetails[space.id]?.tabs}
+                index={index}
+              />
             ))}
           </div>
         ) : (
-          <div className="space-y-3">
-            {sortedSpaces.map(space => (
-              <SpaceCard key={space.id} space={space} variant="list" />
+          <div className="p-4 space-y-3">
+            {activeSpaces.map((space, index) => (
+              <SpaceCard key={space.id} space={space} variant="list" index={index} />
             ))}
           </div>
         )}
@@ -77,7 +129,7 @@ export function SpaceList() {
   );
 }
 
-function ViewToggle({ mode, onChange }: { mode: 'grid' | 'list'; onChange: (m: 'grid' | 'list') => void }) {
+function ViewModeToggle({ mode, onChange }: { mode: ViewMode; onChange: (m: ViewMode) => void }) {
   return (
     <div className="flex bg-surface-card rounded-lg p-0.5 border border-white/[0.06]">
       <button
@@ -87,6 +139,7 @@ function ViewToggle({ mode, onChange }: { mode: 'grid' | 'list'; onChange: (m: '
             ? 'bg-surface-hover text-content-primary'
             : 'text-content-tertiary'
         }`}
+        title="Cards"
       >
         <GridIcon className="w-4 h-4" />
       </button>
@@ -97,8 +150,31 @@ function ViewToggle({ mode, onChange }: { mode: 'grid' | 'list'; onChange: (m: '
             ? 'bg-surface-hover text-content-primary'
             : 'text-content-tertiary'
         }`}
+        title="List"
       >
         <ListIcon className="w-4 h-4" />
+      </button>
+      <button
+        onClick={() => onChange('panes')}
+        className={`p-1.5 rounded-md transition-colors ${
+          mode === 'panes'
+            ? 'bg-surface-hover text-content-primary'
+            : 'text-content-tertiary'
+        }`}
+        title="Panes"
+      >
+        <PanesIcon className="w-4 h-4" />
+      </button>
+      <button
+        onClick={() => onChange('carousel')}
+        className={`p-1.5 rounded-md transition-colors ${
+          mode === 'carousel'
+            ? 'bg-surface-hover text-content-primary'
+            : 'text-content-tertiary'
+        }`}
+        title="Carousel"
+      >
+        <CarouselIcon className="w-4 h-4" />
       </button>
     </div>
   );
@@ -124,16 +200,30 @@ function EmptyState() {
   );
 }
 
-function LoadingGrid() {
+function LoadingState({ viewMode }: { viewMode: ViewMode }) {
+  if (viewMode === 'panes' || viewMode === 'carousel') {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="animate-pulse text-content-tertiary">Loading spaces...</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="grid grid-cols-2 gap-3">
-      {[...Array(4)].map((_, i) => (
-        <div key={i} className="aspect-[4/3] bg-surface-card rounded-card animate-pulse" />
+    <div className={`p-4 ${viewMode === 'grid' ? 'grid grid-cols-1 gap-3' : 'space-y-3'}`}>
+      {[...Array(3)].map((_, i) => (
+        <div
+          key={i}
+          className={`bg-surface-card rounded-card animate-pulse ${
+            viewMode === 'grid' ? 'h-40' : 'h-16'
+          }`}
+        />
       ))}
     </div>
   );
 }
 
+// Icons
 function FolderIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
@@ -145,10 +235,10 @@ function FolderIcon({ className }: { className?: string }) {
 function GridIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
-      <rect x="3" y="3" width="7" height="7" rx="1" />
-      <rect x="14" y="3" width="7" height="7" rx="1" />
-      <rect x="3" y="14" width="7" height="7" rx="1" />
-      <rect x="14" y="14" width="7" height="7" rx="1" />
+      <rect x="3" y="3" width="8" height="8" rx="1" />
+      <rect x="13" y="3" width="8" height="8" rx="1" />
+      <rect x="3" y="13" width="8" height="8" rx="1" />
+      <rect x="13" y="13" width="8" height="8" rx="1" />
     </svg>
   );
 }
@@ -161,3 +251,20 @@ function ListIcon({ className }: { className?: string }) {
   );
 }
 
+function PanesIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+      <rect x="3" y="3" width="5" height="18" rx="1" />
+      <rect x="10" y="3" width="11" height="18" rx="1" />
+    </svg>
+  );
+}
+
+function CarouselIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+      <rect x="6" y="4" width="12" height="16" rx="1" />
+      <path d="M2 8v8M22 8v8" strokeLinecap="round" />
+    </svg>
+  );
+}

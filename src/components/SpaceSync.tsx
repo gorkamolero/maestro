@@ -1,14 +1,17 @@
 import { useEffect } from 'react';
 import { useSnapshot } from 'valtio';
-import { useSpacesStore } from '@/stores/spaces.store';
+import { useSpacesStore, spacesActions } from '@/stores/spaces.store';
 import { useWorkspaceStore, workspaceActions } from '@/stores/workspace.store';
+import { useWorkspaceTasksStore, workspaceTasksActions, workspaceTasksComputed } from '@/stores/workspace-tasks.store';
 import { browserStore } from '@/stores/browser.store';
+import type { TaskItem } from '@shared/types';
 
 export function SpaceSync() {
   const { spaces } = useSpacesStore();
   const { tabs } = useWorkspaceStore();
+  const { tasks } = useWorkspaceTasksStore();
   const browserState = useSnapshot(browserStore);
-  
+
   // Sync spaces to main process
   useEffect(() => {
     const payload = spaces.map(s => ({
@@ -18,46 +21,123 @@ export function SpaceSync() {
       secondaryColor: s.secondaryColor,
       icon: s.icon,
       lastActiveAt: s.lastActiveAt,
+      next: s.next,
+      notesContent: s.notesContent,
+      contentMode: s.contentMode,
+      tags: s.tags,
+      isActive: s.isActive,
       connectedRepo: s.connectedRepo ? { ...s.connectedRepo } : undefined,
       tabs: tabs.filter(t => t.spaceId === s.id).map(t => ({
         id: t.id,
         type: t.type,
         title: t.title,
+        emoji: t.emoji,
+        disabled: t.disabled,
         url: t.type === 'browser' ? browserState.browsers[t.id]?.url : undefined,
-        terminalId: t.terminalState ? t.id : undefined,
-        content: t.type === 'notes' ? 'Notes content not synced yet' : undefined,
-        agentId: t.type === 'agent' ? 'agent-id-placeholder' : undefined, // We need to link agent tabs to sessions eventually
+        terminalState: t.terminalState ? {
+          buffer: t.terminalState.buffer,
+          workingDir: t.terminalState.workingDir,
+        } : undefined,
+        appLauncherConfig: t.appLauncherConfig ? {
+          icon: t.appLauncherConfig.icon,
+          color: t.appLauncherConfig.color,
+        } : undefined,
       })),
     }));
-    
+
     window.electron.send('spaces:update', payload);
   }, [spaces, tabs, browserState]);
 
+  // Sync tasks to main process
+  useEffect(() => {
+    // Group tasks by spaceId
+    const tasksBySpace: Record<string, TaskItem[]> = {};
+
+    for (const space of spaces) {
+      const spaceTasks = workspaceTasksComputed.getTasksForSpace(space.id);
+      tasksBySpace[space.id] = spaceTasks.map(t => ({
+        id: t.id,
+        text: t.content,
+        completed: t.completed,
+        createdAt: new Date(t.createdAt).toISOString(),
+      }));
+    }
+
+    window.electron.send('tasks:update', tasksBySpace);
+  }, [tasks, spaces]);
+
   // Listen for remote commands
   useEffect(() => {
-    const removeCreateTab = window.electron.on('spaces:create-tab', (data) => {
+    const cleanupFns: Array<() => void> = [];
+
+    // === Tab Management ===
+
+    cleanupFns.push(window.electron.on('spaces:create-tab', (data) => {
       const { spaceId, type } = data as { spaceId: string; type: string; url?: string };
-      // Map string type to TabType
       if (type === 'browser' || type === 'terminal' || type === 'notes' || type === 'agent') {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        workspaceActions.openTab(spaceId, type as any, type === 'browser' ? 'New Tab' : type, {
-          // For browser, we might want to set initial URL, but openTab creates generic tab.
-          // We might need to navigate after creation if URL provided.
-        });
-        // TODO: If browser and URL, handle navigation
+        workspaceActions.openTab(spaceId, type as any, type === 'browser' ? 'New Tab' : type, {});
       }
-    });
+    }));
 
-    const removeCreateTerminal = window.electron.on('spaces:create-terminal', (data) => {
+    cleanupFns.push(window.electron.on('spaces:create-terminal', (data) => {
       const { spaceId } = data as { spaceId: string };
       workspaceActions.openTab(spaceId, 'terminal', 'Terminal');
-    });
+    }));
+
+    cleanupFns.push(window.electron.on('spaces:close-tab', (data) => {
+      const { tabId } = data as { tabId: string };
+      workspaceActions.closeTab(tabId);
+    }));
+
+    // === Task Management ===
+
+    cleanupFns.push(window.electron.on('tasks:toggle', (data) => {
+      const { taskId } = data as { taskId: string };
+      workspaceTasksActions.toggleTask(taskId);
+    }));
+
+    cleanupFns.push(window.electron.on('tasks:create', (data) => {
+      const { spaceId, content } = data as { spaceId: string; content: string };
+      workspaceTasksActions.addTask(spaceId, content);
+    }));
+
+    cleanupFns.push(window.electron.on('tasks:delete', (data) => {
+      const { taskId } = data as { taskId: string };
+      workspaceTasksActions.deleteTask(taskId);
+    }));
+
+    cleanupFns.push(window.electron.on('tasks:update-content', (data) => {
+      const { taskId, content } = data as { taskId: string; content: string };
+      workspaceTasksActions.updateTaskContent(taskId, content);
+    }));
+
+    // === Space Management ===
+
+    cleanupFns.push(window.electron.on('spaces:update-space', (data) => {
+      const { spaceId, updates } = data as {
+        spaceId: string;
+        updates: {
+          name?: string;
+          primaryColor?: string;
+          secondaryColor?: string;
+          icon?: string;
+          next?: string | null;
+          isActive?: boolean;
+        };
+      };
+      spacesActions.updateSpace(spaceId, updates);
+    }));
+
+    cleanupFns.push(window.electron.on('spaces:set-next', (data) => {
+      const { spaceId, next } = data as { spaceId: string; next: string | null };
+      spacesActions.setSpaceNext(spaceId, next);
+    }));
 
     return () => {
-      removeCreateTab();
-      removeCreateTerminal();
+      cleanupFns.forEach(fn => fn());
     };
   }, []);
-  
+
   return null;
 }
