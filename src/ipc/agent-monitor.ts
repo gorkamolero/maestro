@@ -10,7 +10,7 @@ import {
   type GetActivitiesRequest,
   type GetActivitiesForSpaceRequest,
   type GetRecentActivitiesRequest,
-} from '@/types/agent-events';
+} from '../types/agent-events';
 
 export function registerAgentMonitorHandlers(getMainWindow: () => BrowserWindow | null) {
   const service = getAgentMonitorService();
