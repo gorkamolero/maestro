@@ -36,21 +36,17 @@ function subscribe(callback: () => void) {
 
 function connectWebSocket(token: string, refreshToken: () => Promise<void>) {
   if (!token || ws?.readyState === WebSocket.OPEN || ws?.readyState === WebSocket.CONNECTING) {
-    console.log('[WS] Connect skipped - already connected/connecting or no token');
     return;
   }
 
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const host = window.location.hostname === 'localhost'
-    ? 'localhost:7777'
-    : window.location.host;
+  // Always use port 7777 for WebSocket (remote server port)
+  const host = `${window.location.hostname}:7777`;
   const url = `${protocol}//${host}/ws?token=${token}`;
 
-  console.log('[WS] Connecting to:', url);
   ws = new WebSocket(url);
 
   ws.onopen = () => {
-    console.log('[WS] Connected');
     isConnectedState = true;
     notifySubscribers();
 
@@ -63,16 +59,14 @@ function connectWebSocket(token: string, refreshToken: () => Promise<void>) {
   ws.onmessage = (event) => {
     try {
       const msg: WSMessage = JSON.parse(event.data);
-      console.log('[WS] Received:', msg.type);
       const typeHandlers = handlers.get(msg.type);
       typeHandlers?.forEach(handler => handler(msg));
-    } catch (err) {
-      console.error('[WS] Parse error:', err);
+    } catch {
+      // Ignore parse errors
     }
   };
 
   ws.onclose = (event) => {
-    console.log('[WS] Disconnected:', event.code);
     isConnectedState = false;
     ws = null;
     notifySubscribers();
@@ -94,8 +88,8 @@ function connectWebSocket(token: string, refreshToken: () => Promise<void>) {
     }
   };
 
-  ws.onerror = (err) => {
-    console.error('[WS] Error:', err);
+  ws.onerror = () => {
+    // Connection errors are handled by onclose
   };
 
   // Keepalive
@@ -114,7 +108,8 @@ function connectWebSocket(token: string, refreshToken: () => Promise<void>) {
   }, 25_000);
 }
 
-function disconnectWebSocket() {
+/** Disconnect WebSocket and clean up - exported for use on logout */
+export function disconnectWebSocket() {
   if (pingInterval) {
     clearInterval(pingInterval);
     pingInterval = null;
@@ -132,9 +127,7 @@ function disconnectWebSocket() {
 }
 
 function sendMessage(type: string, payload: unknown) {
-  console.log('[WS] send() called:', type, 'ws:', !!ws, 'readyState:', ws?.readyState, '(OPEN=1)');
   if (!ws || ws.readyState !== WebSocket.OPEN) {
-    console.log('[WS] send() ABORTED - WebSocket not open');
     return false;
   }
 
@@ -146,15 +139,16 @@ function sendMessage(type: string, payload: unknown) {
     payload,
     timestamp: Date.now(),
   }));
-  console.log('[WS] send() SUCCESS:', type);
   return true;
 }
 
 function addHandler(type: string, handler: MessageHandler) {
-  if (!handlers.has(type)) {
-    handlers.set(type, new Set());
+  let handlerSet = handlers.get(type);
+  if (!handlerSet) {
+    handlerSet = new Set();
+    handlers.set(type, handlerSet);
   }
-  handlers.get(type)!.add(handler);
+  handlerSet.add(handler);
 
   return () => {
     handlers.get(type)?.delete(handler);

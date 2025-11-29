@@ -1,6 +1,6 @@
 import { useSnapshot } from 'valtio';
 import { persistWithHistory } from '@/lib/persist-with-history';
-import type { Space, Segment, SpaceContentMode } from '@/types';
+import type { Space, Segment, SpaceContentMode, SpaceBookmark } from '@/types';
 import { SPACE_COLOR_PALETTE } from '@/types';
 import { closeSpaceTabs } from '@/services/space-cleanup.service';
 
@@ -329,5 +329,65 @@ export const spacesActions = {
   getInactiveSpaces: (): Space[] => {
     const store = getSpacesStore();
     return store.spaces.filter((s) => s.isActive === false);
+  },
+
+  // ===========================================================================
+  // Bookmark Actions
+  // ===========================================================================
+
+  /**
+   * Add a bookmark to a space
+   */
+  addBookmark: (spaceId: string, name: string, url: string, favicon?: string): SpaceBookmark => {
+    const store = getSpacesStore();
+    const space = store.spaces.find((s) => s.id === spaceId);
+    if (!space) throw new Error(`Space not found: ${spaceId}`);
+
+    const bookmark: SpaceBookmark = {
+      id: crypto.randomUUID(),
+      name,
+      url,
+      favicon,
+    };
+
+    if (!space.bookmarks) {
+      space.bookmarks = [];
+    }
+    space.bookmarks.push(bookmark);
+    return bookmark;
+  },
+
+  /**
+   * Update a bookmark
+   */
+  updateBookmark: (spaceId: string, bookmarkId: string, updates: Partial<Omit<SpaceBookmark, 'id'>>): void => {
+    const store = getSpacesStore();
+    const space = store.spaces.find((s) => s.id === spaceId);
+    if (!space?.bookmarks) return;
+
+    const bookmark = space.bookmarks.find((b) => b.id === bookmarkId);
+    if (bookmark) {
+      Object.assign(bookmark, updates);
+    }
+  },
+
+  /**
+   * Remove a bookmark from a space
+   */
+  removeBookmark: (spaceId: string, bookmarkId: string): void => {
+    const store = getSpacesStore();
+    const space = store.spaces.find((s) => s.id === spaceId);
+    if (space?.bookmarks) {
+      space.bookmarks = space.bookmarks.filter((b) => b.id !== bookmarkId);
+    }
+  },
+
+  /**
+   * Get bookmarks for a space
+   */
+  getBookmarks: (spaceId: string): SpaceBookmark[] => {
+    const store = getSpacesStore();
+    const space = store.spaces.find((s) => s.id === spaceId);
+    return space?.bookmarks || [];
   },
 };

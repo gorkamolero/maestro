@@ -12,6 +12,7 @@ import { registerRemoteServerIPC } from './ipc/remote-server';
 import { registerSpaceSyncIPC } from './ipc/space-sync';
 import { remoteServer } from './services/remote-server';
 import { registerRemoteViewHandlers, cleanupRemoteViewHandlers } from './ipc/remote-view';
+import { registerShadowBrowserHandlers, cleanupShadowBrowserHandlers } from './ipc/shadow-browser';
 import { wsManager } from './services/remote-server/websocket/handler';
 
 // Get icon path - different in dev vs production
@@ -80,6 +81,7 @@ app.on('ready', () => {
 
   // Register remote view IPC handlers
   registerRemoteViewHandlers(getMainWindow);
+  registerShadowBrowserHandlers();
 
   // Give WebSocket manager access to main window and browser views for remote view
   wsManager.setRemoteViewDependencies(getMainWindow, getBrowserViewsMap);
@@ -99,6 +101,7 @@ app.on('window-all-closed', () => {
   cleanupPerformanceHandlers();
   cleanupAgentMonitorHandlers();
   cleanupRemoteViewHandlers();
+  cleanupShadowBrowserHandlers();
   if (process.platform !== 'darwin') {
     app.quit();
   }

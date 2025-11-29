@@ -6,6 +6,26 @@ All notable changes to Maestro will be documented in this file.
 
 ### Added
 
+#### Remote View Shadow Browser (2025-11-29)
+- **Shadow Browser**: Open any URL from mobile and view/control it remotely.
+  - Opens URL in hidden BrowserWindow on desktop.
+  - Streams video via WebRTC to mobile device.
+  - Touch gestures: tap (click), double-tap (zoom toggle), long-press (right-click), pinch (zoom 1-4x), drag (pan when zoomed).
+  - Coordinate mapping handles `object-fit: contain` letterboxing correctly.
+- **Touch Overlay Improvements**: Fixed gesture handling for zoom/pan interactions.
+  - Double-tap zoom works in both directions (zoom in and out).
+  - Drag panning respects zoom bounds.
+- **Testing Documentation**: Added `docs/remote-view-testing.md` with setup guide.
+
+### Changed
+
+#### Code Quality Cleanup (2025-11-29)
+- Removed all debug `console.log` statements from Remote View components.
+- Fixed TypeScript types: replaced `any` with proper `SignalData` type.
+- Fixed non-null assertions with proper null checks.
+- Exported `disconnectWebSocket` for logout cleanup.
+- Simplified UI to flat Zed/Obsidian aesthetic (no glassmorphism).
+
 #### Mobile Space Card Redesign (2025-11-29)
 - **Desktop-Matching Tab Row**: Replicated desktop tabs functionality on mobile.
   - Removed useless "Terminal / Open" footer (can't use terminal on phone).

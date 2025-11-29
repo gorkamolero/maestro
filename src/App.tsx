@@ -12,6 +12,7 @@ import { usePerformanceMonitor } from '@/hooks/usePerformance';
 import { startAutoBackup } from '@/lib/backup';
 import { initializeAgentMonitor } from '@/lib/agent-monitor-init';
 import { getRemoteViewManager } from './renderer/remote-view';
+import type { SignalData } from './renderer/remote-view/types';
 import '@/components/editor/themes/editor-theme.css';
 
 // Start automatic database backups
@@ -41,13 +42,14 @@ function App() {
 
     // Listen for viewer connections from main
     // handleViewerConnect is now async and handles capture internally
-    const unsubConnect = window.remoteView.onViewerConnected(async (clientId, browserId, quality) => {
-      await manager.handleViewerConnect(clientId, browserId, quality as 'low' | 'medium' | 'high');
+    // sourceId is provided for shadow browsers to skip redundant lookup
+    const unsubConnect = window.remoteView.onViewerConnected(async (clientId, browserId, quality, sourceId) => {
+      await manager.handleViewerConnect(clientId, browserId, quality as 'low' | 'medium' | 'high', sourceId);
     });
 
     // Listen for incoming signals from mobile
     const unsubSignal = window.remoteView.onSignal((clientId, signal) => {
-      manager.handleSignal(clientId, signal as any);
+      manager.handleSignal(clientId, signal as SignalData);
     });
 
     // Listen for viewer disconnections

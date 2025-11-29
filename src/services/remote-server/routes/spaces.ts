@@ -92,6 +92,7 @@ spacesRouter.get('/', (c) => {
         contentMode: space.contentMode || 'tasks',
         tags: space.tags || [],
         isActive: space.isActive !== false,
+        bookmarks: space.bookmarks || [],
       };
     });
     return c.json({ spaces });
@@ -116,6 +117,7 @@ spacesRouter.get('/', (c) => {
     contentMode: 'tasks' as const,
     tags: [],
     isActive: true,
+    bookmarks: [],
   }));
 
   return c.json({ spaces });
@@ -160,6 +162,7 @@ spacesRouter.get('/:id', (c) => {
       contentMode: space.contentMode || 'tasks',
       tags: space.tags || [],
       isActive: space.isActive !== false,
+      bookmarks: space.bookmarks || [],
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tabs: space.tabs?.map((t: any) => ({
         id: t.id,
@@ -196,6 +199,7 @@ spacesRouter.get('/:id', (c) => {
     contentMode: 'tasks' as const,
     tags: [],
     isActive: true,
+    bookmarks: [],
     tabs: [],
     agents: sessions,
   });

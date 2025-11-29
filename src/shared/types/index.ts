@@ -39,6 +39,14 @@ export interface TaskItem {
   createdAt: string;
 }
 
+// Bookmark for remote viewing
+export interface SpaceBookmark {
+  id: string;
+  name: string;
+  url: string;
+  favicon?: string;
+}
+
 // Enhanced Space info with all desktop features
 export interface SpaceInfo {
   id: string;
@@ -62,6 +70,8 @@ export interface SpaceInfo {
   tags?: string[];
   // Whether space is active or in vault
   isActive?: boolean;
+  // Bookmarks for remote viewing (localhost URLs, etc.)
+  bookmarks?: SpaceBookmark[];
 }
 
 export interface TabInfo {

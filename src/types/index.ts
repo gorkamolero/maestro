@@ -156,6 +156,16 @@ export interface Space {
     /** Whether agent monitoring is enabled */
     monitorAgents: boolean;
   };
+  /** Bookmarks for quick access (e.g., localhost URLs for remote viewing) */
+  bookmarks?: SpaceBookmark[];
+}
+
+export interface SpaceBookmark {
+  id: string;
+  name: string;
+  url: string;
+  /** Optional favicon URL */
+  favicon?: string;
 }
 
 // Color palette for spaces - 8 professional color pairs

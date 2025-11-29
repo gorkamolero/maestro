@@ -63,6 +63,9 @@ export class RemoteViewManager {
 
       const preset = this.getQualityPreset(quality);
 
+      console.log(`[RemoteViewManager] Starting capture with sourceId: ${sourceId}`);
+      console.log(`[RemoteViewManager] Quality preset: ${quality} (${preset.width}x${preset.height}@${preset.frameRate}fps)`);
+
       // Create MediaStream using Electron's chromeMediaSource
       // This ONLY works in renderer process!
       // NOTE: audio MUST be false - chromeMediaSource constraint doesn't support audio capture
@@ -79,9 +82,20 @@ export class RemoteViewManager {
         } as MediaTrackConstraints  // Cast needed - mandatory is Chrome-specific, not in TS types
       });
 
+      // Check if we actually got video tracks
+      const videoTracks = this.stream.getVideoTracks();
+      console.log(`[RemoteViewManager] Got ${videoTracks.length} video tracks`);
+
+      if (videoTracks.length > 0) {
+        const track = videoTracks[0];
+        const settings = track.getSettings();
+        console.log(`[RemoteViewManager] Track settings:`, settings);
+        console.log(`[RemoteViewManager] Track muted: ${track.muted}, enabled: ${track.enabled}, readyState: ${track.readyState}`);
+      }
+
       this.currentSourceId = sourceId;
-      console.log('[RemoteViewManager] Capture started');
-      
+      console.log('[RemoteViewManager] Capture started successfully');
+
       // Process any pending viewers that were waiting for capture
       this.processPendingViewers();
       
@@ -104,17 +118,28 @@ export class RemoteViewManager {
   /**
    * Handle a new viewer connection request
    * If capture isn't ready, queues the viewer for later
+   * @param sourceId - Optional pre-retrieved source ID (for shadow browsers)
    */
-  async handleViewerConnect(clientId: string, browserId: string, quality: StreamQuality): Promise<void> {
+  async handleViewerConnect(clientId: string, browserId: string, quality: StreamQuality, sourceId?: string): Promise<void> {
     // If stream not ready, queue this viewer
     if (!this.stream) {
       console.log(`[RemoteViewManager] Stream not ready, queueing viewer ${clientId}`);
       this.pendingViewers.push({ clientId, browserId, quality });
-      
-      // Try to start capture
-      const source = await window.remoteView.getMaestroSource();
-      if (source) {
-        await this.startCapture(source.id, quality);
+
+      // Use provided sourceId if available (shadow browsers provide this to skip redundant lookup)
+      if (sourceId) {
+        console.log(`[RemoteViewManager] Using provided source ID: ${sourceId}`);
+        await this.startCapture(sourceId, quality);
+      } else {
+        // Otherwise fetch it (for regular BrowserViews)
+        console.log(`[RemoteViewManager] Getting media source for browser: "${browserId}"`);
+        const source = await window.remoteView.getBrowserSource(browserId);
+        if (source) {
+          console.log(`[RemoteViewManager] Got media source ID: ${source.id}`);
+          await this.startCapture(source.id, quality);
+        } else {
+          console.error('[RemoteViewManager] No source found for browser:', browserId);
+        }
       }
       return;
     }

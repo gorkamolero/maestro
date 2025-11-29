@@ -1,7 +1,8 @@
 import { useState, useCallback } from 'react';
-import { Folder, FolderOpen, Link2Off, Bot } from 'lucide-react';
+import { Folder, FolderOpen, Link2Off, Bot, Globe, Plus, Trash2, ExternalLink } from 'lucide-react';
 import { spacesActions } from '@/stores/spaces.store';
 import type { Space } from '@/types';
+import { Input } from '@/components/ui/input';
 import {
   Dialog,
   DialogContent,
@@ -21,6 +22,9 @@ interface SpaceSettingsModalProps {
 
 export function SpaceSettingsModal({ space, isOpen, onClose }: SpaceSettingsModalProps) {
   const [isConnecting, setIsConnecting] = useState(false);
+  const [newBookmarkName, setNewBookmarkName] = useState('');
+  const [newBookmarkUrl, setNewBookmarkUrl] = useState('');
+  const [isAddingBookmark, setIsAddingBookmark] = useState(false);
 
   const handleConnectRepo = useCallback(async () => {
     setIsConnecting(true);
@@ -84,8 +88,28 @@ export function SpaceSettingsModal({ space, isOpen, onClose }: SpaceSettingsModa
     [space.id, space.connectedRepo]
   );
 
+  const handleAddBookmark = useCallback(() => {
+    if (!newBookmarkName.trim() || !newBookmarkUrl.trim()) return;
+
+    // Normalize URL
+    let url = newBookmarkUrl.trim();
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = `http://${url}`;
+    }
+
+    spacesActions.addBookmark(space.id, newBookmarkName.trim(), url);
+    setNewBookmarkName('');
+    setNewBookmarkUrl('');
+    setIsAddingBookmark(false);
+  }, [space.id, newBookmarkName, newBookmarkUrl]);
+
+  const handleRemoveBookmark = useCallback((bookmarkId: string) => {
+    spacesActions.removeBookmark(space.id, bookmarkId);
+  }, [space.id]);
+
   // Extract folder name from path for display
   const folderName = space.connectedRepo?.path.split('/').pop() || '';
+  const bookmarks = space.bookmarks || [];
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -166,6 +190,103 @@ export function SpaceSettingsModal({ space, isOpen, onClose }: SpaceSettingsModa
                 </Button>
               </div>
             )}
+          </div>
+
+          {/* Bookmarks Section */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium flex items-center gap-2">
+                <Globe className="w-4 h-4 text-muted-foreground" />
+                Remote View Bookmarks
+              </h3>
+              {!isAddingBookmark && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsAddingBookmark(true)}
+                  className="h-7 px-2"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              Add localhost URLs to view on mobile (e.g., localhost:3000)
+            </p>
+
+            {/* Add bookmark form */}
+            {isAddingBookmark && (
+              <div className="space-y-2 p-3 rounded-lg border border-border bg-accent/30">
+                <Input
+                  placeholder="Name (e.g., Dev Server)"
+                  value={newBookmarkName}
+                  onChange={(e) => setNewBookmarkName(e.target.value)}
+                  className="h-8 text-sm"
+                />
+                <Input
+                  placeholder="URL (e.g., localhost:3000)"
+                  value={newBookmarkUrl}
+                  onChange={(e) => setNewBookmarkUrl(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddBookmark()}
+                  className="h-8 text-sm"
+                />
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={handleAddBookmark}
+                    disabled={!newBookmarkName.trim() || !newBookmarkUrl.trim()}
+                    className="flex-1 h-7"
+                  >
+                    Add
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setIsAddingBookmark(false);
+                      setNewBookmarkName('');
+                      setNewBookmarkUrl('');
+                    }}
+                    className="h-7"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Bookmark list */}
+            {bookmarks.length > 0 ? (
+              <div className="space-y-1">
+                {bookmarks.map((bookmark) => (
+                  <div
+                    key={bookmark.id}
+                    className="flex items-center justify-between p-2 rounded-lg border border-border bg-accent/20 group"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <ExternalLink className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{bookmark.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{bookmark.url}</p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRemoveBookmark(bookmark.id)}
+                      className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : !isAddingBookmark ? (
+              <div className="text-center py-4 text-sm text-muted-foreground">
+                No bookmarks yet
+              </div>
+            ) : null}
           </div>
         </div>
       </DialogContent>

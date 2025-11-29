@@ -432,7 +432,10 @@ contextBridge.exposeInMainWorld('remoteView', {
   
   // Get the Maestro window source specifically
   getMaestroSource: () => ipcRenderer.invoke('remote-view:get-maestro-source'),
-  
+
+  // Get capture source for a specific browser by its ID (returns media stream ID)
+  getBrowserSource: (browserId: string) => ipcRenderer.invoke('remote-view:get-browser-source', browserId),
+
   // Get list of browser tabs
   getBrowsers: () => ipcRenderer.invoke('remote-view:get-browsers'),
   
@@ -459,9 +462,10 @@ contextBridge.exposeInMainWorld('remoteView', {
   },
   
   // Viewer connected (mobile requested to start viewing)
-  onViewerConnected: (callback: (clientId: string, browserId: string, quality: string) => void) => {
-    const handler = (_event: IpcRendererEvent, clientId: string, browserId: string, quality: string) => {
-      callback(clientId, browserId, quality);
+  // sourceId is optional - provided for shadow browsers to skip redundant lookup
+  onViewerConnected: (callback: (clientId: string, browserId: string, quality: string, sourceId?: string) => void) => {
+    const handler = (_event: IpcRendererEvent, clientId: string, browserId: string, quality: string, sourceId?: string) => {
+      callback(clientId, browserId, quality, sourceId);
     };
     ipcRenderer.on('remote-view:viewer-connected', handler);
     return () => ipcRenderer.removeListener('remote-view:viewer-connected', handler);

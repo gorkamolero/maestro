@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { TabInfo } from '@shared/types';
 import { useWebSocket } from '../hooks/useWebSocket';
 
@@ -28,6 +29,7 @@ const tabTypes = [
 ];
 
 export function TabsRow({ tabs, spaceId, maxVisible = 5 }: TabsRowProps) {
+  const navigate = useNavigate();
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [showAddMenu, setShowAddMenu] = useState(false);
   const { send, isConnected } = useWebSocket();
@@ -54,6 +56,23 @@ export function TabsRow({ tabs, spaceId, maxVisible = 5 }: TabsRowProps) {
     }
     send('space:addTab', { spaceId, tabType });
     setShowAddMenu(false);
+  };
+
+  const handleAddBrowser = (url: string) => {
+    if (!isConnected) {
+      setShowAddMenu(false);
+      return;
+    }
+    // Normalize URL
+    let normalizedUrl = url;
+    if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
+      normalizedUrl = `http://${normalizedUrl}`;
+    }
+    // Open shadow browser - streams to mobile
+    send('shadow-browser:open', { url: normalizedUrl, spaceId, quality: 'medium' });
+    setShowAddMenu(false);
+    // Navigate to remote view to see the stream
+    navigate('/remote-view');
   };
 
   return (
@@ -121,6 +140,7 @@ export function TabsRow({ tabs, spaceId, maxVisible = 5 }: TabsRowProps) {
         {showAddMenu && (
           <AddTabPopover
             onSelectType={handleAddTab}
+            onAddBrowser={handleAddBrowser}
             onClose={() => setShowAddMenu(false)}
             isConnected={isConnected}
           />
@@ -192,13 +212,75 @@ function TabPopover({
 // Add tab menu popover
 function AddTabPopover({
   onSelectType,
+  onAddBrowser,
   onClose,
   isConnected,
 }: {
   onSelectType: (type: string) => void;
+  onAddBrowser: (url: string) => void;
   onClose: () => void;
   isConnected: boolean;
 }) {
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const [url, setUrl] = useState('');
+
+  const handleBrowserClick = () => {
+    setShowUrlInput(true);
+  };
+
+  const handleUrlSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (url.trim()) {
+      onAddBrowser(url.trim());
+    }
+  };
+
+  if (showUrlInput) {
+    return (
+      <>
+        <div className="fixed inset-0 z-40" onClick={onClose} />
+        <div
+          className="absolute top-full left-0 mt-2 z-50 min-w-[220px] p-3 rounded-xl animate-fade-in"
+          style={{
+            background: 'rgba(30,30,32,0.98)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+          }}
+        >
+          <div className="text-[10px] text-[--text-tertiary] uppercase tracking-wider px-1 py-1 mb-2">
+            Add Browser
+          </div>
+          <form onSubmit={handleUrlSubmit}>
+            <input
+              type="text"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="localhost:3000"
+              autoFocus
+              className="w-full px-3 py-2 bg-white/[0.06] border border-white/[0.08] rounded-lg text-[13px] text-[--text-primary] placeholder:text-[--text-tertiary] focus:outline-none focus:border-amber-400/50 mb-2"
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowUrlInput(false)}
+                className="flex-1 py-2 px-3 rounded-lg text-[12px] font-medium bg-white/[0.06] text-[--text-secondary] active:scale-[0.98]"
+              >
+                Back
+              </button>
+              <button
+                type="submit"
+                disabled={!url.trim() || !isConnected}
+                className="flex-1 py-2 px-3 rounded-lg text-[12px] font-medium bg-amber-500 text-black active:scale-[0.98] disabled:opacity-40"
+              >
+                Add
+              </button>
+            </div>
+          </form>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       {/* Backdrop */}
@@ -226,7 +308,7 @@ function AddTabPopover({
         {tabTypes.map((item) => (
           <button
             key={item.type}
-            onClick={() => onSelectType(item.type)}
+            onClick={() => item.type === 'browser' ? handleBrowserClick() : onSelectType(item.type)}
             disabled={!isConnected}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all active:scale-[0.98] disabled:opacity-40 hover:bg-white/[0.06]"
           >

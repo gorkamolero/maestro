@@ -87,7 +87,7 @@ export interface RemoteViewIPCAPI {
   // Signaling relay
   sendSignal: (clientId: string, signal: SignalData) => void;
   onSignal: (callback: (clientId: string, signal: SignalData) => void) => () => void;
-  onViewerConnected: (callback: (clientId: string, browserId: string, quality: StreamQuality) => void) => () => void;
+  onViewerConnected: (callback: (clientId: string, browserId: string, quality: StreamQuality, browserTitle: string) => void) => () => void;
   onViewerDisconnected: (callback: (clientId: string) => void) => () => void;
 }
 

@@ -1,6 +1,7 @@
 import { ipcMain, desktopCapturer, BrowserWindow, BrowserView } from 'electron';
 import type { RemoteInput, ViewportInfo, CaptureSource, ViewableBrowser } from '../renderer/remote-view/types';
 import { getBrowserViewsMap } from './browser';
+import { getShadowWindow, getShadowWindowCaptureSource } from './shadow-browser';
 
 type InputButton = 'left' | 'right' | 'middle';
 type ElectronModifier = 'control' | 'alt' | 'shift' | 'meta';
@@ -106,7 +107,47 @@ export function registerRemoteViewHandlers(getMainWindow: () => BrowserWindow | 
   });
 
   /**
-   * Get the Maestro window source specifically
+   * Get capture source for a specific browser view by its ID
+   * Returns the webContents media stream ID for direct capture
+   * Also supports shadow browser windows
+   */
+  ipcMain.handle('remote-view:get-browser-source', async (_event, browserId: string): Promise<CaptureSource | null> => {
+    // First check if it's a shadow browser window
+    const shadowWindow = getShadowWindow(browserId);
+    if (shadowWindow) {
+      console.log('[RemoteView] Found shadow window:', browserId);
+      return getShadowWindowCaptureSource(browserId);
+    }
+
+    // Otherwise check regular BrowserViews
+    const viewsMap = getBrowserViewsMap();
+    const viewInfo = viewsMap.get(browserId);
+
+    if (!viewInfo) {
+      console.log('[RemoteView] BrowserView not found:', browserId);
+      return null;
+    }
+
+    const mainWindow = getMainWindow();
+    if (!mainWindow) {
+      console.log('[RemoteView] Main window not available');
+      return null;
+    }
+
+    const webContents = viewInfo.view.webContents;
+    const mediaSourceId = webContents.getMediaSourceId(mainWindow);
+    const title = webContents.getTitle();
+
+    console.log('[RemoteView] Got media source ID for browser:', browserId, mediaSourceId);
+
+    return {
+      id: mediaSourceId,
+      name: title || browserId
+    };
+  });
+
+  /**
+   * Get the Maestro window source (legacy, for backwards compat)
    */
   ipcMain.handle('remote-view:get-maestro-source', async (): Promise<CaptureSource | null> => {
     const sources = await desktopCapturer.getSources({
@@ -114,7 +155,12 @@ export function registerRemoteViewHandlers(getMainWindow: () => BrowserWindow | 
       thumbnailSize: { width: 320, height: 180 }
     });
 
-    const maestro = sources.find(s => s.name === 'Maestro' || s.name.includes('Maestro'));
+    const maestro = sources.find(s =>
+      s.name === 'Maestro' ||
+      s.name.includes('Maestro') ||
+      s.name === 'Electron'
+    );
+
     if (!maestro) return null;
 
     return {
@@ -228,6 +274,7 @@ function injectMouseMove(view: BrowserView, x: number, y: number): void {
 export function cleanupRemoteViewHandlers(): void {
   ipcMain.removeHandler('remote-view:get-sources');
   ipcMain.removeHandler('remote-view:get-maestro-source');
+  ipcMain.removeHandler('remote-view:get-browser-source');
   ipcMain.removeHandler('remote-view:get-browsers');
   ipcMain.removeHandler('remote-view:get-browser-bounds');
   ipcMain.removeHandler('remote-view:inject-input');

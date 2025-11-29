@@ -6,6 +6,14 @@ import { getDevice, updateLastSeen } from '../auth/device-registry';
 import { envelope, WSEnvelope } from './protocol';
 import { terminalBridge } from '../terminal/bridge';
 import { injectInputIntoBrowser } from '../../../ipc/remote-view';
+import { requestCreateTab } from '../../../ipc/space-sync';
+import {
+  createShadowWindow,
+  closeShadowWindowsForClient,
+  getShadowWindowByClient,
+  getShadowWindowCaptureSource,
+  injectInputIntoShadow,
+} from '../../../ipc/shadow-browser';
 import type { RemoteInput, ViewportInfo } from '../../../renderer/remote-view/types';
 
 interface WSClient {
@@ -87,7 +95,6 @@ class WSManager {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const msg = JSON.parse(raw) as WSEnvelope<any>;
-      console.log('[WS] Received message:', msg.type);
 
       switch (msg.type) {
         case 'ping':
@@ -134,6 +141,30 @@ class WSManager {
         case 'remote-view:stop':
           this.handleRemoteViewStop(clientId);
           break;
+
+        // =====================================================================
+        // Shadow Browser handlers (open URL from mobile)
+        // =====================================================================
+
+        case 'shadow-browser:open':
+          this.handleShadowBrowserOpen(clientId, msg.payload);
+          break;
+
+        case 'shadow-browser:input':
+          this.handleShadowBrowserInput(clientId, msg.payload);
+          break;
+
+        case 'shadow-browser:close':
+          this.handleShadowBrowserClose(clientId);
+          break;
+
+        // =====================================================================
+        // Space/Tab handlers
+        // =====================================================================
+
+        case 'space:addTab':
+          this.handleAddTab(msg.payload);
+          break;
       }
     } catch (e) {
       this.send(clientId, 'error', { code: 'parse_error', message: 'Invalid message' });
@@ -170,15 +201,12 @@ class WSManager {
   // ===========================================================================
   
   private handleRemoteViewList(clientId: string) {
-    console.log('[WS] handleRemoteViewList called, getBrowserViewsMap:', !!this.getBrowserViewsMap);
     if (!this.getBrowserViewsMap) {
-      console.log('[WS] No getBrowserViewsMap, sending empty list');
       this.send(clientId, 'remote-view:list', { browsers: [] });
       return;
     }
-    
+
     const viewsMap = this.getBrowserViewsMap();
-    console.log('[WS] viewsMap size:', viewsMap.size);
     const browsers: Array<{
       id: string;
       label: string;
@@ -200,12 +228,11 @@ class WSManager {
           title,
           bounds: { width: bounds.width, height: bounds.height }
         });
-      } catch (e) {
-        console.log('[WS] Error getting view info:', e);
+      } catch {
+        // Skip views that can't be accessed
       }
     }
 
-    console.log('[WS] Sending browser list:', browsers.length, 'browsers');
     this.send(clientId, 'remote-view:list', { browsers });
   }
   
@@ -215,27 +242,28 @@ class WSManager {
       this.send(clientId, 'remote-view:error', { error: 'Desktop not available', code: 'NOT_FOUND' });
       return;
     }
-    
+
     const { browserId, quality } = payload;
-    
-    // Get browser bounds directly
+
+    // Get browser info
     const viewsMap = this.getBrowserViewsMap();
     const viewInfo = viewsMap.get(browserId);
-    
+
     if (!viewInfo) {
       this.send(clientId, 'remote-view:error', { error: 'Browser not found', code: 'NOT_FOUND' });
       return;
     }
-    
+
     const bounds = viewInfo.view.getBounds();
-    
+
     // Notify renderer to start capture and create peer for this client
+    // Renderer will use browserId to get the media source ID directly from the BrowserView's webContents
     mainWindow.webContents.send('remote-view:viewer-connected', clientId, browserId, quality);
-    
+
     // Confirm to mobile
-    this.send(clientId, 'remote-view:started', { 
-      browserId, 
-      bounds: { width: bounds.width, height: bounds.height } 
+    this.send(clientId, 'remote-view:started', {
+      browserId,
+      bounds: { width: bounds.width, height: bounds.height }
     });
   }
   
@@ -259,11 +287,123 @@ class WSManager {
   private handleRemoteViewStop(clientId: string) {
     const mainWindow = this.getMainWindow?.();
     if (!mainWindow) return;
-    
+
     mainWindow.webContents.send('remote-view:viewer-disconnected', clientId);
   }
-  
+
+  // ===========================================================================
+  // Shadow Browser Handlers
+  // ===========================================================================
+
+  private async handleShadowBrowserOpen(
+    clientId: string,
+    payload: { url: string; spaceId: string; partition?: string; quality?: string }
+  ) {
+    const mainWindow = this.getMainWindow?.();
+    if (!mainWindow) {
+      this.send(clientId, 'shadow-browser:error', { error: 'Desktop not available', code: 'NOT_FOUND' });
+      return;
+    }
+
+    const { url, spaceId, partition, quality = 'medium' } = payload;
+
+    // Close any existing shadow window for this client
+    closeShadowWindowsForClient(clientId);
+
+    // Create shadow window
+    const shadow = createShadowWindow({
+      clientId,
+      url,
+      spaceId,
+      partition,
+      width: quality === 'high' ? 1920 : quality === 'medium' ? 1280 : 854,
+      height: quality === 'high' ? 1080 : quality === 'medium' ? 720 : 480,
+    });
+
+    // Wait for the page to finish loading before getting capture source
+    await new Promise<void>((resolve) => {
+      const webContents = shadow.window.webContents;
+
+      // Check if already done loading
+      if (!webContents.isLoading()) {
+        // Give it a moment for initial render
+        setTimeout(resolve, 500);
+        return;
+      }
+
+      // Wait for did-finish-load event
+      const onLoad = () => {
+        webContents.removeListener('did-finish-load', onLoad);
+        // Give it a moment for initial render
+        setTimeout(resolve, 500);
+      };
+
+      webContents.on('did-finish-load', onLoad);
+
+      // Timeout fallback after 5 seconds
+      setTimeout(() => {
+        webContents.removeListener('did-finish-load', onLoad);
+        resolve();
+      }, 5000);
+    });
+
+    // Get capture source
+    const source = await getShadowWindowCaptureSource(shadow.id);
+
+    if (!source) {
+      this.send(clientId, 'shadow-browser:error', { error: 'Failed to get capture source', code: 'CAPTURE_FAILED' });
+      return;
+    }
+
+    // Notify renderer to start capture with the ACTUAL source ID (not shadow.id)
+    // This avoids a redundant source lookup in the renderer
+    mainWindow.webContents.send('remote-view:viewer-connected', clientId, shadow.id, quality, source.id);
+
+    // Confirm to mobile
+    this.send(clientId, 'shadow-browser:opened', {
+      shadowId: shadow.id,
+      url,
+      bounds: { width: shadow.window.getBounds().width, height: shadow.window.getBounds().height },
+      sourceId: source.id,
+    });
+  }
+
+  private handleShadowBrowserInput(
+    clientId: string,
+    payload: { input: RemoteInput; viewport: ViewportInfo }
+  ) {
+    const shadow = getShadowWindowByClient(clientId);
+    if (!shadow) {
+      return;
+    }
+
+    const { input } = payload;
+    injectInputIntoShadow(shadow.id, input);
+  }
+
+  private handleShadowBrowserClose(clientId: string) {
+    closeShadowWindowsForClient(clientId);
+
+    const mainWindow = this.getMainWindow?.();
+    if (mainWindow) {
+      mainWindow.webContents.send('remote-view:viewer-disconnected', clientId);
+    }
+
+    this.send(clientId, 'shadow-browser:closed', {});
+  }
+
+  // ===========================================================================
+  // Space/Tab Handlers
+  // ===========================================================================
+
+  private handleAddTab(payload: { spaceId: string; tabType: string; url?: string }) {
+    const { spaceId, tabType, url } = payload;
+    requestCreateTab(spaceId, tabType, url);
+  }
+
   private handleClose(clientId: string) {
+    // Clean up any shadow windows for this client
+    closeShadowWindowsForClient(clientId);
     this.clients.delete(clientId);
   }
   
@@ -283,12 +423,10 @@ class WSManager {
   send(clientId: string, type: string, payload: unknown) {
     const client = this.clients.get(clientId);
     if (!client || client.ws.readyState !== WebSocket.OPEN) {
-      console.log('[WS] send failed - client:', !!client, 'readyState:', client?.ws.readyState);
       return;
     }
 
     const msg = JSON.stringify(envelope(type, payload));
-    console.log('[WS] Sending to client:', type);
     client.ws.send(msg);
   }
   
