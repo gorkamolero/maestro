@@ -25,7 +25,12 @@ export function useWebSocket() {
     if (!token || wsRef.current?.readyState === WebSocket.OPEN) return;
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.host || 'localhost:7777';
+    
+    // In dev (localhost), force port 7777. In prod (IP address), use same host/port.
+    const host = window.location.hostname === 'localhost' 
+      ? 'localhost:7777' 
+      : window.location.host;
+      
     const url = `${protocol}//${host}/ws?token=${token}`;
 
     const ws = new WebSocket(url);

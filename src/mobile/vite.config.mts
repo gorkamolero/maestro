@@ -26,5 +26,6 @@ export default defineConfig({
   server: {
     open: true,
     port: 5174,
+    host: true, // Allow external connections (mobile testing)
   },
 });

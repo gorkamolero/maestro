@@ -63,6 +63,7 @@ All notable changes to Maestro will be documented in this file.
 - **CORS**: Whitelisted `X-Maestro-Client` header to fix mobile network calls.
 - **Vite Config**: Added auto-open and fixed port 5174 for mobile dev server.
 - **Branding**: Updated application logo and icons.
+- **WebSocket**: Fixed incorrect WebSocket URL construction in mobile app for dev environment.
 
 #### Code Quality Improvements (2025-11-29)
 - Added proper `LexicalNode` TypeScript interface for notes text extraction.
