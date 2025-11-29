@@ -97,17 +97,17 @@ export function NotesEditor({ spaceId, initialContent }: NotesEditorProps) {
 
   return (
     <LexicalComposer initialConfig={editorConfig}>
-      <div className="relative flex-1 flex flex-col min-h-0">
+      <div className="relative flex-1 flex flex-col min-h-0 h-full">
         <RichTextPlugin
           contentEditable={
             <ContentEditable
-              className="flex-1 min-h-0 outline-none overflow-y-auto py-2 text-[13px] focus:outline-none"
+              className="flex-1 min-h-0 h-full outline-none overflow-y-auto py-2 text-[13px] focus:outline-none border border-amber-600/50 rounded-lg px-3"
               aria-placeholder="Write notes..."
             />
           }
           placeholder={
             <div
-              className="absolute top-2 left-0 text-[13px] pointer-events-none"
+              className="absolute top-2 left-3 text-[13px] pointer-events-none"
               style={{ color: 'rgba(255,255,255,0.3)' }}
             >
               Notes... (# heading, - list, **bold**)

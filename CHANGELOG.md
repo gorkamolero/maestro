@@ -72,6 +72,13 @@ All notable changes to Maestro will be documented in this file.
 
 ### Fixed
 
+#### Mobile Notes Editor Layout Fix (2025-11-29)
+- **Expandable Notes Section**: Notes editor now fills available vertical space.
+  - Changed content container from `space-y-3` to `flex flex-col gap-3`.
+  - Notes section uses `flex-1 min-h-[120px]` to expand.
+  - Added visible border and proper padding to ContentEditable.
+- **Tech Debt Documentation**: Created `docs/tech-debt/notes-editor-height.md` documenting the desktop notes editor height issue for future fixing.
+
 #### Mobile Infrastructure Fixes (2025-11-29)
 - **Space Sync**: Fixed "object could not be cloned" error by copying Proxy objects before IPC.
 - **CORS**: Whitelisted `X-Maestro-Client` header to fix mobile network calls.

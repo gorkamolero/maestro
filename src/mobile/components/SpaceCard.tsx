@@ -343,12 +343,12 @@ export function SpaceContent({
       {/* Tabs Row - always show (with "+" button to add tabs) */}
       <TabsRow tabs={tabs || []} spaceId={space.id} />
 
-      {/* Content - scrollable, min-h-0 allows flex shrinking */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3 space-y-3 scrollbar-thin">
+      {/* Content - scrollable flex column, min-h-0 allows flex shrinking */}
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3 flex flex-col gap-3 scrollbar-thin">
         {/* Task Creation Input - minimal styling */}
         <form
           onSubmit={(e) => { e.preventDefault(); handleCreateTask(); }}
-          className="flex gap-2"
+          className="flex gap-2 shrink-0"
         >
           <input
             type="text"
@@ -370,19 +370,21 @@ export function SpaceContent({
 
         {/* Tasks Section */}
         {space.tasks && space.tasks.length > 0 && (
-          <section className="animate-fade-in-up" style={{ animationDelay: '80ms' }}>
+          <section className="animate-fade-in-up shrink-0" style={{ animationDelay: '80ms' }}>
             <SectionHeader title="Tasks" count={space.tasks.length} />
             <TasksList tasks={space.tasks} onToggle={handleTaskToggle} color={accentColor} spaceId={space.id} />
           </section>
         )}
 
-        {/* Notes Section - Always show editor */}
-        <section className="animate-fade-in-up" style={{ animationDelay: '120ms' }}>
+        {/* Notes Section - flex-1 to fill remaining space */}
+        <section className="animate-fade-in-up flex-1 min-h-[120px] flex flex-col" style={{ animationDelay: '120ms' }}>
           <SectionHeader title="Notes" />
-          <NotesEditor
-            spaceId={space.id}
-            initialContent={space.notesContent}
-          />
+          <div className="flex-1 min-h-0 flex flex-col">
+            <NotesEditor
+              spaceId={space.id}
+              initialContent={space.notesContent}
+            />
+          </div>
         </section>
 
       </div>
