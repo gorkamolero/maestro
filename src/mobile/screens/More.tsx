@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { useWebSocket } from '../hooks/useWebSocket';
 
 export function More() {
   const { logout } = useAuth();
   const { isConnected } = useWebSocket();
+  const navigate = useNavigate();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
@@ -32,10 +34,10 @@ export function More() {
         <section className="bg-surface-card border border-white/[0.06] rounded-card p-3">
           <div className="flex items-center gap-3">
             <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
-              isConnected ? 'bg-green-500/10' : 'bg-red-500/10'
+              isConnected ? 'bg-green-500/10' : 'bg-red-400/10'
             }`}>
               <span className={`w-2.5 h-2.5 rounded-full ${
-                isConnected ? 'bg-green-500' : 'bg-red-500'
+                isConnected ? 'bg-green-500' : 'bg-red-400'
               }`} />
             </div>
             <div>
@@ -46,6 +48,21 @@ export function More() {
                 {isConnected ? 'Live updates active' : 'Trying to reconnect...'}
               </p>
             </div>
+          </div>
+        </section>
+
+        {/* Features */}
+        <section>
+          <h2 className="text-[11px] font-semibold text-content-tertiary uppercase tracking-wider mb-2 px-1">
+            Features
+          </h2>
+          <div className="bg-surface-card border border-white/[0.06] rounded-card overflow-hidden">
+            <MenuItem
+              icon={<MonitorIcon />}
+              label="Remote View"
+              description="Control desktop browser tabs"
+              onClick={() => navigate('/remote-view')}
+            />
           </div>
         </section>
 
@@ -111,14 +128,21 @@ function MenuItem({
   label,
   description,
   value,
+  onClick,
 }: {
   icon: React.ReactNode;
   label: string;
   description?: string;
   value?: string;
+  onClick?: () => void;
 }) {
   return (
-    <div className="flex items-center gap-3 px-3 py-2.5 border-b border-white/[0.04] last:border-0">
+    <div 
+      onClick={onClick}
+      className={`flex items-center gap-3 px-3 py-2.5 border-b border-white/[0.04] last:border-0 ${
+        onClick ? 'cursor-pointer active:bg-surface-hover/50' : ''
+      }`}
+    >
       <div className="w-7 h-7 rounded-md bg-surface-hover flex items-center justify-center text-content-secondary">
         {icon}
       </div>
@@ -137,6 +161,16 @@ function MenuItem({
 }
 
 // Icons
+function MonitorIcon() {
+  return (
+    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+      <rect x="2" y="3" width="20" height="14" rx="2" />
+      <line x1="8" y1="21" x2="16" y2="21" />
+      <line x1="12" y1="17" x2="12" y2="21" />
+    </svg>
+  );
+}
+
 function BellIcon() {
   return (
     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>

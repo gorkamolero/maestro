@@ -12,6 +12,7 @@ import { SpaceDetail } from './screens/SpaceDetail';
 import { Terminal } from './screens/Terminal';
 import { Settings } from './screens/Settings';
 import { More } from './screens/More';
+import { RemoteView } from './screens/RemoteView';
 
 function ProtectedRoutes() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -33,6 +34,9 @@ function ProtectedRoutes() {
           <Route path="/space/:id" element={<SpaceDetail />} />
           <Route path="/terminal/:id" element={<Terminal />} />
           <Route path="/settings" element={<Settings />} />
+
+          {/* Remote View */}
+          <Route path="/remote-view" element={<RemoteView />} />
         </Routes>
       </main>
       <BottomTabBar />

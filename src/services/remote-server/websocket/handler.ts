@@ -1,9 +1,12 @@
 import { WebSocket } from 'ws';
 import crypto from 'crypto';
+import { BrowserWindow, BrowserView, ipcMain } from 'electron';
 import { verifyAccessToken } from '../auth/token';
 import { getDevice, updateLastSeen } from '../auth/device-registry';
 import { envelope, WSEnvelope } from './protocol';
 import { terminalBridge } from '../terminal/bridge';
+import { injectInputIntoBrowser } from '../../ipc/remote-view';
+import type { RemoteInput, ViewportInfo } from '../../renderer/remote-view/types';
 
 interface WSClient {
   ws: WebSocket;
@@ -16,10 +19,30 @@ interface WSClient {
 class WSManager {
   private clients = new Map<string, WSClient>();
   private pingInterval: NodeJS.Timeout | null = null;
+  private getMainWindow: (() => BrowserWindow | null) | null = null;
+  private getBrowserViewsMap: (() => Map<string, { view: BrowserView; label: string }>) | null = null;
   
   constructor() {
     // Keepalive: ping every 30s
     this.pingInterval = setInterval(() => this.pingAll(), 30_000);
+  }
+  
+  // ADD: Set dependencies for remote view
+  setRemoteViewDependencies(
+    getMainWindow: () => BrowserWindow | null,
+    getBrowserViewsMap: () => Map<string, { view: BrowserView; label: string }>
+  ) {
+    this.getMainWindow = getMainWindow;
+    this.getBrowserViewsMap = getBrowserViewsMap;
+    this.setupIPCListeners();
+  }
+  
+  // ADD: Listen for signals from renderer to forward to mobile
+  private setupIPCListeners() {
+    // Renderer sends signal → forward to mobile client
+    ipcMain.on('remote-view:signal-out', (_event, clientId: string, signal: unknown) => {
+      this.send(clientId, 'remote-view:signal', { signal });
+    });
   }
   
   async handleUpgrade(ws: WebSocket, token: string): Promise<boolean> {
@@ -86,6 +109,30 @@ class WSManager {
         case 'term:resize':
           this.handleTerminalResize(msg.payload);
           break;
+        
+        // =====================================================================
+        // Remote View handlers
+        // =====================================================================
+        
+        case 'remote-view:list':
+          this.handleRemoteViewList(clientId);
+          break;
+          
+        case 'remote-view:start':
+          this.handleRemoteViewStart(clientId, msg.payload);
+          break;
+          
+        case 'remote-view:signal':
+          this.handleRemoteViewSignal(clientId, msg.payload);
+          break;
+          
+        case 'remote-view:input':
+          this.handleRemoteViewInput(msg.payload);
+          break;
+          
+        case 'remote-view:stop':
+          this.handleRemoteViewStop(clientId);
+          break;
       }
     } catch (e) {
       this.send(clientId, 'error', { code: 'parse_error', message: 'Invalid message' });
@@ -115,6 +162,100 @@ class WSManager {
   
   private handleTerminalResize(payload: { id: string; cols: number; rows: number }) {
     terminalBridge.resize(payload.id, payload.cols, payload.rows);
+  }
+  
+  // ===========================================================================
+  // Remote View Handlers
+  // ===========================================================================
+  
+  private handleRemoteViewList(clientId: string) {
+    if (!this.getBrowserViewsMap) {
+      this.send(clientId, 'remote-view:list', { browsers: [] });
+      return;
+    }
+    
+    const viewsMap = this.getBrowserViewsMap();
+    const browsers: Array<{
+      id: string;
+      label: string;
+      url: string;
+      title: string;
+      bounds: { width: number; height: number };
+    }> = [];
+
+    for (const [label, { view }] of viewsMap) {
+      try {
+        const url = view.webContents.getURL();
+        const title = view.webContents.getTitle();
+        const bounds = view.getBounds();
+
+        browsers.push({
+          id: label,
+          label,
+          url,
+          title,
+          bounds: { width: bounds.width, height: bounds.height }
+        });
+      } catch {
+        // View might be destroyed, skip
+      }
+    }
+    
+    this.send(clientId, 'remote-view:list', { browsers });
+  }
+  
+  private handleRemoteViewStart(clientId: string, payload: { browserId: string; quality: string }) {
+    const mainWindow = this.getMainWindow?.();
+    if (!mainWindow || !this.getBrowserViewsMap) {
+      this.send(clientId, 'remote-view:error', { error: 'Desktop not available', code: 'NOT_FOUND' });
+      return;
+    }
+    
+    const { browserId, quality } = payload;
+    
+    // Get browser bounds directly
+    const viewsMap = this.getBrowserViewsMap();
+    const viewInfo = viewsMap.get(browserId);
+    
+    if (!viewInfo) {
+      this.send(clientId, 'remote-view:error', { error: 'Browser not found', code: 'NOT_FOUND' });
+      return;
+    }
+    
+    const bounds = viewInfo.view.getBounds();
+    
+    // Notify renderer to start capture and create peer for this client
+    mainWindow.webContents.send('remote-view:viewer-connected', clientId, browserId, quality);
+    
+    // Confirm to mobile
+    this.send(clientId, 'remote-view:started', { 
+      browserId, 
+      bounds: { width: bounds.width, height: bounds.height } 
+    });
+  }
+  
+  private handleRemoteViewSignal(clientId: string, payload: { signal: unknown }) {
+    const mainWindow = this.getMainWindow?.();
+    if (!mainWindow) return;
+    
+    // Forward WebRTC signal to renderer
+    mainWindow.webContents.send('remote-view:signal-in', clientId, payload.signal);
+  }
+  
+  private handleRemoteViewInput(payload: { browserId: string; input: RemoteInput; viewport: ViewportInfo }) {
+    if (!this.getMainWindow) return;
+    
+    const { browserId, input, viewport } = payload;
+    
+    // Call the exported injection function directly - no IPC round-trip needed
+    injectInputIntoBrowser(browserId, input, viewport, this.getMainWindow);
+  }
+  
+  private handleRemoteViewStop(clientId: string) {
+    const mainWindow = this.getMainWindow?.();
+    if (!mainWindow) return;
+    
+    mainWindow.webContents.send('remote-view:viewer-disconnected', clientId);
   }
   
   private handleClose(clientId: string) {

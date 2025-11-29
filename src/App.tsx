@@ -11,6 +11,7 @@ import { historyActions } from '@/stores/history.store';
 import { usePerformanceMonitor } from '@/hooks/usePerformance';
 import { startAutoBackup } from '@/lib/backup';
 import { initializeAgentMonitor } from '@/lib/agent-monitor-init';
+import { getRemoteViewManager } from './renderer/remote-view';
 import '@/components/editor/themes/editor-theme.css';
 
 // Start automatic database backups
@@ -28,6 +29,44 @@ function App() {
 
   // Initialize performance monitoring (collects metrics every 2s)
   usePerformanceMonitor(2000);
+
+  // Initialize Remote View
+  useEffect(() => {
+    const manager = getRemoteViewManager();
+
+    // Set up signal forwarding to main process
+    manager.onSignal((clientId, signal) => {
+      window.remoteView.sendSignal(clientId, signal);
+    });
+
+    // Listen for viewer connections from main
+    // handleViewerConnect is now async and handles capture internally
+    const unsubConnect = window.remoteView.onViewerConnected(async (clientId, browserId, quality) => {
+      await manager.handleViewerConnect(clientId, browserId, quality as 'low' | 'medium' | 'high');
+    });
+
+    // Listen for incoming signals from mobile
+    const unsubSignal = window.remoteView.onSignal((clientId, signal) => {
+      manager.handleSignal(clientId, signal as any);
+    });
+
+    // Listen for viewer disconnections
+    const unsubDisconnect = window.remoteView.onViewerDisconnected((clientId) => {
+      manager.disconnectViewer(clientId);
+
+      // Stop capture if no more viewers
+      if (manager.getSessionCount() === 0) {
+        manager.stopCapture();
+      }
+    });
+
+    return () => {
+      unsubConnect();
+      unsubSignal();
+      unsubDisconnect();
+      manager.destroy();
+    };
+  }, []);
 
   // Dark mode
   useEffect(() => {

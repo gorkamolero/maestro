@@ -421,3 +421,58 @@ contextBridge.exposeInMainWorld('ntfy', {
   setConfig: (config: { enabled: boolean; topic: string; server?: string }) => ipcRenderer.invoke('ntfy:set-config', config),
   test: () => ipcRenderer.invoke('ntfy:test'),
 });
+
+// =============================================================================
+// Remote View API
+// =============================================================================
+
+contextBridge.exposeInMainWorld('remoteView', {
+  // Get available capture sources (screen, windows)
+  getSources: () => ipcRenderer.invoke('remote-view:get-sources'),
+  
+  // Get the Maestro window source specifically
+  getMaestroSource: () => ipcRenderer.invoke('remote-view:get-maestro-source'),
+  
+  // Get list of browser tabs
+  getBrowsers: () => ipcRenderer.invoke('remote-view:get-browsers'),
+  
+  // Get bounds of a specific browser
+  getBrowserBounds: (browserId: string) => 
+    ipcRenderer.invoke('remote-view:get-browser-bounds', browserId),
+  
+  // Inject input into a browser (called from renderer when receiving remote input)
+  injectInput: (browserId: string, input: unknown, viewport: unknown) =>
+    ipcRenderer.invoke('remote-view:inject-input', browserId, input, viewport),
+  
+  // Signaling: send signal to mobile client (renderer → main → WebSocket)
+  sendSignal: (clientId: string, signal: unknown) => {
+    ipcRenderer.send('remote-view:signal-out', clientId, signal);
+  },
+  
+  // Signaling: receive signal from mobile client (WebSocket → main → renderer)
+  onSignal: (callback: (clientId: string, signal: unknown) => void) => {
+    const handler = (_event: IpcRendererEvent, clientId: string, signal: unknown) => {
+      callback(clientId, signal);
+    };
+    ipcRenderer.on('remote-view:signal-in', handler);
+    return () => ipcRenderer.removeListener('remote-view:signal-in', handler);
+  },
+  
+  // Viewer connected (mobile requested to start viewing)
+  onViewerConnected: (callback: (clientId: string, browserId: string, quality: string) => void) => {
+    const handler = (_event: IpcRendererEvent, clientId: string, browserId: string, quality: string) => {
+      callback(clientId, browserId, quality);
+    };
+    ipcRenderer.on('remote-view:viewer-connected', handler);
+    return () => ipcRenderer.removeListener('remote-view:viewer-connected', handler);
+  },
+  
+  // Viewer disconnected
+  onViewerDisconnected: (callback: (clientId: string) => void) => {
+    const handler = (_event: IpcRendererEvent, clientId: string) => {
+      callback(clientId);
+    };
+    ipcRenderer.on('remote-view:viewer-disconnected', handler);
+    return () => ipcRenderer.removeListener('remote-view:viewer-disconnected', handler);
+  },
+});
