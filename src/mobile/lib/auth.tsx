@@ -53,6 +53,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Check for existing credentials on mount
       useEffect(() => {
         const init = async () => {
+          // Wait for server to be ready
+          const isReady = await api.waitForHealth();
+          if (!isReady) {
+            console.error('Server unreachable');
+            setIsLoading(false);
+            return;
+          }
+
+          // Check for dev bypass
+          if (import.meta.env.VITE_DEV_AUTH_BYPASS === 'true') {
+            console.log('🔓 Dev auth bypass enabled');
+            setDeviceId('dev-device');
+            setToken('dev-token');
+            setIsAuthenticated(true);
+            setIsLoading(false);
+            return;
+          }
+
           const storedDeviceId = localStorage.getItem(STORAGE_KEYS.DEVICE_ID);
           const storedSecret = localStorage.getItem(STORAGE_KEYS.SECRET);
           const storedToken = localStorage.getItem(STORAGE_KEYS.TOKEN);

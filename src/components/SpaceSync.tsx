@@ -24,7 +24,7 @@ export function SpaceSync() {
       next: s.next,
       notesContent: s.notesContent,
       contentMode: s.contentMode,
-      tags: s.tags,
+      tags: s.tags ? [...s.tags] : undefined,
       isActive: s.isActive,
       connectedRepo: s.connectedRepo ? { ...s.connectedRepo } : undefined,
       tabs: tabs.filter(t => t.spaceId === s.id).map(t => ({

@@ -6,6 +6,14 @@ All notable changes to Maestro will be documented in this file.
 
 ### Added
 
+#### Mobile Dev Experience (2025-11-29)
+- **Auth Bypass**: Added `MAESTRO_DEV_AUTH_BYPASS` environment variable support.
+  - Allows skipping PIN pairing in development.
+  - Integrated into `dev:all` script.
+- **Smart Connection Retry**: Mobile app now polls for server health on startup.
+  - Waits up to 20 seconds for desktop server to become available.
+  - Eliminates race condition where mobile app loads before server.
+
 #### Mobile Spaces Extension (2025-11-29)
 - **Full Spaces Experience on Mobile**: Replicated desktop Space cards and panes on mobile.
   - **4 View Modes**: Grid cards, compact list, Andy Matuschak-style stacked panes, horizontal carousel.
@@ -49,6 +57,12 @@ All notable changes to Maestro will be documented in this file.
 - **Space ID Validation**: All space endpoints validate ID format before processing.
 
 ### Fixed
+
+#### Mobile Infrastructure Fixes (2025-11-29)
+- **Space Sync**: Fixed "object could not be cloned" error by copying Proxy objects before IPC.
+- **CORS**: Whitelisted `X-Maestro-Client` header to fix mobile network calls.
+- **Vite Config**: Added auto-open and fixed port 5174 for mobile dev server.
+- **Branding**: Updated application logo and icons.
 
 #### Code Quality Improvements (2025-11-29)
 - Added proper `LexicalNode` TypeScript interface for notes text extraction.

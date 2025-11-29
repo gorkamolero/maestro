@@ -64,6 +64,19 @@ class ApiClient {
   delete<T>(path: string): Promise<T> {
     return this.request<T>('DELETE', path);
   }
+
+  async waitForHealth(retries = 20, interval = 1000): Promise<boolean> {
+    for (let i = 0; i < retries; i++) {
+      try {
+        await this.get('/api/health');
+        return true;
+      } catch (err) {
+        console.log(`Waiting for server... (${i + 1}/${retries})`);
+        await new Promise(resolve => setTimeout(resolve, interval));
+      }
+    }
+    return false;
+  }
 }
 
 export const api = new ApiClient();

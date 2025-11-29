@@ -8,6 +8,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  define: {
+    'import.meta.env.VITE_DEV_AUTH_BYPASS': JSON.stringify(process.env.MAESTRO_DEV_AUTH_BYPASS),
+  },
   root: __dirname,
   base: '/',
   build: {
@@ -19,5 +22,9 @@ export default defineConfig({
       '@shared': path.resolve(__dirname, '../shared'),
       '@mobile': __dirname,
     },
+  },
+  server: {
+    open: true,
+    port: 5174,
   },
 });

@@ -8,15 +8,15 @@
     "start": "electron-forge start",
     "dev": "electron-forge start",
     "dev:mobile": "vite --config src/mobile/vite.config.mts",
-    "dev:all": "concurrently -n desktop,mobile -c blue,green \"MAESTRO_DEV_AUTH_BYPASS=true pnpm dev\" \"pnpm dev:mobile\"",
+    "dev:all": "concurrently -n desktop,mobile -c blue,green \"MAESTRO_DEV_AUTH_BYPASS=true pnpm dev\" \"MAESTRO_DEV_AUTH_BYPASS=true pnpm dev:mobile\"",
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
-    "build": "npm run make && npm run build:mobile",
+    "build": "npm run build:mobile && npm run make",
     "build:mobile": "vite build --config src/mobile/vite.config.mts",
     "lint": "eslint --ext .ts,.tsx .",
     "update-happy": "bash scripts/update-happy-claude.sh",
-    "deploy": "npm run make && rm -rf /Applications/Maestro.app && cp -R out/Maestro-darwin-arm64/Maestro.app /Applications/"
+    "deploy": "npm run build && rm -rf /Applications/Maestro.app && cp -R out/Maestro-darwin-arm64/Maestro.app /Applications/"
   },
   "keywords": [],
   "author": {

@@ -36,8 +36,8 @@ class RemoteServer {
   private setupMiddleware() {
     this.app.use('*', cors({
       origin: '*',  // Mobile apps
-      allowMethods: ['GET', 'POST', 'PUT', 'DELETE'],
-      allowHeaders: ['Content-Type', 'Authorization'],
+      allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowHeaders: ['Content-Type', 'Authorization', 'X-Maestro-Client'],
     }));
   }
   
