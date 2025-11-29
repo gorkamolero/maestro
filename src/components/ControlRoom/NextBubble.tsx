@@ -6,6 +6,7 @@ interface NextBubbleProps {
   onChange: (value: string | null) => void;
   placeholder?: string;
   className?: string;
+  accentColor?: string;
 }
 
 export function NextBubble({
@@ -13,6 +14,7 @@ export function NextBubble({
   onChange,
   placeholder = "What's next?",
   className,
+  accentColor,
 }: NextBubbleProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value || '');
@@ -24,15 +26,6 @@ export function NextBubble({
       inputRef.current.select();
     }
   }, [isEditing]);
-
-  const handleStartEdit = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      setEditValue(value || '');
-      setIsEditing(true);
-    },
-    [value]
-  );
 
   const handleSave = useCallback(() => {
     const trimmed = editValue.trim();
@@ -58,48 +51,44 @@ export function NextBubble({
   );
 
   const isEmpty = !value || value.trim() === '';
-
-  if (isEditing) {
-    return (
-      <div
-        className={cn('flex items-center gap-2', className)}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <span className="text-muted-foreground text-xs">→</span>
-        <input
-          ref={inputRef}
-          type="text"
-          value={editValue}
-          onChange={(e) => setEditValue(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onBlur={handleSave}
-          className="flex-1 bg-transparent text-xs outline-none min-w-0 text-foreground"
-          placeholder={placeholder}
-        />
-      </div>
-    );
-  }
+  const textColor = accentColor || 'var(--foreground)';
 
   return (
-    <button
-      type="button"
-      onClick={handleStartEdit}
-      className={cn('flex items-center gap-2 text-left w-full group/next', className)}
+    <div
+      className={cn('flex items-center gap-2 w-full px-3 py-1.5 cursor-text', className)}
+      style={{
+        background: accentColor ? `${accentColor}12` : 'rgba(255,255,255,0.03)',
+        borderLeft: accentColor ? `2px solid ${accentColor}50` : '2px solid rgba(255,255,255,0.15)',
+      }}
+      onClick={(e) => {
+        e.stopPropagation();
+        if (!isEditing) {
+          setEditValue(value || '');
+          setIsEditing(true);
+        }
+      }}
     >
-      <span className="text-muted-foreground text-xs">→</span>
-      {isEmpty ? (
-        <>
-          <span className="flex-1 text-xs text-muted-foreground/50 group-hover/next:text-muted-foreground transition-colors">
-            {placeholder}
-          </span>
-          {/* Red dot - very small, muted */}
-          <span className="w-1.5 h-1.5 rounded-full bg-red-500/60" />
-        </>
-      ) : (
-        <span className="flex-1 text-xs text-muted-foreground group-hover/next:text-foreground transition-colors truncate">
-          {value}
-        </span>
+      <span className="text-xs font-medium" style={{ color: textColor }}>→</span>
+
+      <input
+        ref={inputRef}
+        type="text"
+        value={isEditing ? editValue : (value || '')}
+        onChange={(e) => setEditValue(e.target.value)}
+        onKeyDown={handleKeyDown}
+        onFocus={() => {
+          setEditValue(value || '');
+          setIsEditing(true);
+        }}
+        onBlur={handleSave}
+        className="flex-1 bg-transparent text-xs font-medium outline-none min-w-0 uppercase tracking-wide"
+        style={{ color: isEmpty && !isEditing ? 'var(--muted-foreground)' : textColor, opacity: isEmpty && !isEditing ? 0.6 : 1 }}
+        placeholder={placeholder}
+      />
+
+      {isEmpty && !isEditing && (
+        <span className="w-1.5 h-1.5 rounded-full bg-red-500/50 shrink-0" />
       )}
-    </button>
+    </div>
   );
 }

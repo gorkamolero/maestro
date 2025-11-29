@@ -148,15 +148,16 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
         />
 
         {/* What's Next bubble - primary focus indicator */}
-        <div className="px-3 pb-2">
+        <div className="px-3 pb-2" onMouseDown={(e) => e.stopPropagation()}>
           <NextBubble
             value={space.next}
             onChange={(value) => spacesActions.updateSpace(space.id, { next: value })}
+            accentColor={space.primaryColor}
           />
         </div>
 
         {/* Tabs / Favorites */}
-        <div className="px-3 pb-2">
+        <div className="px-3 pb-2" onMouseDown={(e) => e.stopPropagation()}>
           <TabPreviewList
             tabs={tabs}
             spaceId={space.id}
@@ -165,8 +166,8 @@ export function SpaceCard({ space, tabs }: SpaceCardProps) {
           />
         </div>
 
-        {/* Collapsible Tasks & Notes sections */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden px-2">
+        {/* Collapsible Tasks & Notes sections - stop drag propagation */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-2" onMouseDown={(e) => e.stopPropagation()}>
           <CollapsibleSection
             icon={<CheckSquare className="w-3 h-3" />}
             label="Tasks"

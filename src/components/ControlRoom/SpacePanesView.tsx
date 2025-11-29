@@ -389,6 +389,7 @@ const SpacePane = memo(function SpacePane({
           <NextBubble
             value={space.next}
             onChange={(value) => spacesActions.updateSpace(space.id, { next: value })}
+            accentColor={space.primaryColor}
           />
         </div>
 
