@@ -6,6 +6,20 @@ All notable changes to Maestro will be documented in this file.
 
 ### Added
 
+#### Mobile Space Card Redesign (2025-11-29)
+- **Desktop-Matching Tab Row**: Replicated desktop tabs functionality on mobile.
+  - Removed useless "Terminal / Open" footer (can't use terminal on phone).
+  - Added TabsRow component at top of each space card.
+  - Tab icons with tap-to-show popover.
+  - "Open on Desktop" button sends WebSocket message to focus tab on desktop.
+- **Add Tab Popover**: Plus button shows menu to add tabs remotely.
+  - Browser, Terminal, Notes, Tasks options.
+  - Shows "Not connected to desktop" warning when disconnected.
+  - Positioned directly below the button for better UX.
+- **Mobile Dev Documentation**: Added mobile development section to CLAUDE.md.
+  - Instructions for testing on actual mobile devices.
+  - Local IP address usage for WiFi testing.
+
 #### Mobile Dev Experience (2025-11-29)
 - **Auth Bypass**: Added `MAESTRO_DEV_AUTH_BYPASS` environment variable support.
   - Allows skipping PIN pairing in development.

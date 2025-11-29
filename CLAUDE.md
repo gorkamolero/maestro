@@ -175,6 +175,19 @@ pnpm tauri dev
 pnpm dev
 ```
 
+### Mobile Development
+
+```bash
+# Start mobile dev server
+MAESTRO_DEV_AUTH_BYPASS=true npm run dev:mobile
+```
+
+**Testing on actual mobile device:**
+- Mobile devices cannot access `localhost`
+- Use your computer's local IP address instead: `http://192.168.x.x:5174`
+- Find your IP with: `ipconfig getifaddr en0` (macOS) or check Network settings
+- Ensure your phone is on the same WiFi network as your computer
+
 ### Building
 
 ```bash

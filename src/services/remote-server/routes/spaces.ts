@@ -12,6 +12,7 @@ import {
   requestUpdateTask,
   requestUpdateSpace,
   requestSetSpaceNext,
+  requestSetSpaceNotesContent,
   type SpaceUpdate,
 } from '../../../ipc/space-sync';
 
@@ -317,5 +318,30 @@ spacesRouter.delete('/:id/tabs/:tabId', async (c) => {
   const tabId = c.req.param('tabId');
 
   requestCloseTab(tabId);
+  return c.json({ success: true });
+});
+
+// === Notes Management ===
+
+// Get notes content for a space
+spacesRouter.get('/:id/notes', (c) => {
+  const id = c.req.param('id');
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const cachedSpaces = getCachedSpaces() as any[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const space = cachedSpaces?.find((s: any) => s.id === id);
+
+  return c.json({
+    notesContent: space?.notesContent || null,
+  });
+});
+
+// Update notes content
+spacesRouter.put('/:id/notes', async (c) => {
+  const spaceId = c.req.param('id');
+  const { content } = await c.req.json() as { content: string };
+
+  requestSetSpaceNotesContent(spaceId, content);
   return c.json({ success: true });
 });

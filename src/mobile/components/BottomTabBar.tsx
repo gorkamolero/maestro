@@ -9,29 +9,29 @@ const tabs = [
 
 export function BottomTabBar() {
   const location = useLocation();
-  
+
   // Hide on detail screens
   const hideOn = ['/terminal/', '/agent/', '/space/'];
   const shouldHide = hideOn.some(path => location.pathname.startsWith(path));
-  
+
   if (shouldHide) return null;
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 bg-surface-primary/95 backdrop-blur-lg border-t border-white/[0.06]">
-      <div className="flex justify-around items-center h-14 pb-[env(safe-area-inset-bottom)]">
+    <nav className="flex-shrink-0 z-30 bg-surface-primary/95 backdrop-blur-md border-t border-white/[0.04]">
+      <div className="flex justify-center items-center gap-1 h-9 pb-[env(safe-area-inset-bottom)]">
         {tabs.map(tab => (
           <NavLink
             key={tab.path}
             to={tab.path}
             end={tab.path === '/'}
             className={({ isActive }) =>
-              `flex flex-col items-center gap-0.5 px-6 py-2 transition-colors ${
-                isActive ? 'text-accent' : 'text-content-tertiary'
+              `flex items-center gap-1.5 px-3 py-1 rounded transition-colors ${
+                isActive ? 'text-content-primary bg-white/[0.06]' : 'text-content-tertiary'
               }`
             }
           >
-            <tab.icon className="w-5 h-5" />
-            <span className="text-[11px] font-medium">{tab.label}</span>
+            <tab.icon className="w-3.5 h-3.5" />
+            <span className="text-[10px] font-medium uppercase tracking-wider">{tab.label}</span>
           </NavLink>
         ))}
       </div>

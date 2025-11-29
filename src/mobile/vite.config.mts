@@ -9,7 +9,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   define: {
-    'import.meta.env.VITE_DEV_AUTH_BYPASS': JSON.stringify(process.env.MAESTRO_DEV_AUTH_BYPASS),
+    'import.meta.env.VITE_DEV_AUTH_BYPASS': JSON.stringify(process.env.MAESTRO_DEV_AUTH_BYPASS === 'true'),
   },
   root: __dirname,
   base: '/',

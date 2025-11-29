@@ -20,21 +20,23 @@ function ProtectedRoutes() {
   if (!isAuthenticated) return <Navigate to="/login" replace />;
 
   return (
-    <>
-      <Routes>
-        {/* Tab routes */}
-        <Route path="/" element={<AgentList />} />
-        <Route path="/spaces" element={<SpaceList />} />
-        <Route path="/more" element={<More />} />
-        
-        {/* Detail routes */}
-        <Route path="/agent/:id" element={<AgentDetail />} />
-        <Route path="/space/:id" element={<SpaceDetail />} />
-        <Route path="/terminal/:id" element={<Terminal />} />
-        <Route path="/settings" element={<Settings />} />
-      </Routes>
+    <div className="flex flex-col bg-surface-primary" style={{ height: '100dvh' }}>
+      <main className="flex-1 min-h-0 overflow-hidden">
+        <Routes>
+          {/* Tab routes */}
+          <Route path="/" element={<AgentList />} />
+          <Route path="/spaces" element={<SpaceList />} />
+          <Route path="/more" element={<More />} />
+
+          {/* Detail routes */}
+          <Route path="/agent/:id" element={<AgentDetail />} />
+          <Route path="/space/:id" element={<SpaceDetail />} />
+          <Route path="/terminal/:id" element={<Terminal />} />
+          <Route path="/settings" element={<Settings />} />
+        </Routes>
+      </main>
       <BottomTabBar />
-    </>
+    </div>
   );
 }
 

@@ -55,18 +55,17 @@ export function AgentList() {
   const idle = agents.filter(a => a.status === 'idle');
 
   return (
-    <div className="min-h-screen bg-surface-primary text-content-primary pb-20">
-      {/* Header */}
-      <header className="sticky top-0 z-10 bg-surface-primary/90 backdrop-blur-lg border-b border-white/[0.06] px-4 py-3">
-        <div className="flex items-center justify-between">
-          <h1 className="text-page-title font-semibold">Agents</h1>
-          <div className="flex items-center gap-3">
-            <ConnectionIndicator connected={isConnected} />
-            <Link to="/more" className="p-2 -m-2 active:opacity-60 transition-opacity">
-              <SettingsIcon className="w-5 h-5 text-content-tertiary" />
-            </Link>
-          </div>
+    <div className="h-full bg-surface-primary text-content-primary overflow-y-auto">
+      {/* Header - compact status bar style */}
+      <header className="sticky top-0 z-10 bg-surface-primary/95 backdrop-blur-md border-b border-white/[0.04] px-3 h-9 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <ConnectionIndicator connected={isConnected} />
+          <span className="text-[11px] font-medium text-content-secondary uppercase tracking-wider">Agents</span>
+          <span className="text-[10px] text-content-tertiary tabular-nums">{agents.length}</span>
         </div>
+        <Link to="/settings" className="p-1 rounded transition-colors text-content-tertiary hover:text-content-secondary">
+          <SettingsIcon className="w-3.5 h-3.5" />
+        </Link>
       </header>
 
       {/* Content */}
@@ -131,12 +130,7 @@ export function AgentList() {
 
 function ConnectionIndicator({ connected }: { connected: boolean }) {
   return (
-    <div className="flex items-center gap-1.5">
-      <span className={`w-2 h-2 rounded-full ${connected ? 'bg-emerald-400' : 'bg-red-400'}`} />
-      <span className="text-small text-content-tertiary">
-        {connected ? 'Live' : 'Offline'}
-      </span>
-    </div>
+    <span className={`w-1.5 h-1.5 rounded-full ${connected ? 'bg-emerald-400' : 'bg-red-400'}`} />
   );
 }
 

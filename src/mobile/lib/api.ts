@@ -1,10 +1,10 @@
 const getBaseUrl = () => {
   // In production, served from same origin
-  if (window.location.hostname !== 'localhost') {
+  if (window.location.hostname !== 'localhost' && !window.location.hostname.startsWith('192.168')) {
     return '';
   }
-  // Dev: point to local server
-  return 'http://localhost:7777';
+  // Dev: use same hostname as the page (works for both localhost and network IP)
+  return `http://${window.location.hostname}:7777`;
 };
 
 class ApiClient {
@@ -130,4 +130,14 @@ export const tasksApi = {
   // Delete task
   delete: (spaceId: string, taskId: string) =>
     api.delete<{ success: boolean }>(`/api/spaces/${spaceId}/tasks/${taskId}`),
+};
+
+export const notesApi = {
+  // Get notes content for a space
+  get: (spaceId: string) =>
+    api.get<{ notesContent: string | null }>(`/api/spaces/${spaceId}/notes`),
+
+  // Update notes content (plain text - will be converted to Lexical format on server)
+  update: (spaceId: string, content: string) =>
+    api.put<{ success: boolean }>(`/api/spaces/${spaceId}/notes`, { content }),
 };

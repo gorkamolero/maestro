@@ -53,20 +53,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Check for existing credentials on mount
       useEffect(() => {
         const init = async () => {
-          // Wait for server to be ready
-          const isReady = await api.waitForHealth();
-          if (!isReady) {
-            console.error('Server unreachable');
+          // Check for dev bypass FIRST (before server check)
+          if (import.meta.env.VITE_DEV_AUTH_BYPASS === true) {
+            console.log('🔓 Dev auth bypass enabled');
+            // Still wait for server, but don't block on auth
+            api.waitForHealth().then(ready => {
+              if (!ready) console.warn('Server unreachable but bypassing auth');
+            });
+            setDeviceId('dev-device');
+            setToken('dev-token');
+            localStorage.setItem(STORAGE_KEYS.TOKEN, 'dev-token');
+            setIsAuthenticated(true);
             setIsLoading(false);
             return;
           }
 
-          // Check for dev bypass
-          if (import.meta.env.VITE_DEV_AUTH_BYPASS === 'true') {
-            console.log('🔓 Dev auth bypass enabled');
-            setDeviceId('dev-device');
-            setToken('dev-token');
-            setIsAuthenticated(true);
+          // Wait for server to be ready
+          const isReady = await api.waitForHealth();
+          if (!isReady) {
+            console.error('Server unreachable');
             setIsLoading(false);
             return;
           }

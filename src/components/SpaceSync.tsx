@@ -134,6 +134,11 @@ export function SpaceSync() {
       spacesActions.setSpaceNext(spaceId, next);
     }));
 
+    cleanupFns.push(window.electron.on('spaces:set-notes-content', (data) => {
+      const { spaceId, content } = data as { spaceId: string; content: string };
+      spacesActions.setSpaceNotesContent(spaceId, content);
+    }));
+
     return () => {
       cleanupFns.forEach(fn => fn());
     };

@@ -111,3 +111,10 @@ export function requestSetSpaceNext(spaceId: string, next: string | null) {
     win.webContents.send('spaces:set-next', { spaceId, next });
   }
 }
+
+export function requestSetSpaceNotesContent(spaceId: string, content: string) {
+  const win = _getMainWindow?.();
+  if (win) {
+    win.webContents.send('spaces:set-notes-content', { spaceId, content });
+  }
+}

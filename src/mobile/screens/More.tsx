@@ -18,10 +18,13 @@ export function More() {
   };
 
   return (
-    <div className="min-h-screen bg-surface-primary text-content-primary pb-20">
-      {/* Header */}
-      <header className="sticky top-0 z-10 bg-surface-primary/90 backdrop-blur-lg border-b border-white/[0.06] px-4 py-3">
-        <h1 className="text-page-title font-semibold">More</h1>
+    <div className="h-full bg-surface-primary text-content-primary overflow-y-auto">
+      {/* Header - compact status bar style */}
+      <header className="sticky top-0 z-10 bg-surface-primary/95 backdrop-blur-md border-b border-white/[0.04] px-3 h-9 flex items-center">
+        <div className="flex items-center gap-2">
+          <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-emerald-400' : 'bg-red-400'}`} />
+          <span className="text-[11px] font-medium text-content-secondary uppercase tracking-wider">Settings</span>
+        </div>
       </header>
 
       <main className="p-4 space-y-5">
