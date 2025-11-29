@@ -54,6 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       useEffect(() => {
         const init = async () => {
           // Check for dev bypass FIRST (before server check)
+          // Note: Vite define injects boolean true via JSON.stringify
           if (import.meta.env.VITE_DEV_AUTH_BYPASS === true) {
             console.log('🔓 Dev auth bypass enabled');
             // Still wait for server, but don't block on auth

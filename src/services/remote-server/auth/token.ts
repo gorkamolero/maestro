@@ -40,6 +40,15 @@ export async function signAccessToken(
 }
 
 export async function verifyAccessToken(token: string): Promise<TokenPayload | null> {
+  // Dev bypass for testing
+  if (token === 'dev-token' && process.env.MAESTRO_DEV_AUTH_BYPASS === 'true') {
+    return {
+      deviceId: 'dev-device',
+      iat: Math.floor(Date.now() / 1000),
+      exp: Math.floor(Date.now() / 1000) + 86400, // 24 hours
+    };
+  }
+
   try {
     const { payload } = await jwtVerify(token, SECRET);
     return payload as unknown as TokenPayload;

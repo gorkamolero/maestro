@@ -36,7 +36,7 @@ export class RemoteViewManager {
   private pendingViewers: PendingViewer[] = [];
   private onSignalCallback: SignalCallback | null = null;
   private currentSourceId: string | null = null;
-  private isCapturing: boolean = false;
+  private isCapturing = false;
 
   /**
    * Initialize capture with a specific source

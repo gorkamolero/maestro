@@ -36,6 +36,16 @@ function saveDevices(devices: RegisteredDevice[]): void {
 }
 
 export function getDevice(deviceId: string): RegisteredDevice | undefined {
+  // Dev bypass for testing
+  if (deviceId === 'dev-device' && process.env.MAESTRO_DEV_AUTH_BYPASS === 'true') {
+    return {
+      deviceId: 'dev-device',
+      secret: 'dev-secret',
+      name: 'Dev Device',
+      createdAt: new Date().toISOString(),
+      lastSeen: new Date().toISOString(),
+    };
+  }
   return loadDevices().find(d => d.deviceId === deviceId);
 }
 

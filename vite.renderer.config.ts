@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import path from 'node:path';
+import { nodePolyfills } from 'vite-plugin-node-polyfills';
 
 // https://vitejs.dev/config
 export default defineConfig(async () => {
@@ -7,7 +8,14 @@ export default defineConfig(async () => {
   const tailwindcss = await import('@tailwindcss/vite');
 
   return {
-    plugins: [react.default(), tailwindcss.default()],
+    plugins: [
+      react.default(),
+      tailwindcss.default(),
+      nodePolyfills({
+        include: ['process', 'buffer'],
+        globals: { process: true, Buffer: true },
+      }),
+    ],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),

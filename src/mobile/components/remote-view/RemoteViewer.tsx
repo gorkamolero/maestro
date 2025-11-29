@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import Peer from 'simple-peer';
+import { Monitor, AlertCircle } from 'lucide-react';
 import { TouchOverlay } from './TouchOverlay';
 import { ViewerControls } from './ViewerControls';
 import { useWebSocket } from '../../hooks/useWebSocket';
@@ -133,12 +134,16 @@ export function RemoteViewer({
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-full p-4">
-        <p className="text-red-500 mb-4">Connection Error</p>
-        <p className="text-content-tertiary mb-4 text-center">{error}</p>
+      <div className="flex flex-col items-center justify-center h-full p-6 bg-black">
+        <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-4">
+          <AlertCircle className="w-8 h-8 text-red-400" />
+        </div>
+        <p className="text-content-primary font-medium mb-1">Connection Failed</p>
+        <p className="text-content-tertiary text-[12px] text-center mb-6 max-w-[240px]">{error}</p>
         <button
           onClick={handleDisconnect}
-          className="px-4 py-2 bg-surface-secondary rounded-lg"
+          className="px-5 py-2 bg-surface-card border border-white/[0.06] rounded-xl text-content-primary text-sm font-medium
+            active:bg-surface-hover transition-colors"
         >
           Go Back
         </button>
@@ -148,23 +153,58 @@ export function RemoteViewer({
 
   return (
     <div className="relative w-full h-full bg-black">
+      {/* Animated rings loading state */}
       {connecting && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black z-10">
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-8 h-8 border-2 border-content-tertiary border-t-content-primary rounded-full animate-spin" />
-            <span className="text-content-tertiary">Connecting...</span>
+        <div className="absolute inset-0 flex items-center justify-center bg-black/95 z-10">
+          <div className="flex flex-col items-center gap-4">
+            {/* Concentric pulsing rings */}
+            <div className="relative w-16 h-16">
+              <div className="absolute inset-0 rounded-full border-2 border-amber-500/20 animate-ping" />
+              <div
+                className="absolute inset-2 rounded-full border-2 border-amber-500/30 animate-ping"
+                style={{ animationDelay: '150ms' }}
+              />
+              <div
+                className="absolute inset-4 rounded-full border-2 border-amber-500/40 animate-ping"
+                style={{ animationDelay: '300ms' }}
+              />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Monitor className="w-6 h-6 text-amber-400" />
+              </div>
+            </div>
+            <div className="text-center">
+              <p className="text-content-primary font-medium text-sm">Connecting</p>
+              <p className="text-content-tertiary text-[11px] mt-1">Establishing secure stream...</p>
+            </div>
           </div>
         </div>
       )}
 
-      <video
-        ref={videoRef}
-        autoPlay
-        playsInline
-        muted
-        className="w-full h-full object-contain"
-      />
+      {/* Video with subtle frame */}
+      <div className="absolute inset-2 rounded-xl overflow-hidden shadow-2xl">
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className="w-full h-full object-contain bg-neutral-900"
+        />
+      </div>
 
+      {/* Live badge when connected */}
+      {connected && (
+        <div className="absolute top-4 right-4 z-20">
+          <div className="flex items-center gap-2 px-2.5 py-1 bg-black/60 backdrop-blur-sm rounded-full border border-white/10">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
+            </span>
+            <span className="text-[10px] font-medium text-emerald-400 uppercase tracking-wider">Live</span>
+          </div>
+        </div>
+      )}
+
+      {/* Touch overlay for input */}
       {connected && (
         <TouchOverlay
           videoRef={videoRef}
@@ -172,6 +212,7 @@ export function RemoteViewer({
         />
       )}
 
+      {/* Controls */}
       <ViewerControls
         quality={quality}
         onQualityChange={onQualityChange}

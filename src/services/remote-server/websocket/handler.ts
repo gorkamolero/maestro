@@ -5,8 +5,8 @@ import { verifyAccessToken } from '../auth/token';
 import { getDevice, updateLastSeen } from '../auth/device-registry';
 import { envelope, WSEnvelope } from './protocol';
 import { terminalBridge } from '../terminal/bridge';
-import { injectInputIntoBrowser } from '../../ipc/remote-view';
-import type { RemoteInput, ViewportInfo } from '../../renderer/remote-view/types';
+import { injectInputIntoBrowser } from '../../../ipc/remote-view';
+import type { RemoteInput, ViewportInfo } from '../../../renderer/remote-view/types';
 
 interface WSClient {
   ws: WebSocket;
@@ -83,11 +83,12 @@ class WSManager {
   private handleMessage(clientId: string, raw: string) {
     const client = this.clients.get(clientId);
     if (!client) return;
-    
+
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const msg = JSON.parse(raw) as WSEnvelope<any>;
-      
+      console.log('[WS] Received message:', msg.type);
+
       switch (msg.type) {
         case 'ping':
           client.lastPing = Date.now();
@@ -169,12 +170,15 @@ class WSManager {
   // ===========================================================================
   
   private handleRemoteViewList(clientId: string) {
+    console.log('[WS] handleRemoteViewList called, getBrowserViewsMap:', !!this.getBrowserViewsMap);
     if (!this.getBrowserViewsMap) {
+      console.log('[WS] No getBrowserViewsMap, sending empty list');
       this.send(clientId, 'remote-view:list', { browsers: [] });
       return;
     }
     
     const viewsMap = this.getBrowserViewsMap();
+    console.log('[WS] viewsMap size:', viewsMap.size);
     const browsers: Array<{
       id: string;
       label: string;
@@ -196,11 +200,12 @@ class WSManager {
           title,
           bounds: { width: bounds.width, height: bounds.height }
         });
-      } catch {
-        // View might be destroyed, skip
+      } catch (e) {
+        console.log('[WS] Error getting view info:', e);
       }
     }
-    
+
+    console.log('[WS] Sending browser list:', browsers.length, 'browsers');
     this.send(clientId, 'remote-view:list', { browsers });
   }
   
@@ -277,9 +282,14 @@ class WSManager {
   // Send to specific client
   send(clientId: string, type: string, payload: unknown) {
     const client = this.clients.get(clientId);
-    if (!client || client.ws.readyState !== WebSocket.OPEN) return;
-    
-    client.ws.send(JSON.stringify(envelope(type, payload)));
+    if (!client || client.ws.readyState !== WebSocket.OPEN) {
+      console.log('[WS] send failed - client:', !!client, 'readyState:', client?.ws.readyState);
+      return;
+    }
+
+    const msg = JSON.stringify(envelope(type, payload));
+    console.log('[WS] Sending to client:', type);
+    client.ws.send(msg);
   }
   
   // Broadcast to subscribers of a channel
